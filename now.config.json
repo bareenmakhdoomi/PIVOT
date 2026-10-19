@@ -1,0 +1,7 @@
+{
+    "scope": "x_enno_pivot",
+    "scopeId": "72e59d78b06d426a8e37fdbb14ccca66",
+    "name": "PIVOT",
+    "tsconfigPath": "./src/server/tsconfig.json",
+    "packageSourceCodeOnInstance": true
+}
