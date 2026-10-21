@@ -392,7 +392,11 @@ export function createApi(base) {
     const data = body && body.result !== undefined ? body.result : body;
     if (res.status === 401) throw new Error('Your ServiceNow session has ended. Reload the page to sign in again.');
     if (res.status === 403) throw new Error('You need a PIVOT role to use this workspace. Ask your PIVOT admin for access.');
-    if (!res.ok) throw new Error((data && data.error) || (body && body.error && body.error.message) || 'PIVOT could not complete the request (HTTP ' + res.status + ').');
+    if (!res.ok) {
+      const e = (data && data.error) || (body && body.error);
+      const text = typeof e === 'string' ? e : e ? [e.message, e.detail].filter(Boolean).join(' – ') : '';
+      throw new Error((text || 'PIVOT could not complete the request.') + ' (HTTP ' + res.status + ')');
+    }
     return data;
   });
   return {

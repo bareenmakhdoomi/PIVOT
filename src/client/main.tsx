@@ -1,7 +1,7 @@
 // PIVOT workspace entry point (UI page x_enno_pivot_workspace.do).
 // Loads the approved Concept 27 shell, reads the PIVOT data through the workspace REST API
 // (platform session, ACLs applied on the server) and starts the workspace.
-import './pivot/pivot.css'
+import { CSS } from './pivot/styles.js'
 import { SHELL } from './pivot/shell.js'
 import { createPV, createApi } from './pivot/live-store.js'
 import { startWorkspace } from './pivot/workspace.js'
@@ -13,6 +13,9 @@ function escapeHtml(s: string) {
 }
 
 function boot() {
+    const style = document.createElement('style')
+    style.textContent = CSS
+    document.head.appendChild(style)
     const root = document.getElementById('root') || document.body
     root.innerHTML = SHELL
     const main = document.getElementById('main') as HTMLElement

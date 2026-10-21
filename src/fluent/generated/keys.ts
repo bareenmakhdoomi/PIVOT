@@ -284,10 +284,12 @@ declare global {
                     'pivot/pivot.css': {
                         table: 'sys_ux_theme_asset'
                         id: '511202a25bf14cf6b9e3eb75bacdf477'
+                        deleted: true
                     }
                     'pivot\\pivot.css': {
                         table: 'sys_ux_theme_asset'
                         id: 'ab86356ae8b84fbe9bbf4a796e633176'
+                        deleted: true
                     }
                     'prop-admin-group': {
                         table: 'sys_properties'
