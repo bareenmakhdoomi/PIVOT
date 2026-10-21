@@ -1,9 +1,0 @@
-:root { --bg:#f4f7fb; --ink:#172744; --blue:#2864e8; --side:#1f2a6b; }
-body { margin:0; font-family: Inter, system-ui, sans-serif; background:var(--bg); color:var(--ink); }
-.shell { display:grid; grid-template-columns:230px 1fr; min-height:100vh; }
-.sidebar { background:var(--side); padding:20px 12px; display:flex; flex-direction:column; gap:4px; }
-.brand { color:#fff; font-weight:800; font-size:20px; padding:4px 10px 18px; }
-.navbtn { text-align:left; background:transparent; border:0; color:#dfe5ff; padding:10px; border-radius:8px; cursor:pointer; font:inherit; }
-.navbtn.active { background:#fff; color:var(--blue); font-weight:700; }
-.main { padding:28px; }
-.eyebrow { font-size:11px; letter-spacing:.08em; color:var(--blue); font-weight:700; }
