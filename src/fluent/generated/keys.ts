@@ -277,6 +277,46 @@ declare global {
                         table: 'sys_app_module'
                         id: '5702a5181e094ead967f169e2ea7f8de'
                     }
+                    'pivot-portal': {
+                        table: 'sp_portal'
+                        id: '0fe1a93559c44ef2858726304563daaf'
+                    }
+                    'pivot-portal-dependency': {
+                        table: 'sp_dependency'
+                        id: 'daa1773daabd4aa4a8b946497aa4e1ae'
+                    }
+                    'pivot-portal-home-column': {
+                        table: 'sp_column'
+                        id: '37161d0e2cdc47deb8a2bd066bffa579'
+                    }
+                    'pivot-portal-home-container': {
+                        table: 'sp_container'
+                        id: 'f6852e36670e4b58bab1e14d2e07c491'
+                    }
+                    'pivot-portal-home-instance': {
+                        table: 'sp_instance'
+                        id: 'fb96e32061a1425d9ac9283b9945d80b'
+                    }
+                    'pivot-portal-home-row': {
+                        table: 'sp_row'
+                        id: 'ccddd46c42d64d5a9218512233216058'
+                    }
+                    'pivot-portal-js-include': {
+                        table: 'sp_js_include'
+                        id: '84560a97bd294bf4ac9f669705444cf1'
+                    }
+                    'pivot-portal-theme': {
+                        table: 'sp_theme'
+                        id: '29b04d787025485d80834d4ec0c1ee89'
+                    }
+                    'pivot-portal-ui-script': {
+                        table: 'sys_ui_script'
+                        id: 'f756837d8f324af9bfc13f7052815019'
+                    }
+                    'pivot-portal-widget': {
+                        table: 'sp_widget'
+                        id: 'ac2a1900921f428095c7612d05d17f9e'
+                    }
                     'pivot-workspace-page-read': {
                         table: 'sys_security_acl'
                         id: 'dab42fddd09945d9a3df99fac83d0e53'
@@ -1094,6 +1134,14 @@ declare global {
                             value: 'secops'
                             language: 'en'
                             dependent_value: 'NULL'
+                        }
+                    },
+                    {
+                        table: 'm2m_sp_widget_dependency'
+                        id: '16fad516c4b94537947db503750aa20f'
+                        key: {
+                            sp_widget: 'ac2a1900921f428095c7612d05d17f9e'
+                            sp_dependency: 'daa1773daabd4aa4a8b946497aa4e1ae'
                         }
                     },
                     {
@@ -2654,6 +2702,13 @@ declare global {
                         id: '522249df388c4eed9cd2569ff4faf273'
                         key: {
                             name: 'x_enno_pivot.business_owner'
+                        }
+                    },
+                    {
+                        table: 'sp_page'
+                        id: '523f5a62e7914292af98eb6481348a63'
+                        key: {
+                            id: 'x_enno_pivot_home'
                         }
                     },
                     {
@@ -5742,6 +5797,14 @@ declare global {
                         key: {
                             application_file: 'dc56b9fccbff469dbc1a4c38d8d01c8d'
                             source_artifact: '4b95afbf928f46e5b1b90f66da64c95d'
+                        }
+                    },
+                    {
+                        table: 'm2m_sp_dependency_js_include'
+                        id: 'c98ecb310c2142c383013636ecaa8c39'
+                        key: {
+                            sp_js_include: '84560a97bd294bf4ac9f669705444cf1'
+                            sp_dependency: 'daa1773daabd4aa4a8b946497aa4e1ae'
                         }
                     },
                     {
