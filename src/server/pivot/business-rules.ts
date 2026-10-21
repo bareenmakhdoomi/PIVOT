@@ -1,7 +1,7 @@
 // Table business rules (before insert/update). They are the last line of defence: every write –
 // from the workspace, a form, a list edit or an import – passes the same PIVOT rules (design B6).
 import { gs, GlideDateTime } from '@servicenow/glide'
-import { priorityOf, priorityReason, validateScores, validateRejection, validateCapability, validateOutcome, SCOPE } from './rules'
+import { priorityOf, priorityReason, validateScores, validateRejection, validateCapability, validateOutcome, SCOPE } from './rules.ts'
 
 function stop(current: any, message: string) {
     gs.addErrorMessage(message)

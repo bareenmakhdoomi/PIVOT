@@ -6,7 +6,7 @@ import { gs, GlideRecord, GlideRecordSecure, GlideDateTime } from '@servicenow/g
 import {
     SCOPE, FAMILIES, PROPERTIES, Errors, initialsOf, priorityOf, priorityReason, validateScores, validateRejection,
     validateCapability, validateOutcome, validateProperty,
-} from './rules'
+} from './rules.ts'
 
 const T = {
     capability: SCOPE + '_capability',
