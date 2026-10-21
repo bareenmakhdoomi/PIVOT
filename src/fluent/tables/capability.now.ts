@@ -12,7 +12,7 @@ export const x_enno_pivot_capability = Table({
     audit: true,
     autoNumber: { prefix: 'PVC', number: 1000, numberOfDigits: 7 },
     schema: {
-        number: StringColumn({ label: 'Number', maxLength: 40, readOnly: true, default: 'javascript:getNextObjNumberPadded();' }),
+        number: StringColumn({ label: 'Number', maxLength: 40, readOnly: true, default: 'javascript:global.getNextObjNumberPadded();' }),
         name: StringColumn({ label: 'Name', maxLength: 100, mandatory: true, hint: 'Set by discovery' }),
         product_family: ChoiceColumn({
             label: 'Product family',

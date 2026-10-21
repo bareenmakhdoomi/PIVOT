@@ -1,0 +1,22 @@
+PIVOT workspace – Concept 27 on the real PIVOT tables (PIV-063)
+================================================================
+Copy the folders in this zip over C:\Users\Bareenmakhdoomi\Desktop\pivot-app (replace files), then in that folder:
+
+1. Delete the old placeholder UI files:
+     del src\client\app.tsx src\client\app.css src\client\main.tsx
+2. npm install            (React is no longer used – the workspace is plain JavaScript)
+3. npm run build
+4. npm run deploy         ("Forbidden" while tracking is OK – check the tracker link)
+5. git add -A
+   git commit -m "PIV-063 Concept 27 workspace on real tables, REST API, business rules"
+   git push
+
+What is new
+- src/server/pivot/*            REST API handlers, business rules, shared PIVOT rules (B6)
+- src/fluent/api/               Scripted REST API /api/x_enno_pivot/v1/workspace (bootstrap + action), ACL: PIVOT viewer
+- src/fluent/business-rules/    Priority recalculation, capability validation, outcome baseline lock
+- src/fluent/tables/            Record numbers fixed (global.getNextObjNumberPadded), Opportunity.activity_log
+- src/fluent/security/          3 extra field ACLs for analysts (activity_log, priority, priority_reason)
+- src/client/                   The 10 Concept 27 views, reading and writing the PIVOT tables
+
+Do NOT copy keys.ts from anywhere – your build adds the new keys to your own src/fluent/generated/keys.ts. Commit it.

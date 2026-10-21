@@ -9,7 +9,7 @@ export const x_enno_pivot_opportunity = Table({
     audit: true,
     autoNumber: { prefix: 'PVO', number: 1000, numberOfDigits: 7 },
     schema: {
-        number: StringColumn({ label: 'Number', maxLength: 40, readOnly: true, default: 'javascript:getNextObjNumberPadded();' }),
+        number: StringColumn({ label: 'Number', maxLength: 40, readOnly: true, default: 'javascript:global.getNextObjNumberPadded();' }),
         assessment: ReferenceColumn({ label: 'Assessment', referenceTable: 'x_enno_pivot_assessment', readOnly: true, hint: 'Last run that found or updated it' }),
         capability: ReferenceColumn({ label: 'Capability', referenceTable: 'x_enno_pivot_capability', mandatory: true, readOnly: true }),
         outcome: ReferenceColumn({ label: 'Business outcome', referenceTable: 'x_enno_pivot_business_outcome', readOnly: true }),
@@ -33,6 +33,7 @@ export const x_enno_pivot_opportunity = Table({
         }),
         assigned_to: ReferenceColumn({ label: 'Assigned to', referenceTable: 'sys_user' }),
         rejection_reason: StringColumn({ label: 'Rejection reason', maxLength: 500 }),
+        activity_log: MultiLineTextColumn({ label: 'Activity log', maxLength: 65000, hint: 'Written by PIVOT: decisions and notes as JSON, newest last' }),
         sys_domain: DomainIdColumn({ label: 'Domain' }),
     },
 })

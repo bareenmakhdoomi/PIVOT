@@ -8,7 +8,7 @@ export const x_enno_pivot_assessment = Table({
     display: 'number',
     autoNumber: { prefix: 'PVA', number: 1000, numberOfDigits: 7 },
     schema: {
-        number: StringColumn({ label: 'Number', maxLength: 40, readOnly: true, default: 'javascript:getNextObjNumberPadded();' }),
+        number: StringColumn({ label: 'Number', maxLength: 40, readOnly: true, default: 'javascript:global.getNextObjNumberPadded();' }),
         run_date: DateTimeColumn({ label: 'Run date', readOnly: true }),
         status: ChoiceColumn({
             label: 'Status', readOnly: true, default: 'queued',

@@ -1,5 +1,4 @@
-// handles importing scss as modules
-declare module '*.scss' {
-    const content: string
-    export default content
+// Session token provided by the platform globals on the UI page (used as X-UserToken).
+interface Window {
+    g_ck?: string
 }
