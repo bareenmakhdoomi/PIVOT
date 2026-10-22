@@ -241,6 +241,10 @@ declare global {
                         table: 'sys_module'
                         id: '96a7857d9dc642e591d1491c9aa06c55'
                     }
+                    'pivot-job-discovery': {
+                        table: 'sysauto_script'
+                        id: 'f61e02c0b75f4981ac9c9ca4599c40c5'
+                    }
                     'pivot-menu': {
                         table: 'sys_app_application'
                         id: 'b8acb94ad60b40e4b42fffad35af63d2'
@@ -248,6 +252,22 @@ declare global {
                     'pivot-module-assessments': {
                         table: 'sys_app_module'
                         id: 'cee5dcc815eb48298face1806b65c2f4'
+                    }
+                    'pivot-module-cap-apps': {
+                        table: 'sys_app_module'
+                        id: '6b6b648a2bb44867bc9e7bb88c75d027'
+                    }
+                    'pivot-module-cap-licences': {
+                        table: 'sys_app_module'
+                        id: '473ea2cca2eb427d83497149ff7cc864'
+                    }
+                    'pivot-module-cap-not-found': {
+                        table: 'sys_app_module'
+                        id: '420407ced50648009ba5ad960addce3a'
+                    }
+                    'pivot-module-cap-plugins': {
+                        table: 'sys_app_module'
+                        id: '925d9697a86c4debaece93c933df0507'
                     }
                     'pivot-module-capabilities': {
                         table: 'sys_app_module'
@@ -284,6 +304,7 @@ declare global {
                     'pivot-portal-dependency': {
                         table: 'sp_dependency'
                         id: 'daa1773daabd4aa4a8b946497aa4e1ae'
+                        deleted: true
                     }
                     'pivot-portal-home-column': {
                         table: 'sp_column'
@@ -304,6 +325,7 @@ declare global {
                     'pivot-portal-js-include': {
                         table: 'sp_js_include'
                         id: '84560a97bd294bf4ac9f669705444cf1'
+                        deleted: true
                     }
                     'pivot-portal-theme': {
                         table: 'sp_theme'
@@ -320,6 +342,30 @@ declare global {
                     'pivot-workspace-page-read': {
                         table: 'sys_security_acl'
                         id: 'dab42fddd09945d9a3df99fac83d0e53'
+                    }
+                    'pivot-xscope-read-license_details': {
+                        table: 'sys_scope_privilege'
+                        id: '8a326d50948546cbacd1efdde4f608d7'
+                    }
+                    'pivot-xscope-read-sn_sub_man_st_subscription_overview': {
+                        table: 'sys_scope_privilege'
+                        id: 'bddcfb951c864973a68d0929c92ba137'
+                    }
+                    'pivot-xscope-read-subscription_entitlement': {
+                        table: 'sys_scope_privilege'
+                        id: '29c4ac5f8c864d7c810b9acd2a07d4e5'
+                    }
+                    'pivot-xscope-read-sys_store_app': {
+                        table: 'sys_scope_privilege'
+                        id: '9076b92ee16b44ca99aa33f90b37f0c7'
+                    }
+                    'pivot-xscope-read-ua_app_family': {
+                        table: 'sys_scope_privilege'
+                        id: '9b4189c139254b6c8c0a0dfd7d0b357a'
+                    }
+                    'pivot-xscope-read-v_plugin': {
+                        table: 'sys_scope_privilege'
+                        id: '7269194580be4710942668b20e89a522'
                     }
                     'pivot/pivot.css': {
                         table: 'sys_ux_theme_asset'
@@ -387,6 +433,10 @@ declare global {
                         table: 'sys_module'
                         id: '427376b9d32c4976ad703910ffe0c806'
                     }
+                    src_server_pivot_discovery_ts: {
+                        table: 'sys_module'
+                        id: 'fbe2069723db4c049fefbad765de4bce'
+                    }
                     src_server_pivot_rules_ts: {
                         table: 'sys_module'
                         id: 'de182cb60ab14d978a24810611df0066'
@@ -397,6 +447,15 @@ declare global {
                     }
                 }
                 composite: [
+                    {
+                        table: 'sys_documentation'
+                        id: '0070333e74f54d72b6ae04f55c182ecb'
+                        key: {
+                            name: 'x_enno_pivot_capability'
+                            element: 'version'
+                            language: 'en'
+                        }
+                    },
                     {
                         table: 'sys_ui_element'
                         id: '00b6e026c1cf4e73b1b6523130f77f9b'
@@ -712,6 +771,14 @@ declare global {
                         key: {
                             name: 'x_enno_pivot_business_outcome'
                             element: 'expected_benefit'
+                        }
+                    },
+                    {
+                        table: 'sys_dictionary'
+                        id: '0d3165d041564980aea4745e929250e9'
+                        key: {
+                            name: 'x_enno_pivot_capability'
+                            element: 'source_id'
                         }
                     },
                     {
@@ -1139,6 +1206,7 @@ declare global {
                     {
                         table: 'm2m_sp_widget_dependency'
                         id: '16fad516c4b94537947db503750aa20f'
+                        deleted: true
                         key: {
                             sp_widget: 'ac2a1900921f428095c7612d05d17f9e'
                             sp_dependency: 'daa1773daabd4aa4a8b946497aa4e1ae'
@@ -1291,6 +1359,28 @@ declare global {
                             name: 'x_enno_pivot_capability'
                             element: 'active'
                             language: 'en'
+                        }
+                    },
+                    {
+                        table: 'sys_ui_element'
+                        id: '1cd3731255b1431b91bb02d912296db8'
+                        key: {
+                            sys_ui_section: {
+                                id: '5bd62381046c4b169f9aff0f63d685d5'
+                                key: {
+                                    name: 'x_enno_pivot_capability'
+                                    caption: 'Discovery'
+                                    view: {
+                                        id: 'Default view'
+                                        key: {
+                                            name: 'NULL'
+                                        }
+                                    }
+                                    sys_domain: 'global'
+                                }
+                            }
+                            element: '.split'
+                            position: '5'
                         }
                     },
                     {
@@ -1765,6 +1855,15 @@ declare global {
                     },
                     {
                         table: 'sys_documentation'
+                        id: '2caec63cf1ba464b9a864238d168b998'
+                        key: {
+                            name: 'x_enno_pivot_capability'
+                            element: 'source_id'
+                            language: 'en'
+                        }
+                    },
+                    {
+                        table: 'sys_documentation'
                         id: '2d332499a83b4f198e2609dbe4e5d177'
                         key: {
                             name: 'x_enno_pivot_opportunity'
@@ -1775,6 +1874,7 @@ declare global {
                     {
                         table: 'sys_ui_element'
                         id: '2d7b865a062a40128bfb0c13710ffe60'
+                        deleted: true
                         key: {
                             sys_ui_section: {
                                 id: '5bd62381046c4b169f9aff0f63d685d5'
@@ -1875,6 +1975,28 @@ declare global {
                         }
                     },
                     {
+                        table: 'sys_ui_element'
+                        id: '31256594a815412686e3606e88d63ce1'
+                        key: {
+                            sys_ui_section: {
+                                id: '5bd62381046c4b169f9aff0f63d685d5'
+                                key: {
+                                    name: 'x_enno_pivot_capability'
+                                    caption: 'Discovery'
+                                    view: {
+                                        id: 'Default view'
+                                        key: {
+                                            name: 'NULL'
+                                        }
+                                    }
+                                    sys_domain: 'global'
+                                }
+                            }
+                            element: 'linked_app'
+                            position: '4'
+                        }
+                    },
+                    {
                         table: 'sys_choice'
                         id: '32367984df4f4dd4b4905cc1d9f2f346'
                         key: {
@@ -1928,6 +2050,28 @@ declare global {
                                 }
                             }
                             sys_domain: 'global'
+                        }
+                    },
+                    {
+                        table: 'sys_ui_element'
+                        id: '32dc013b4055460185138d8895997b12'
+                        key: {
+                            sys_ui_section: {
+                                id: '5bd62381046c4b169f9aff0f63d685d5'
+                                key: {
+                                    name: 'x_enno_pivot_capability'
+                                    caption: 'Discovery'
+                                    view: {
+                                        id: 'Default view'
+                                        key: {
+                                            name: 'NULL'
+                                        }
+                                    }
+                                    sys_domain: 'global'
+                                }
+                            }
+                            element: 'source_id'
+                            position: '2'
                         }
                     },
                     {
@@ -2992,6 +3136,7 @@ declare global {
                     {
                         table: 'sys_ui_element'
                         id: '5a9ec5222df44d74b5c0884a61b25c53'
+                        deleted: true
                         key: {
                             sys_ui_section: {
                                 id: '5bd62381046c4b169f9aff0f63d685d5'
@@ -3207,6 +3352,28 @@ declare global {
                         }
                     },
                     {
+                        table: 'sys_ui_element'
+                        id: '6241b90c3b9c450e94e7a3bef42cfc1c'
+                        key: {
+                            sys_ui_section: {
+                                id: '5bd62381046c4b169f9aff0f63d685d5'
+                                key: {
+                                    name: 'x_enno_pivot_capability'
+                                    caption: 'Discovery'
+                                    view: {
+                                        id: 'Default view'
+                                        key: {
+                                            name: 'NULL'
+                                        }
+                                    }
+                                    sys_domain: 'global'
+                                }
+                            }
+                            element: 'version'
+                            position: '3'
+                        }
+                    },
+                    {
                         table: 'sys_documentation'
                         id: '62656e2984f84f88b92d67cd197a4166'
                         key: {
@@ -3386,6 +3553,28 @@ declare global {
                             }
                             element: 'expected_benefit'
                             position: '1'
+                        }
+                    },
+                    {
+                        table: 'sys_ui_element'
+                        id: '6d289c0145a6493a87c8631398862d16'
+                        key: {
+                            sys_ui_section: {
+                                id: '5bd62381046c4b169f9aff0f63d685d5'
+                                key: {
+                                    name: 'x_enno_pivot_capability'
+                                    caption: 'Discovery'
+                                    view: {
+                                        id: 'Default view'
+                                        key: {
+                                            name: 'NULL'
+                                        }
+                                    }
+                                    sys_domain: 'global'
+                                }
+                            }
+                            element: 'sys_domain'
+                            position: '7'
                         }
                     },
                     {
@@ -4079,6 +4268,28 @@ declare global {
                                 }
                             }
                             sys_domain: 'global'
+                        }
+                    },
+                    {
+                        table: 'sys_ui_element'
+                        id: '84a8c2135b8c4d30b44647f29365119a'
+                        key: {
+                            sys_ui_section: {
+                                id: '5bd62381046c4b169f9aff0f63d685d5'
+                                key: {
+                                    name: 'x_enno_pivot_capability'
+                                    caption: 'Discovery'
+                                    view: {
+                                        id: 'Default view'
+                                        key: {
+                                            name: 'NULL'
+                                        }
+                                    }
+                                    sys_domain: 'global'
+                                }
+                            }
+                            element: '.end_split'
+                            position: '8'
                         }
                     },
                     {
@@ -4843,6 +5054,14 @@ declare global {
                         id: 'a2fa3b79e7a84422b50c0df01bd803c4'
                         key: {
                             name: 'x_enno_pivot_outcome_result'
+                        }
+                    },
+                    {
+                        table: 'sys_dictionary'
+                        id: 'a368d1d36480411f8c63e3dc42ad8898'
+                        key: {
+                            name: 'x_enno_pivot_capability'
+                            element: 'version'
                         }
                     },
                     {
@@ -5802,6 +6021,7 @@ declare global {
                     {
                         table: 'm2m_sp_dependency_js_include'
                         id: 'c98ecb310c2142c383013636ecaa8c39'
+                        deleted: true
                         key: {
                             sp_js_include: '84560a97bd294bf4ac9f669705444cf1'
                             sp_dependency: 'daa1773daabd4aa4a8b946497aa4e1ae'
@@ -6501,6 +6721,7 @@ declare global {
                     {
                         table: 'sys_ui_element'
                         id: 'e52a913efca6413687e80426d3397f61'
+                        deleted: true
                         key: {
                             sys_ui_section: {
                                 id: '5bd62381046c4b169f9aff0f63d685d5'
@@ -6925,6 +7146,28 @@ declare global {
                         }
                     },
                     {
+                        table: 'sys_ui_element'
+                        id: 'f6a070ea8eea4aa4b317efc821354060'
+                        key: {
+                            sys_ui_section: {
+                                id: '5bd62381046c4b169f9aff0f63d685d5'
+                                key: {
+                                    name: 'x_enno_pivot_capability'
+                                    caption: 'Discovery'
+                                    view: {
+                                        id: 'Default view'
+                                        key: {
+                                            name: 'NULL'
+                                        }
+                                    }
+                                    sys_domain: 'global'
+                                }
+                            }
+                            element: 'not_found'
+                            position: '6'
+                        }
+                    },
+                    {
                         table: 'sn_glider_source_artifact_m2m'
                         id: 'f6ddb577ff164b30846719a176d21a93'
                         key: {
@@ -7180,6 +7423,7 @@ declare global {
                     {
                         table: 'sys_ui_element'
                         id: 'ff4ecafc1f474bffa3eeb278e35e1a0f'
+                        deleted: true
                         key: {
                             sys_ui_section: {
                                 id: '5bd62381046c4b169f9aff0f63d685d5'

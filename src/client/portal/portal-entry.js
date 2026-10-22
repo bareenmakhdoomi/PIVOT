@@ -28,4 +28,4 @@ function mount(host) {
       const retry = document.getElementById('pivotRetry'); if (retry) retry.addEventListener('click', () => window.location.reload());
     });
 }
-window.x_enno_pivot_portal = { mount };
+window.x_enno_pivot_portal = { mount, version: '__PIVOT_PORTAL_VERSION__' };

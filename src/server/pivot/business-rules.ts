@@ -1,6 +1,6 @@
 // Table business rules (before insert/update). They are the last line of defence: every write –
 // from the workspace, a form, a list edit or an import – passes the same PIVOT rules (design B6).
-import { gs, GlideDateTime } from '@servicenow/glide'
+import { gs, GlideDateTime, GlideRecord } from '@servicenow/glide'
 import { priorityOf, priorityReason, validateScores, validateRejection, validateCapability, validateOutcome, SCOPE } from './rules.ts'
 
 function stop(current: any, message: string) {
@@ -36,7 +36,7 @@ export function opportunityBefore(current: any, previous: any) {
 }
 
 /** Capability: measurement settings must be valid. */
-export function capabilityBefore(current: any) {
+export function capabilityBefore(current: any, previous: any) {
     try {
         const err = firstError(validateCapability({
             measure_table: current.getValue('measure_table') || '',
@@ -46,7 +46,14 @@ export function capabilityBefore(current: any) {
             weight: current.getValue('weight') || '1',
             family: current.getValue('product_family') || '',
         }))
-        if (err) stop(current, err)
+        if (err) return stop(current, err)
+        // PIV-014.04 – a licence can only be linked to another, installed capability
+        const linked = current.getValue('linked_app')
+        if (linked && (!previous || linked !== previous.getValue('linked_app'))) {
+            if (linked === current.getUniqueValue()) return stop(current, 'A capability cannot be linked to itself.')
+            const app = new GlideRecord(SCOPE + '_capability')
+            if (!app.get(linked) || !(app.getValue('installed') === '1' || app.getValue('installed') === 'true')) return stop(current, 'Linked app must be an installed capability.')
+        }
     } catch (ex) {
         gs.error('PIVOT capability rule failed: ' + ex)
     }

@@ -5,6 +5,7 @@ import { readFileSync, writeFileSync, mkdirSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import ts from 'typescript'
+import { createHash } from 'node:crypto'
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..')
 const client = join(root, 'src', 'client')
@@ -91,6 +92,13 @@ bundle = noTemplates(bundle)
 
 // ASCII only, so the script works whatever character set the instance serves it with
 const ascii = bundle.replace(/[^\x00-\x7e]/g, (c) => '\\u' + c.charCodeAt(0).toString(16).padStart(4, '0'))
+// Version stamp: the widget loads /pivot_portal.jsdbx?v=<version>, so browsers fetch every new build
+// instead of a cached older copy.
+const version = createHash('sha1').update(ascii).digest('hex').slice(0, 12)
+const stamped = ascii.replace('__PIVOT_PORTAL_VERSION__', version)
 mkdirSync(dirname(out), { recursive: true })
-writeFileSync(out, ascii, 'utf8')
-console.log('[pivot] Portal bundle written: ' + out.replace(root, '.') + ' (' + ascii.length + ' bytes)')
+writeFileSync(out, stamped, 'utf8')
+const widgetClient = join(root, 'src', 'fluent', 'portal', 'widget', 'client.js')
+const tpl = readFileSync(join(root, 'src', 'fluent', 'portal', 'widget', 'client.template.js'), 'utf8').replace(/\r\n/g, '\n')
+writeFileSync(widgetClient, tpl.replace(/__PIVOT_PORTAL_VERSION__/g, version), 'utf8')
+console.log('[pivot] Portal bundle written: ' + out.replace(root, '.') + ' (' + stamped.length + ' bytes, version ' + version + ')')

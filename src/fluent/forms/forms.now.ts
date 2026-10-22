@@ -9,7 +9,7 @@ Form({
         { caption: 'Capability', content: [{ layout: 'two-column', leftElements: [{ field: 'number', type: 'table_field' }, { field: 'name', type: 'table_field' }, { field: 'product_family', type: 'table_field' }, { field: 'source', type: 'table_field' }, { field: 'active', type: 'table_field' }], rightElements: [{ field: 'licensed', type: 'table_field' }, { field: 'installed', type: 'table_field' }, { field: 'entitled_count', type: 'table_field' }, { field: 'allocated_count', type: 'table_field' }, { field: 'app_scope', type: 'table_field' }] }] },
         { caption: 'Measurement', content: [{ layout: 'two-column', leftElements: [{ field: 'measure_table', type: 'table_field' }, { field: 'date_field', type: 'table_field' }, { field: 'days_back', type: 'table_field' }], rightElements: [{ field: 'target_value', type: 'table_field' }, { field: 'weight', type: 'table_field' }, { field: 'linked_app', type: 'table_field' }] }] },
         { caption: 'Measurement filter', content: [{ layout: 'one-column', elements: [{ field: 'measure_filter', type: 'table_field' }] }] },
-        { caption: 'Discovery', content: [{ layout: 'two-column', leftElements: [{ field: 'last_discovered', type: 'table_field' }], rightElements: [{ field: 'not_found', type: 'table_field' }, { field: 'sys_domain', type: 'table_field' }] }] },
+        { caption: 'Discovery', content: [{ layout: 'two-column', leftElements: [{ field: 'last_discovered', type: 'table_field' }, { field: 'source_id', type: 'table_field' }, { field: 'version', type: 'table_field' }, { field: 'linked_app', type: 'table_field' }], rightElements: [{ field: 'not_found', type: 'table_field' }, { field: 'sys_domain', type: 'table_field' }] }] },
     ],
 })
 

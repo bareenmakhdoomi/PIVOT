@@ -125,3 +125,26 @@ export function initialsOf(name: string) {
     const w = String(name || '?').trim().split(/\s+/)
     return ((w[0] || '?').charAt(0) + (w.length > 1 ? w[w.length - 1].charAt(0) : '')).toUpperCase()
 }
+
+/** Product family from the ServiceNow line of business (ua_app_family.lob_name). Empty = Needs mapping. */
+const LOB_FAMILY: { [lob: string]: string } = {
+    'IT Service Management': 'itsm',
+    'IT Operations Management': 'itom',
+    'IT Asset Management': 'itam',
+    'Software Asset Management': 'itam',
+    'Human Resources': 'hrsd',
+    'Customer Service Management': 'csm',
+    'Field Service Management': 'csm',
+    'Security': 'secops',
+    'Security Operations': 'secops',
+    'Strategic Portfolio Management': 'spm',
+    'Now Platform': 'platform',
+    'App Engine': 'platform',
+    'Automation Engine': 'platform',
+    'Now Intelligence': 'platform',
+    'Now Platform Security': 'platform',
+}
+export function familyFromLob(lob: string): string {
+    if (!lob) return ''
+    return LOB_FAMILY[lob] || 'other'
+}
