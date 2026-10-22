@@ -14,12 +14,13 @@ export const discoveryOnDemand = ScheduledScript({
 })
 
 // PIV-016 – Read-only access to the source tables (design B5). PIVOT never writes outside its scope.
+// targetScope is a reference to sys_scope: 'global' for global tables, otherwise the ServiceNow app's scope sys_id.
 CrossScopePrivilege({
     $id: Now.ID['pivot-xscope-read-sn_sub_man_st_subscription_overview'],
     operation: 'read',
     status: 'allowed',
     targetName: 'sn_sub_man_st_subscription_overview',
-    targetScope: 'sn_sub_man',
+    targetScope: '86d7bb63ff021110468365d7d3b8fe41', // sn_sub_man (sys_scope sys_id – the field is a reference)
     targetType: 'sys_db_object',
 })
 CrossScopePrivilege({
@@ -27,7 +28,7 @@ CrossScopePrivilege({
     operation: 'read',
     status: 'allowed',
     targetName: 'subscription_entitlement',
-    targetScope: 'sn_entitlement',
+    targetScope: 'bcadabf277f311109c62f5f3cb5a992a', // sn_entitlement (sys_scope sys_id – the field is a reference)
     targetType: 'sys_db_object',
 })
 CrossScopePrivilege({
@@ -51,7 +52,7 @@ CrossScopePrivilege({
     operation: 'read',
     status: 'allowed',
     targetName: 'sys_store_app',
-    targetScope: 'sn_appclient',
+    targetScope: '781f36a96fef21005be8883e6b3ee43d', // sn_appclient (sys_scope sys_id – the field is a reference)
     targetType: 'sys_db_object',
 })
 CrossScopePrivilege({
