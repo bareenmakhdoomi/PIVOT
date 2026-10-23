@@ -51,7 +51,7 @@ Record({
 Record({
     $id: Now.ID['pivot-module-cap-plugins'],
     table: 'sys_app_module',
-    data: { title: 'Plugins', application: pivotMenu, link_type: 'FILTER', name: 'x_enno_pivot_capability', filter: 'source=plugin^ORDERBYname', roles: ['x_enno_pivot.admin'], active: true, order: 226 },
+    data: { title: 'Plugins', application: pivotMenu, link_type: 'FILTER', name: 'x_enno_pivot_capability', filter: 'source=plugin^ORDERBYname', hint: 'Active for-fee plugins found by discovery. Empty until PIVOT – Run discovery has run (PIV-012.09).', roles: ['x_enno_pivot.admin'], active: true, order: 226 },
 })
 Record({
     $id: Now.ID['pivot-module-cap-not-found'],

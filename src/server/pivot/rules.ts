@@ -101,6 +101,8 @@ export const PROPERTIES: { [name: string]: { type: 'number' | 'string' | 'boolea
     slow_capability_seconds: { type: 'number', def: '60' },
     admin_group: { type: 'string', def: 'PIVOT Admins' },
     ai_enabled: { type: 'boolean', def: 'true' },
+    max_run_minutes: { type: 'number', def: '30' },
+    timing_log: { type: 'boolean', def: 'false' },
 }
 
 /** Validates one property change. `current` holds the other current values (short names). */
@@ -114,6 +116,7 @@ export function validateProperty(short: string, value: unknown, current: { [k: s
     if (/threshold/.test(short) && (n < 0 || n > 100)) return { error: 'Enter a value from 0 to 100.' }
     if ((short === 'default_days_back') && !(n >= 1 && n <= 365 && isWhole(n))) return { error: 'Enter 1 to 365 days.' }
     if ((short === 'slow_capability_seconds') && !(n >= 1 && n <= 3600 && isWhole(n))) return { error: 'Enter 1 to 3600 seconds.' }
+    if ((short === 'max_run_minutes') && !(n >= 0 && n <= 1440 && isWhole(n))) return { error: 'Enter 0 to 1440 minutes (0 = no limit).' }
     if (short === 'priority_next' && !(n > 0)) return { error: 'Enter a number above 0.' }
     if (short === 'priority_next' && n >= Number(current.priority_now)) return { error: 'Must be lower than "Priority for Now" (' + current.priority_now + ').' }
     if (short === 'priority_now' && n <= Number(current.priority_next)) return { error: 'Must be higher than "Priority for Next" (' + current.priority_next + ').' }
@@ -147,4 +150,72 @@ const LOB_FAMILY: { [lob: string]: string } = {
 export function familyFromLob(lob: string): string {
     if (!lob) return ''
     return LOB_FAMILY[lob] || 'other'
+}
+
+// ---------------------------------------------------------------- Sprint 3: scoring (design B6)
+export type ScoreResult = { status: 'measured' | 'not_measured' | 'not_installed'; score: number | null; reason: string }
+
+/** Score = actual ÷ target × 100, capped at 100 and rounded; licensed-not-installed = 0; missing data = Not Measured (empty, never 0). */
+export function scoreOf(c: { licensed: boolean; installed: boolean; target: number | null }, actual: number | null, notMeasuredReason?: string): ScoreResult {
+    if (c.licensed && !c.installed) return { status: 'not_installed', score: 0, reason: 'Licensed but not installed' }
+    if (notMeasuredReason) return { status: 'not_measured', score: null, reason: notMeasuredReason }
+    if (actual === null || actual === undefined || isNaN(actual)) return { status: 'not_measured', score: null, reason: 'No measured value' }
+    if (c.target === null || c.target === undefined || !(c.target > 0)) return { status: 'not_measured', score: null, reason: 'No target set' }
+    const raw = (actual / c.target) * 100
+    return { status: 'measured', score: Math.round(Math.min(100, raw)), reason: raw >= 100 ? 'At or above target (capped at 100)' : 'Actual ÷ target × 100' }
+}
+
+/** Utilization = allocated ÷ purchased × 100, rounded, not capped; empty without a purchased count. */
+export function utilizationOf(entitled: number | null, allocated: number | null): { utilization: number | null; overAllocated: boolean } {
+    if (!entitled || !(entitled > 0)) return { utilization: null, overAllocated: false }
+    const u = Math.round(((allocated || 0) / entitled) * 100)
+    return { utilization: u, overAllocated: u > 100 }
+}
+
+/** Platform Value Score = Σ(score × weight) ÷ Σ(weight); Not Measured and weight 0 are left out; empty when nothing is scored. */
+export function overallScore(rows: { score: number | null; weight: number | null }[]): number | null {
+    let sum = 0, w = 0
+    rows.forEach((r) => {
+        const weight = r.weight === null || r.weight === undefined || isNaN(r.weight) ? 1 : r.weight
+        if (r.score === null || r.score === undefined || !(weight > 0)) return
+        sum += r.score * weight
+        w += weight
+    })
+    return w ? Math.round(sum / w) : null
+}
+
+/** Outcome status from baseline, target and the measured value (design B6). */
+export function outcomeStatus(o: { baseline: number | null; target: number | null; direction: string }, actual: number | null): { status: string; improvement: number | null; reason: string } {
+    if (actual === null || actual === undefined || isNaN(actual)) return { status: 'not_measured', improvement: null, reason: 'No measured value' }
+    if (o.baseline === null || o.baseline === undefined) return { status: 'not_measured', improvement: null, reason: 'No baseline captured yet' }
+    if (o.target === null || o.target === undefined) return { status: 'not_measured', improvement: null, reason: 'No target set' }
+    const span = o.target - o.baseline
+    const imp = span === 0 ? null : Math.round(((actual - o.baseline) / span) * 1000) / 10
+    const reached = o.direction === 'lower_better' ? actual <= o.target : actual >= o.target
+    return { status: reached ? 'on_target' : imp !== null && imp > 0 ? 'improved' : 'below_target', improvement: imp, reason: '' }
+}
+
+/** Look-back window for a KPI period. */
+export function periodDays(period: string): number {
+    return period === 'yearly' ? 365 : period === 'quarterly' ? 90 : 30
+}
+
+/** PIV-015 – proposed starter measurement settings for well-known capabilities, keyed by source ID (plugin ID or app scope).
+ *  Discovery applies them once, only when the capability has no measure table and no target yet; admins can change them.
+ *  Targets are proposals per look-back window and must be confirmed with the product SMEs (PIV-015.02 / .08). */
+export const SEED_MEASURES: { [sourceId: string]: { table: string; filter: string; dateField: string; days: number; target: number } } = {
+    'com.snc.incident': { table: 'incident', filter: '', dateField: 'sys_created_on', days: 30, target: 500 },
+    'com.snc.problem': { table: 'problem', filter: '', dateField: 'sys_created_on', days: 30, target: 20 },
+    'com.snc.change_management': { table: 'change_request', filter: '', dateField: 'sys_created_on', days: 30, target: 50 },
+    'com.glideapp.servicecatalog': { table: 'sc_req_item', filter: '', dateField: 'sys_created_on', days: 30, target: 300 },
+    'com.snc.incident.mim': { table: 'incident', filter: 'major_incident_state=accepted', dateField: 'sys_created_on', days: 90, target: 3 },
+    'com.snc.change_management.cab': { table: 'cab_meeting', filter: '', dateField: 'sys_created_on', days: 90, target: 12 },
+    'com.snc.asset_management': { table: 'alm_asset', filter: '', dateField: 'sys_created_on', days: 30, target: 50 },
+    'sn_customerservice': { table: 'sn_customerservice_case', filter: '', dateField: 'sys_created_on', days: 30, target: 200 },
+    'com.snc.conversation_builder': { table: 'sys_cs_conversation', filter: '', dateField: 'sys_created_on', days: 30, target: 300 },
+    'com.snc.project_management_v3': { table: 'pm_project', filter: '', dateField: 'sys_created_on', days: 90, target: 10 },
+    'com.snc.resource_management': { table: 'resource_plan', filter: '', dateField: 'sys_created_on', days: 90, target: 20 },
+    'com.snc.time_card': { table: 'time_card', filter: '', dateField: 'sys_created_on', days: 30, target: 100 },
+    'com.snc.sdlc.agile.2.0': { table: 'rm_story', filter: '', dateField: 'sys_created_on', days: 30, target: 50 },
+    'com.snc.service-watch': { table: 'em_alert', filter: '', dateField: 'sys_created_on', days: 30, target: 500 },
 }

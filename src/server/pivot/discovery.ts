@@ -5,7 +5,7 @@
 // target, weight, linked app) are never overwritten. Items no longer found get not_found = true – never deleted.
 // Source tables are only read (cross-scope Read privileges); PIVOT writes only to its own tables.
 import { gs, GlideRecord, GlideDateTime } from '@servicenow/glide'
-import { SCOPE, familyFromLob, PROPERTIES } from './rules.ts'
+import { SCOPE, familyFromLob, PROPERTIES, SEED_MEASURES } from './rules.ts'
 
 export type LogEntry = { ts: number; level: 'info' | 'warn' | 'error'; step: number; message: string }
 export type Counts = { read: number; created: number; updated: number; skipped: number }
@@ -48,6 +48,7 @@ export function runDiscovery(): DiscoverySummary {
     const add = (level: LogEntry['level'], message: string) => log.push({ ts: new GlideDateTime().getNumericValue(), level, step: STEP, message })
     const zero = (): Counts => ({ read: 0, created: 0, updated: 0, skipped: 0 })
     const s: DiscoverySummary = { ok: true, licences: zero(), apps: zero(), plugins: zero(), excluded: [], notFound: 0, unlinkedLicences: 0, needsMapping: 0, log }
+    const seeded: string[] = []
     const defaultDaysBack = toInt(gs.getProperty(SCOPE + '.default_days_back', PROPERTIES.default_days_back.def)) || 30
 
     /** Find the capability for source + key (falls back to source + name for records made before source IDs existed). */
@@ -82,6 +83,17 @@ export function runDiscovery(): DiscoverySummary {
         gr.setValue('source_id', key.slice(0, 255))
         Object.keys(data).forEach((f) => gr.setValue(f, data[f]))
         if (family && !str(gr, 'product_family')) gr.setValue('product_family', family) // only fills an empty family
+        // PIV-015 – starter measurement settings, applied once and only when nothing is set yet
+        const seed = SEED_MEASURES[key]
+        if (seed && str(gr, 'seed_applied') !== '1' && str(gr, 'seed_applied') !== 'true' && !str(gr, 'measure_table') && !str(gr, 'target_value') && tableExists(seed.table)) {
+            gr.setValue('measure_table', seed.table)
+            gr.setValue('measure_filter', seed.filter)
+            gr.setValue('date_field', seed.dateField)
+            gr.setValue('days_back', seed.days)
+            gr.setValue('target_value', seed.target)
+            gr.setValue('seed_applied', true)
+            seeded.push(name)
+        }
         gr.setValue('last_discovered', startValue)
         gr.setValue('not_found', false)
         if (found) {
@@ -253,6 +265,8 @@ export function runDiscovery(): DiscoverySummary {
     } catch (ex) {
         add('error', 'Could not check linked apps: ' + ex)
     }
+
+    if (seeded.length) add('info', 'Starter measurement settings applied to ' + seeded.length + ' capabilities (' + seeded.join(', ') + '). Review the targets with the product owners.')
 
     const nm = new GlideRecord(CAP)
     nm.addQuery('active', true)

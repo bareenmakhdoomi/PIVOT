@@ -23,3 +23,7 @@ Property({ $id: Now.ID['prop-admin-group'], name: 'x_enno_pivot.admin_group', ty
     description: 'Group that receives the "PIVOT run complete" and "PIVOT run failed" emails.' })
 Property({ $id: Now.ID['prop-ai-enabled'], name: 'x_enno_pivot.ai_enabled', type: 'boolean', value: true, roles: access,
     description: 'Turns all PIVOT AI features (Now Assist) on or off. PIVOT works fully without them.' })
+Property({ $id: Now.ID['prop-max-run-minutes'], name: 'x_enno_pivot.max_run_minutes', type: 'integer', value: 30, roles: access,
+    description: 'Maximum assessment run time in minutes (PIV-022). Capabilities not measured when the limit is reached are Not Measured with reason "Run time limit reached". 0 = no limit.' })
+Property({ $id: Now.ID['prop-timing-log'], name: 'x_enno_pivot.timing_log', type: 'boolean', value: false, roles: access,
+    description: 'When true, the assessment run log shows how long each measured capability took (PIV-022.02). Slow capabilities are always logged.' })

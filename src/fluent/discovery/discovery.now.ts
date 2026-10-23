@@ -1,6 +1,7 @@
 import '@servicenow/sdk/global'
 import { ScheduledScript, CrossScopePrivilege } from '@servicenow/sdk/core'
 import { discoveryJob } from '../../server/pivot/discovery'
+import { assessmentJob } from '../../server/pivot/assessment'
 
 // PIV-011 … PIV-013 – discovery on demand. An admin opens System Definition > Scheduled Jobs >
 // "PIVOT – Run discovery" and clicks Execute Now. From Sprint 4 the assessment runner calls the same code
@@ -62,4 +63,13 @@ CrossScopePrivilege({
     targetName: 'v_plugin',
     targetScope: 'global',
     targetType: 'sys_db_object',
+})
+
+// PIV-018 … PIV-025 – full assessment on demand (steps 1–6). The weekly job and Run Now arrive in Sprint 4.
+export const assessmentOnDemand = ScheduledScript({
+    $id: Now.ID['pivot-job-assessment'],
+    name: 'PIVOT – Run assessment',
+    active: true,
+    frequency: 'on_demand',
+    script: assessmentJob,
 })
