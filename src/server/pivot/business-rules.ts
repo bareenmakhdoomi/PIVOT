@@ -1,6 +1,6 @@
 // Table business rules (before insert/update). They are the last line of defence: every write –
 // from the workspace, a form, a list edit or an import – passes the same PIVOT rules (design B6).
-import { gs, GlideDateTime } from '@servicenow/glide'
+import { gs, GlideDateTime, GlideRecord } from '@servicenow/glide'
 import { priorityOf, priorityReason, validateScores, validateRejection, validateCapability, validateOutcome, SCOPE } from './rules.ts'
 
 function stop(current: any, message: string) {
@@ -36,7 +36,7 @@ export function opportunityBefore(current: any, previous: any) {
 }
 
 /** Capability: measurement settings must be valid. */
-export function capabilityBefore(current: any) {
+export function capabilityBefore(current: any, previous: any) {
     try {
         const err = firstError(validateCapability({
             measure_table: current.getValue('measure_table') || '',
@@ -46,7 +46,14 @@ export function capabilityBefore(current: any) {
             weight: current.getValue('weight') || '1',
             family: current.getValue('product_family') || '',
         }))
-        if (err) stop(current, err)
+        if (err) return stop(current, err)
+        // PIV-014.04 – a licence can only be linked to another, installed capability
+        const linked = current.getValue('linked_app')
+        if (linked && (!previous || linked !== previous.getValue('linked_app'))) {
+            if (linked === current.getUniqueValue()) return stop(current, 'A capability cannot be linked to itself.')
+            const app = new GlideRecord(SCOPE + '_capability')
+            if (!app.get(linked) || !(app.getValue('installed') === '1' || app.getValue('installed') === 'true')) return stop(current, 'Linked app must be an installed capability.')
+        }
     } catch (ex) {
         gs.error('PIVOT capability rule failed: ' + ex)
     }
@@ -62,6 +69,21 @@ export function outcomeBefore(current: any, previous: any) {
             period: current.getValue('period'),
         }))
         if (err) return stop(current, err)
+        // PIV-024.02 / .06 – a sum or average needs a field; a manual value cannot be dated in the future
+        const aggType = current.getValue('kpi_aggregate')
+        if (current.getValue('measurement_type') === 'calculated' && (aggType === 'sum' || aggType === 'avg') && !current.getValue('kpi_field'))
+            return stop(current, 'Choose a field to sum or average.')
+        const valueDate = current.getValue('manual_value_date')
+        if (valueDate && valueDate > new GlideDateTime().getValue().split(' ')[0]) return stop(current, 'Value date cannot be in the future.')
+        // PIV-024.08 – remember who entered a manual value
+        if (current.getValue('measurement_type') === 'manual' && current.getValue('manual_value') !== null && (!previous || current.getValue('manual_value') !== previous.getValue('manual_value') || current.getValue('manual_value_date') !== previous.getValue('manual_value_date')))
+            current.setValue('manual_value_by', gs.getUserID())
+        // PIV-023.04 – warn, do not block, when the owner is inactive
+        const owner = current.getValue('owner')
+        if (owner && (!previous || owner !== previous.getValue('owner'))) {
+            const u = new GlideRecord('sys_user')
+            if (u.get(owner) && !(u.getValue('active') === '1' || u.getValue('active') === 'true')) gs.addInfoMessage('Owner is inactive.')
+        }
         const before = previous ? previous.getValue('baseline') : null, now = current.getValue('baseline')
         if (before !== null && before !== '' && Number(before) !== Number(now)) {
             if (!gs.hasRole(SCOPE + '.admin')) return stop(current, 'The baseline is locked after the first measurement. Only PIVOT admins can change it (the change is audited).')

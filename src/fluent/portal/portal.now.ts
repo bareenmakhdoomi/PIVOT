@@ -1,10 +1,10 @@
 import '@servicenow/sdk/global'
-import { Record, JsInclude, SPWidgetDependency, SPWidget, SPTheme, SPPage, ServicePortal } from '@servicenow/sdk/core'
+import { Record, SPWidget, SPTheme, SPPage, ServicePortal } from '@servicenow/sdk/core'
 import { viewer } from '../roles/roles.now'
 
 // PIV-064 – PIVOT Service Portal: https://<instance>/x_enno_pivot  (page x_enno_pivot_home)
 // The portal shows the same Concept 27 workspace as the UI page, with the same REST API and ACLs.
-// No iframe: the workspace code is a UI script loaded through a widget dependency.
+// No iframe: the widget loads the workspace UI script (versioned URL, so a new build is never served from cache).
 
 // UI script generated from src/client by scripts/build-portal-bundle.mjs (runs before every build)
 export const portalScript = Record({
@@ -21,18 +21,6 @@ export const portalScript = Record({
     },
 })
 
-const portalJs = JsInclude({
-    $id: Now.ID['pivot-portal-js-include'],
-    name: 'PIVOT portal workspace',
-    sysUiScript: portalScript,
-})
-
-const portalDependency = SPWidgetDependency({
-    $id: Now.ID['pivot-portal-dependency'],
-    name: 'x_enno_pivot_workspace_dependency',
-    jsIncludes: [{ order: 100, include: portalJs }],
-})
-
 export const workspaceWidget = SPWidget({
     $id: Now.ID['pivot-portal-widget'],
     name: 'PIVOT Workspace',
@@ -41,7 +29,6 @@ export const workspaceWidget = SPWidget({
     htmlTemplate: Now.include('./widget/template.html'),
     clientScript: Now.include('./widget/client.js'),
     customCss: Now.include('./widget/styles.scss'),
-    dependencies: [portalDependency],
     roles: [viewer],
     hasPreview: false,
 })

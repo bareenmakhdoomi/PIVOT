@@ -1,5 +1,5 @@
 import '@servicenow/sdk/global'
-import { Table, StringColumn, ChoiceColumn, DecimalColumn, ReferenceColumn, DateTimeColumn, DurationColumn, MultiLineTextColumn, DomainIdColumn } from '@servicenow/sdk/core'
+import { IntegerColumn, Table, StringColumn, ChoiceColumn, DecimalColumn, ReferenceColumn, DateTimeColumn, DurationColumn, MultiLineTextColumn, DomainIdColumn } from '@servicenow/sdk/core'
 
 // PIV-003 Assessment – one record per run (weekly or Run Now)
 export const x_enno_pivot_assessment = Table({
@@ -18,10 +18,14 @@ export const x_enno_pivot_assessment = Table({
             label: 'Trigger', readOnly: true, default: 'weekly',
             choices: { weekly: { label: 'Weekly schedule', sequence: 10 }, run_now: { label: 'Run Now', sequence: 20 } },
         }),
-        overall_score: DecimalColumn({ label: 'Overall score', readOnly: true, hint: 'Platform Value Score for this run' }),
+        overall_score: DecimalColumn({ label: 'Overall score', readOnly: true, hint: 'Weighted average of capability scores. Not Measured capabilities are excluded.' }),
         run_by: ReferenceColumn({ label: 'Run by', referenceTable: 'sys_user', readOnly: true }),
         duration: DurationColumn({ label: 'Duration', readOnly: true }),
-        log: MultiLineTextColumn({ label: 'Log', maxLength: 8000, readOnly: true }),
+        log: MultiLineTextColumn({ label: 'Log', maxLength: 65000, readOnly: true }),
+        scored_count: IntegerColumn({ label: 'Capabilities scored', readOnly: true }),
+        not_measured_count: IntegerColumn({ label: 'Not measured', readOnly: true }),
+        inactive_count: IntegerColumn({ label: 'Skipped as inactive', readOnly: true }),
+        slow_count: IntegerColumn({ label: 'Slow capabilities', readOnly: true }),
         sys_domain: DomainIdColumn({ label: 'Domain' }),
     },
 })

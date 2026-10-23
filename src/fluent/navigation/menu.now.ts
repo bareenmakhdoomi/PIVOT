@@ -37,6 +37,27 @@ Record({
     table: 'sys_app_module',
     data: { title: 'Needs mapping', application: pivotMenu, link_type: 'FILTER', name: 'x_enno_pivot_capability', filter: 'active=true^product_familyISEMPTY^ORDERBYname', roles: ['x_enno_pivot.admin'], active: true, order: 220 },
 })
+// PIV-012.09 / PIV-013.04 – capability lists by source and not found (admin fallback views)
+Record({
+    $id: Now.ID['pivot-module-cap-licences'],
+    table: 'sys_app_module',
+    data: { title: 'Licences', application: pivotMenu, link_type: 'FILTER', name: 'x_enno_pivot_capability', filter: 'source=subscription^ORDERBYname', roles: ['x_enno_pivot.admin'], active: true, order: 222 },
+})
+Record({
+    $id: Now.ID['pivot-module-cap-apps'],
+    table: 'sys_app_module',
+    data: { title: 'Store apps', application: pivotMenu, link_type: 'FILTER', name: 'x_enno_pivot_capability', filter: 'source=store_app^ORDERBYname', roles: ['x_enno_pivot.admin'], active: true, order: 224 },
+})
+Record({
+    $id: Now.ID['pivot-module-cap-plugins'],
+    table: 'sys_app_module',
+    data: { title: 'Plugins', application: pivotMenu, link_type: 'FILTER', name: 'x_enno_pivot_capability', filter: 'source=plugin^ORDERBYname', hint: 'Active for-fee plugins found by discovery. Empty until PIVOT – Run discovery has run (PIV-012.09).', roles: ['x_enno_pivot.admin'], active: true, order: 226 },
+})
+Record({
+    $id: Now.ID['pivot-module-cap-not-found'],
+    table: 'sys_app_module',
+    data: { title: 'Not found in last run', application: pivotMenu, link_type: 'FILTER', name: 'x_enno_pivot_capability', filter: 'not_found=true^ORDERBYDESClast_discovered', roles: ['x_enno_pivot.admin'], active: true, order: 228 },
+})
 Record({
     $id: Now.ID['pivot-module-assessments'],
     table: 'sys_app_module',

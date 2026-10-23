@@ -201,6 +201,7 @@ function buildSnapshot() {
     bo.query()
     while (bo.next()) {
         if (str(bo, 'owner')) userIds.push(str(bo, 'owner'))
+        if (str(bo, 'manual_value_by')) userIds.push(str(bo, 'manual_value_by'))
         outcomes.push({
             id: bo.getUniqueValue(), capability: str(bo, 'capability'), objective: str(bo, 'objective'), kpi: str(bo, 'kpi'), direction: str(bo, 'direction') || 'higher_better',
             measurement_type: str(bo, 'measurement_type') || 'calculated', kpi_table: str(bo, 'kpi_table'), kpi_filter: str(bo, 'kpi_filter'),
@@ -208,6 +209,7 @@ function buildSnapshot() {
             baseline_date: str(bo, 'baseline_date') ? ms(str(bo, 'baseline_date') + ' 12:00:00') : null, baseline_change_reason: str(bo, 'baseline_change_reason'),
             target: num(bo, 'target'), period: str(bo, 'period') || 'monthly', owner: str(bo, 'owner'), expected_benefit: str(bo, 'expected_benefit'),
             important_objective: bool(bo, 'important_objective'), low_volume_expected: bool(bo, 'low_volume_expected'),
+            manual_value: num(bo, 'manual_value'), manual_value_date: str(bo, 'manual_value_date'), manual_value_by: str(bo, 'manual_value_by'),
         })
     }
 
@@ -383,6 +385,23 @@ function saveOutcome(f: any): Result {
     const locked = !isNew && str(gr, 'baseline') !== ''
     const baselineChange = locked && f.baseline !== undefined && f.baseline !== '' && f.baseline !== null && Number(f.baseline) !== num(gr, 'baseline')
     if (baselineChange && !admin) e.baseline = 'The baseline is locked after the first measurement. Only admins can change it (the change is audited).'
+    const changeReason = String(f.baseline_change_reason || '').trim()
+    if (baselineChange && admin && changeReason.length < 5) e.baseline_change_reason = 'Give a reason for changing the locked baseline.'
+    // PIV-024.02 – a sum or average needs a real field on the KPI table
+    const isCalc = f.measurement_type !== 'manual'
+    if (isCalc && (f.kpi_aggregate === 'sum' || f.kpi_aggregate === 'avg')) {
+        const field = String(f.kpi_field || '').trim()
+        if (!field) e.kpi_field = 'Choose a field to sum or average.'
+        else if (!e.kpi_table && f.kpi_table && new GlideRecord(String(f.kpi_table)).isValid() && !new GlideRecord(String(f.kpi_table)).isValidField(field)) e.kpi_field = 'Field ' + field + ' does not exist on ' + f.kpi_table + '.'
+    }
+    if (isCalc && !e.kpi_table && f.kpi_table && !new GlideRecord(String(f.kpi_table)).isValid()) e.kpi_table = 'Table ' + f.kpi_table + ' does not exist on this instance.'
+    // PIV-024.06 – manual value and date
+    const manualValue = f.manual_value === undefined || f.manual_value === null ? '' : String(f.manual_value).trim()
+    const manualDate = String(f.manual_value_date || '').trim()
+    if (!isCalc && manualValue !== '' && isNaN(Number(manualValue))) e.manual_value = 'Enter a number.'
+    if (!isCalc && manualDate && !/^\d{4}-\d{2}-\d{2}$/.test(manualDate)) e.manual_value_date = 'Enter a date.'
+    else if (!isCalc && manualDate && manualDate > new GlideDateTime().getValue().split(' ')[0]) e.manual_value_date = 'Value date cannot be in the future.'
+    if (!isCalc && manualValue !== '' && !manualDate) e.manual_value_date = 'Give the date the value applies to.'
     if (hasErrors(e)) return invalid(e)
 
     const text = (k: string, max: number) => String(f[k] === undefined || f[k] === null ? '' : f[k]).trim().slice(0, max)
@@ -399,9 +418,24 @@ function saveOutcome(f: any): Result {
     gr.setValue('important_objective', !!f.important_objective)
     gr.setValue('low_volume_expected', !!f.low_volume_expected)
     gr.setValue('target', Number(f.target))
+    gr.setValue('kpi_field', isCalc && f.kpi_aggregate !== 'count' ? text('kpi_field', 80) : '')
+    if (!isCalc && f.manual_value !== undefined) {
+        if (manualValue !== String(num(gr, 'manual_value') === null ? '' : num(gr, 'manual_value')) || manualDate !== str(gr, 'manual_value_date')) {
+            gr.setValue('manual_value', manualValue)
+            gr.setValue('manual_value_date', manualDate)
+        }
+    }
     if (baselineChange) {
+        const before = str(gr, 'baseline')
         gr.setValue('baseline', Number(f.baseline))
-        gr.setValue('baseline_change_reason', 'Changed by ' + gs.getUserDisplayName() + ' in the PIVOT workspace on ' + new GlideDateTime().getDisplayValue() + '.')
+        gr.setValue('baseline_change_reason', ('Baseline changed from ' + before + ' to ' + Number(f.baseline) + ' by ' + gs.getUserDisplayName() + ' on ' + new GlideDateTime().getDisplayValue() + ': ' + changeReason).slice(0, 500))
+    }
+    // PIV-023.04 – warn (do not block) when the owner is inactive
+    const ownerId = isNew ? '' : str(gr, 'owner')
+    let ownerNote = ''
+    if (ownerId) {
+        const u = new GlideRecord('sys_user')
+        if (u.get(ownerId) && !bool(u, 'active')) ownerNote = ' Owner is inactive – choose an active owner.'
     }
     if (isNew) {
         let owner = me
@@ -418,7 +452,7 @@ function saveOutcome(f: any): Result {
     const r = save(gr)
     if (r.ok) {
         r.id = gr.getUniqueValue()
-        r.note = 'Saved.'
+        r.note = 'Saved.' + ownerNote
     }
     return r
 }
