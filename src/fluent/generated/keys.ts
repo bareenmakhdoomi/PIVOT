@@ -349,7 +349,7 @@ declare global {
                     }
                     'pivot-xscope-read-sn_sub_man_st_subscription_overview': {
                         table: 'sys_scope_privilege'
-                        id: 'bddcfb951c864973a68d0929c92ba137'
+                        id: 'a1aa6f0e2f885750d2a0d68fcea4e396'
                     }
                     'pivot-xscope-read-subscription_entitlement': {
                         table: 'sys_scope_privilege'
@@ -357,7 +357,7 @@ declare global {
                     }
                     'pivot-xscope-read-sys_store_app': {
                         table: 'sys_scope_privilege'
-                        id: '9076b92ee16b44ca99aa33f90b37f0c7'
+                        id: '61aa6f0e2f885750d2a0d68fcea4e3f3'
                     }
                     'pivot-xscope-read-ua_app_family': {
                         table: 'sys_scope_privilege'
