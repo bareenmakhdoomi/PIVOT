@@ -11,6 +11,8 @@ export const pivotMenu = ApplicationMenu({
     active: true,
 })
 
+// PIV-008.03: admins see Workspace, Capabilities, Needs mapping, Properties, Assessment list in that order;
+// the other admin lists follow. Every module after Workspace is admin-only.
 // First module: opens the workspace on the Dashboard (all PIVOT roles) – PIV-008.02
 Record({
     $id: Now.ID['pivot-module-workspace'],
@@ -41,40 +43,40 @@ Record({
 Record({
     $id: Now.ID['pivot-module-cap-licences'],
     table: 'sys_app_module',
-    data: { title: 'Licences', application: pivotMenu, link_type: 'FILTER', name: 'x_enno_pivot_capability', filter: 'source=subscription^ORDERBYname', roles: ['x_enno_pivot.admin'], active: true, order: 222 },
+    data: { title: 'Licences', application: pivotMenu, link_type: 'FILTER', name: 'x_enno_pivot_capability', filter: 'source=subscription^ORDERBYname', roles: ['x_enno_pivot.admin'], active: true, order: 310 },
 })
 Record({
     $id: Now.ID['pivot-module-cap-apps'],
     table: 'sys_app_module',
-    data: { title: 'Store apps', application: pivotMenu, link_type: 'FILTER', name: 'x_enno_pivot_capability', filter: 'source=store_app^ORDERBYname', roles: ['x_enno_pivot.admin'], active: true, order: 224 },
+    data: { title: 'Store apps', application: pivotMenu, link_type: 'FILTER', name: 'x_enno_pivot_capability', filter: 'source=store_app^ORDERBYname', roles: ['x_enno_pivot.admin'], active: true, order: 320 },
 })
 Record({
     $id: Now.ID['pivot-module-cap-plugins'],
     table: 'sys_app_module',
-    data: { title: 'Plugins', application: pivotMenu, link_type: 'FILTER', name: 'x_enno_pivot_capability', filter: 'source=plugin^ORDERBYname', hint: 'Active for-fee plugins found by discovery. Empty until PIVOT – Run discovery has run (PIV-012.09).', roles: ['x_enno_pivot.admin'], active: true, order: 226 },
+    data: { title: 'Plugins', application: pivotMenu, link_type: 'FILTER', name: 'x_enno_pivot_capability', filter: 'source=plugin^ORDERBYname', hint: 'Active for-fee plugins found by discovery. Empty until PIVOT – Run discovery has run (PIV-012.09).', roles: ['x_enno_pivot.admin'], active: true, order: 330 },
 })
 Record({
     $id: Now.ID['pivot-module-cap-not-found'],
     table: 'sys_app_module',
-    data: { title: 'Not found in last run', application: pivotMenu, link_type: 'FILTER', name: 'x_enno_pivot_capability', filter: 'not_found=true^ORDERBYDESClast_discovered', roles: ['x_enno_pivot.admin'], active: true, order: 228 },
+    data: { title: 'Not found in last run', application: pivotMenu, link_type: 'FILTER', name: 'x_enno_pivot_capability', filter: 'not_found=true^ORDERBYDESClast_discovered', roles: ['x_enno_pivot.admin'], active: true, order: 340 },
 })
 Record({
     $id: Now.ID['pivot-module-assessments'],
     table: 'sys_app_module',
-    data: { title: 'Assessments', application: pivotMenu, link_type: 'FILTER', name: 'x_enno_pivot_assessment', filter: 'ORDERBYDESCrun_date', roles: ['x_enno_pivot.admin'], active: true, order: 230 },
+    data: { title: 'Assessment list', application: pivotMenu, link_type: 'FILTER', name: 'x_enno_pivot_assessment', filter: 'ORDERBYDESCrun_date', roles: ['x_enno_pivot.admin'], active: true, order: 240 },
 })
 Record({
     $id: Now.ID['pivot-module-opportunities'],
     table: 'sys_app_module',
-    data: { title: 'Opportunities', application: pivotMenu, link_type: 'FILTER', name: 'x_enno_pivot_opportunity', filter: 'stateINopen,accepted^ORDERBYDESCpriority', roles: ['x_enno_pivot.admin'], active: true, order: 240 },
+    data: { title: 'Opportunities', application: pivotMenu, link_type: 'FILTER', name: 'x_enno_pivot_opportunity', filter: 'stateINopen,accepted^ORDERBYDESCpriority', roles: ['x_enno_pivot.admin'], active: true, order: 350 },
 })
 Record({
     $id: Now.ID['pivot-module-outcomes'],
     table: 'sys_app_module',
-    data: { title: 'Business Outcomes', application: pivotMenu, link_type: 'FILTER', name: 'x_enno_pivot_business_outcome', filter: 'ORDERBYkpi', roles: ['x_enno_pivot.admin'], active: true, order: 250 },
+    data: { title: 'Business Outcomes', application: pivotMenu, link_type: 'FILTER', name: 'x_enno_pivot_business_outcome', filter: 'ORDERBYkpi', roles: ['x_enno_pivot.admin'], active: true, order: 360 },
 })
 Record({
     $id: Now.ID['pivot-module-properties'],
     table: 'sys_app_module',
-    data: { title: 'Properties', application: pivotMenu, link_type: 'FILTER', name: 'sys_properties', filter: 'nameSTARTSWITHx_enno_pivot.', roles: ['x_enno_pivot.admin'], active: true, order: 900 },
+    data: { title: 'Properties', application: pivotMenu, link_type: 'FILTER', name: 'sys_properties', filter: 'nameSTARTSWITHx_enno_pivot.', roles: ['x_enno_pivot.admin'], active: true, order: 230 },
 })

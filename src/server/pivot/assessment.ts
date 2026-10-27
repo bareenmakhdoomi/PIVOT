@@ -43,6 +43,7 @@ function aggregate(table: string, filter: string, dateField: string, daysBack: n
         const from = new GlideDateTime()
         from.addDaysUTC(-daysBack)
         ga.addQuery(dateField, '>=', from.getValue())
+        ga.addQuery(dateField, '<=', new GlideDateTime().getValue()) // PIV-018: only the last N days – future-dated rows are not counted
     }
     const fn = agg === 'count' ? 'COUNT' : agg === 'sum' ? 'SUM' : 'AVG'
     if (agg === 'count') (ga as any).addAggregate('COUNT')
