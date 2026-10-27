@@ -57,7 +57,7 @@ function createPV(first, api) {
   const r2 = n => Math.round(n * 100) / 100;
 
   const LABELS = {
-    source: { subscription: 'Subscription', store_app: 'Store app', plugin: 'Plugin' },
+    source: { subscription: 'Subscription', store_app: 'Store app', plugin: 'Plugin', manual: 'Manual' },
     family: {}, status: { queued: 'Queued', running: 'Running', complete: 'Complete', failed: 'Failed', none: 'No run yet' },
     type: { shelfware: 'Shelfware', idle_licences: 'Idle licences', low_adoption: 'Low adoption', not_measured: 'Not measured', weak_outcome: 'Weak outcome', adoption_potential: 'Adoption potential' },
     state: { open: 'Open', accepted: 'Accepted', rejected: 'Rejected', done: 'Done' },
@@ -1347,6 +1347,6 @@ function mount(host) {
       const retry = document.getElementById('pivotRetry'); if (retry) retry.addEventListener('click', () => window.location.reload());
     });
 }
-window.x_enno_pivot_portal = { mount, version: 'd191fc4aad06' };
+window.x_enno_pivot_portal = { mount, version: '205ca0a12295' };
 
 })();

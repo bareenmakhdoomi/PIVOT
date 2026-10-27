@@ -2790,6 +2790,17 @@ declare global {
                         }
                     },
                     {
+                        table: 'sys_choice'
+                        id: '3ca8b0e0cebd45319445504b3afba280'
+                        key: {
+                            name: 'x_enno_pivot_capability'
+                            element: 'source'
+                            value: 'manual'
+                            language: 'en'
+                            dependent_value: 'NULL'
+                        }
+                    },
+                    {
                         table: 'sys_ui_element'
                         id: '3d10560202514229afd265272d5c2159'
                         key: {

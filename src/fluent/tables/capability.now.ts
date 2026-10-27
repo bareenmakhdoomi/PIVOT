@@ -19,14 +19,17 @@ export const x_enno_pivot_capability = Table({
             hint: 'Empty = listed in Needs mapping',
             dropdown: 'dropdown_with_none',
             choices: {
-                itsm: { label: 'ITSM', sequence: 10 }, itom: { label: 'ITOM', sequence: 20 }, itam: { label: 'ITAM', sequence: 30 },
-                hrsd: { label: 'HRSD', sequence: 40 }, csm: { label: 'CSM', sequence: 50 }, secops: { label: 'SecOps', sequence: 60 },
-                spm: { label: 'SPM', sequence: 70 }, platform: { label: 'Platform', sequence: 80 }, other: { label: 'Other', sequence: 90 },
+                // PIV-002.04: lowercase values, readable labels (the workspace keeps its short column names from rules.ts FAMILIES)
+                itsm: { label: 'IT Service Management', sequence: 10 }, itom: { label: 'IT Operations Management', sequence: 20 },
+                itam: { label: 'IT Asset Management', sequence: 30 }, hrsd: { label: 'HR Service Delivery', sequence: 40 },
+                csm: { label: 'Customer Service Management', sequence: 50 }, secops: { label: 'Security Operations', sequence: 60 },
+                spm: { label: 'Strategic Portfolio Management', sequence: 70 }, platform: { label: 'Platform', sequence: 80 }, other: { label: 'Other', sequence: 90 },
             },
         }),
         source: ChoiceColumn({
-            label: 'Source', readOnly: true,
-            choices: { subscription: { label: 'Subscription', sequence: 10 }, store_app: { label: 'Store app', sequence: 20 }, plugin: { label: 'Plugin', sequence: 30 } },
+            label: 'Source', readOnly: true, default: 'manual',
+            hint: 'Set by discovery (subscription = licence / entitlement); Manual for capabilities an admin adds by hand.',
+            choices: { subscription: { label: 'Subscription (entitlement)', sequence: 10 }, store_app: { label: 'Store app', sequence: 20 }, plugin: { label: 'Plugin', sequence: 30 }, manual: { label: 'Manual', sequence: 40 } },
         }),
         licensed: BooleanColumn({ label: 'Licensed', readOnly: true, default: 'false' }),
         installed: BooleanColumn({ label: 'Installed', readOnly: true, default: 'false' }),
