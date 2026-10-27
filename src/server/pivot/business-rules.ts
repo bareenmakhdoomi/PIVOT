@@ -107,3 +107,38 @@ export function roadmapItemDefaults(current: any) {
         gs.error('PIVOT roadmap item defaults failed: ' + ex)
     }
 }
+
+/** Shared range check: empty is allowed (Not Measured / not set yet). */
+function outOfRange(current: any, field: string, min: number, max: number | null) {
+    const v = current.getValue(field)
+    if (v === null || v === '') return false
+    const n = Number(v)
+    return isNaN(n) || n < min || (max !== null && n > max)
+}
+
+/** Assessment (PIV-003.01): overall score must be 0–100. */
+export function assessmentBefore(current: any) {
+    try {
+        if (outOfRange(current, 'overall_score', 0, 100)) return stop(current, 'Overall score must be between 0 and 100.')
+    } catch (ex) {
+        gs.error('PIVOT assessment rule failed: ' + ex)
+    }
+}
+
+/** Result (PIV-003.04): score must be 0–100. */
+export function resultBefore(current: any) {
+    try {
+        if (outOfRange(current, 'score', 0, 100)) return stop(current, 'Score must be between 0 and 100.')
+    } catch (ex) {
+        gs.error('PIVOT result rule failed: ' + ex)
+    }
+}
+
+/** Roadmap item (PIV-004.04): sequence must be 0 or greater. */
+export function roadmapItemBefore(current: any) {
+    try {
+        if (outOfRange(current, 'sequence', 0, null)) return stop(current, 'Sequence must be 0 or greater.')
+    } catch (ex) {
+        gs.error('PIVOT roadmap item rule failed: ' + ex)
+    }
+}

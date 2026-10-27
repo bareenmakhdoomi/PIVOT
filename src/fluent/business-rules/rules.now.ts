@@ -1,6 +1,6 @@
 import '@servicenow/sdk/global'
 import { BusinessRule } from '@servicenow/sdk/core'
-import { opportunityBefore, capabilityBefore, outcomeBefore, roadmapItemDefaults } from '../../server/pivot/business-rules'
+import { opportunityBefore, capabilityBefore, outcomeBefore, roadmapItemDefaults, assessmentBefore, resultBefore, roadmapItemBefore } from '../../server/pivot/business-rules'
 
 // PIV-020/021/030 – PIVOT rules (design B6) enforced on every write, whatever the source.
 BusinessRule({
@@ -62,4 +62,40 @@ BusinessRule({
     active: true,
     script: roadmapItemDefaults,
     description: 'If the assessment is empty, it is copied from the opportunity when the roadmap item is saved.',
+})
+
+BusinessRule({
+    $id: Now.ID['br-assessment-validate'],
+    name: 'PIVOT – Validate assessment',
+    table: 'x_enno_pivot_assessment',
+    when: 'before',
+    action: ['insert', 'update'],
+    order: 90,
+    active: true,
+    script: assessmentBefore,
+    description: 'PIV-003.01: overall score must be between 0 and 100.',
+})
+
+BusinessRule({
+    $id: Now.ID['br-result-validate'],
+    name: 'PIVOT – Validate result',
+    table: 'x_enno_pivot_result',
+    when: 'before',
+    action: ['insert', 'update'],
+    order: 90,
+    active: true,
+    script: resultBefore,
+    description: 'PIV-003.04: score must be between 0 and 100.',
+})
+
+BusinessRule({
+    $id: Now.ID['br-roadmap-item-validate'],
+    name: 'PIVOT – Validate roadmap item',
+    table: 'x_enno_pivot_roadmap_item',
+    when: 'before',
+    action: ['insert', 'update'],
+    order: 90,
+    active: true,
+    script: roadmapItemBefore,
+    description: 'PIV-004.04: sequence must be 0 or greater.',
 })

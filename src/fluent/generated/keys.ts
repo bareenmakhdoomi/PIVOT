@@ -257,6 +257,10 @@ declare global {
                         table: 'sys_module'
                         id: 'f0918765f8b240bf92054b27586857dd'
                     }
+                    'br-assessment-validate': {
+                        table: 'sys_script'
+                        id: '54ce3ae748e34ce9873510a7189e8fee'
+                    }
                     'br-capability-validate': {
                         table: 'sys_script'
                         id: 'd675635953714c45a6b4cca42127f7fd'
@@ -269,6 +273,10 @@ declare global {
                         table: 'sys_script'
                         id: 'bd119d2057534c34a236d8ae25879806'
                     }
+                    'br-result-validate': {
+                        table: 'sys_script'
+                        id: '9c8e70fe0b03450fb5abe25da3b08fed'
+                    }
                     'br-roadmap-item-defaults-display': {
                         table: 'sys_script'
                         id: '99aab20322ea49b292d5c4d7dcc690ce'
@@ -276,6 +284,10 @@ declare global {
                     'br-roadmap-item-defaults-insert': {
                         table: 'sys_script'
                         id: 'ebf6caf8d566419aafa590e3c9ae815e'
+                    }
+                    'br-roadmap-item-validate': {
+                        table: 'sys_script'
+                        id: '990301d7687845f3911975cdc39da7a9'
                     }
                     'opportunity-related-list-roadmap-items': {
                         table: 'sys_ui_related_list_entry'
