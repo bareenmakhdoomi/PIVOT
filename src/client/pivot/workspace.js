@@ -223,6 +223,12 @@ function renderDetail() {
   const c = S.capability(st.map.sel) || S.capabilities({ view: 'active' })[0]; const o = topOpp(c.id);
   return `<aside><div class="detailpanel"><div class="smallcaps">${esc(famLabel(c.family))} · ${esc(c.number)}</div><div class="detailtop"><div class="largesymbol">${esc(sym(c.name))}</div><div><div class="detailname">${esc(c.name)}</div><div class="detailscore">${esc(bandText(c))}</div></div></div><div class="opportunity">${o ? '! Open opportunity · ' + esc(o.typeLabel) + ' · priority ' + F.pri(o.priority) : '● No open opportunity'}${c.stale ? '<br>! ' + esc(c.staleNote) : ''}</div><button class="btn primary detailbtn" data-cap-open="${c.id}">View capability details <span>›</span></button><div class="detailtabs" role="tablist">${['Overview', 'Usage', 'Outcomes', 'Opportunities'].map(t => `<button role="tab" aria-selected="${st.map.tab === t}" class="${st.map.tab === t ? 'active' : ''}" data-detailtab="${t}">${t}</button>`).join('')}</div><div id="detailTabBody">${mapDetailBody(c, st.map.tab)}</div></div><div class="legendpanel"><div class="smallcaps">Key · Usage band</div><p><i class="swatch" style="background:#2f347d"></i>STRONG · score ${hi()} or more</p><p><i class="swatch" style="background:#4e55a6"></i>MODERATE · score ${lo()}–${hi() - 1}</p><p><i class="swatch" style="background:#c9c9eb"></i>LOW · score below ${lo()}</p><p><i class="swatch" style="background:repeating-linear-gradient(135deg,#fff,#fff 5px,#e8e9ef 5px,#e8e9ef 7px)"></i>Hatched · licensed not installed, or not measured</p><p><span class="horizon" style="position:static;display:inline-block;margin-right:5px">NOW</span> Top open opportunity and its roadmap column</p></div></aside>`;
 }
+function mapColumn(cl) {
+  if (!cl.items.length) return '<div class="emptycol">No matching capabilities</div>';
+  const key = 'map:' + st.map.mode + ':' + cl.label, limit = st.more[key] || 5, rest = cl.items.length - limit;
+  return cl.items.slice(0, limit).map(tileMarkup).join('')
+    + (rest > 0 ? `<button class="btn map-more" data-more="${esc(key)}" aria-label="Load ${Math.min(10, rest)} more in ${esc(cl.label)}" title="${rest} more in this column">Load more · ${rest}</button>` : '');
+}
 function elementMap() {
   const q = st.map.q.toLowerCase(), all = S.capabilities({ view: 'active' });
   const shown = all.filter(c => !q || (c.name + ' ' + famLabel(c.family) + ' ' + sym(c.name) + ' ' + c.number).toLowerCase().includes(q));
@@ -230,7 +236,7 @@ function elementMap() {
   if (st.map.mode === 'band') cols = BAND_ORDER.map(b => ({ label: BAND[b].label, items: shown.filter(c => bandOf(c) === b) }));
   else { cols = families().filter(f => all.some(c => c.family === f)).map(f => ({ label: L.family[f], items: shown.filter(c => c.family === f) })); if (all.some(c => !c.family)) cols.push({ label: 'Needs mapping', items: shown.filter(c => !c.family) }); }
   cols.forEach(cl => cl.items.sort((a, b) => (b.score == null ? -1 : b.score) - (a.score == null ? -1 : a.score)));
-  const groups = cols.map(cl => `<div class="familycol"><div class="familylabel">${esc(cl.label)} <span class="familycount">${cl.items.length}</span></div>${cl.items.map(tileMarkup).join('') || '<div class="emptycol">No matching capabilities</div>'}</div>`).join('');
+  const groups = cols.map(cl => `<div class="familycol"><div class="familylabel">${esc(cl.label)} <span class="familycount">${cl.items.length}</span></div>${mapColumn(cl)}</div>`).join('');
   return heading('PIVOT / CAPABILITY LANDSCAPE', 'Element Map', 'Every active capability is an element. Columns are product families; each tile shows its score and usage band. Hatched tiles are licensed but not installed, or not measured.', `<button class="btn" data-action="exportCaps">Export map ↓</button>`)
     + `<div class="maphead"><div><div style="font-size:11px;color:var(--muted)">${shown.length} of ${all.length} active capabilities · scores from ${esc(S.latest().number)}</div></div><div class="maptools"><div class="toggle" role="group" aria-label="Group by"><button class="${st.map.mode === 'family' ? 'active' : ''}" aria-pressed="${st.map.mode === 'family'}" data-mode="family">Product families</button><button class="${st.map.mode === 'band' ? 'active' : ''}" aria-pressed="${st.map.mode === 'band'}" data-mode="band">Usage band</button></div><input class="mapsearch" id="mapSearch" value="${esc(st.map.q)}" placeholder="⌕ Search capabilities…" aria-label="Search capabilities"><button class="btn" data-action="resetMap">Reset</button></div></div>`
     + `<div class="maplayout"><div class="elementgrid" style="--cols:${cols.length}">${groups}</div>${renderDetail()}</div>`;
@@ -815,7 +821,7 @@ document.addEventListener('click', e => {
   if (!t || t.disabled) return;
   const ds = t.dataset;
   if (ds.page) { const infoKey = ds.page, current = st.pages[infoKey] || 0; if (ds.step === 'first') st.pages[infoKey] = 0; else if (ds.step === 'prev') st.pages[infoKey] = Math.max(0, current - 1); else if (ds.step === 'next') st.pages[infoKey] = current + 1; else if (ds.step === 'last') st.pages[infoKey] = 999999; render(true); return; }
-  if (ds.more) { if (ds.more.startsWith('road')) st.more[ds.more] = (st.more[ds.more] || 5) + 5; else if (ds.more === 'reportsBands') st.more.reportsBands = (st.more.reportsBands || 5) + 5; render(true); return; }
+  if (ds.more) { if (ds.more.startsWith('map:')) st.more[ds.more] = (st.more[ds.more] || 5) + 10; else if (ds.more.startsWith('road')) st.more[ds.more] = (st.more[ds.more] || 5) + 5; else if (ds.more === 'reportsBands') st.more.reportsBands = (st.more.reportsBands || 5) + 5; render(true); return; }
   if (ds.note) st.read.add(ds.note);
   if (t.id === 'notificationTrigger') { const d = $('notificationDrawer'), open = d.hidden; d.hidden = !open; t.setAttribute('aria-expanded', String(open)); t.classList.toggle('is-open', open); toggleProfile(false); if (open) { const f = d.querySelector('button'); if (f) f.focus(); } return; }
   if (t.id === 'notificationClose') { closeDrawer(); $('notificationTrigger').focus(); return; }
