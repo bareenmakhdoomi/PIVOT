@@ -95,3 +95,15 @@ export function outcomeBefore(current: any, previous: any) {
         gs.error('PIVOT outcome rule failed: ' + ex)
     }
 }
+
+/** Roadmap item (PIV-004.05): a new item made from the Opportunity form's related list gets the opportunity's assessment.
+ *  Runs on display (so the new form shows it) and before insert (so it is saved even if the form did not send it). */
+export function roadmapItemDefaults(current: any) {
+    try {
+        if (current.getValue('assessment') || !current.getValue('opportunity')) return
+        const o = new GlideRecord(SCOPE + '_opportunity')
+        if (o.get(current.getValue('opportunity')) && o.getValue('assessment')) current.setValue('assessment', o.getValue('assessment'))
+    } catch (ex) {
+        gs.error('PIVOT roadmap item defaults failed: ' + ex)
+    }
+}

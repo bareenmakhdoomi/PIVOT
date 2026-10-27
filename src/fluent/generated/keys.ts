@@ -269,6 +269,22 @@ declare global {
                         table: 'sys_script'
                         id: 'bd119d2057534c34a236d8ae25879806'
                     }
+                    'br-roadmap-item-defaults-display': {
+                        table: 'sys_script'
+                        id: '99aab20322ea49b292d5c4d7dcc690ce'
+                    }
+                    'br-roadmap-item-defaults-insert': {
+                        table: 'sys_script'
+                        id: 'ebf6caf8d566419aafa590e3c9ae815e'
+                    }
+                    'opportunity-related-list-roadmap-items': {
+                        table: 'sys_ui_related_list_entry'
+                        id: '3b37b036b8aa451cb1aa137b6a9c8794'
+                    }
+                    'opportunity-related-lists': {
+                        table: 'sys_ui_related_list'
+                        id: '96a24aab77db4eeca7fe6bc7d796d4e7'
+                    }
                     package_json: {
                         table: 'sys_module'
                         id: '96a7857d9dc642e591d1491c9aa06c55'
@@ -940,6 +956,23 @@ declare global {
                         key: {
                             name: 'x_enno_pivot_capability'
                             element: 'source_id'
+                        }
+                    },
+                    {
+                        table: 'sys_ui_list'
+                        id: '0d8334e93d19412983871dd305e346de'
+                        key: {
+                            name: 'x_enno_pivot_roadmap_item'
+                            view: {
+                                id: 'Default view'
+                                key: {
+                                    name: 'NULL'
+                                }
+                            }
+                            sys_domain: 'global'
+                            element: 'NULL'
+                            relationship: 'NULL'
+                            parent: 'NULL'
                         }
                     },
                     {
@@ -1986,6 +2019,29 @@ declare global {
                         }
                     },
                     {
+                        table: 'sys_ui_list_element'
+                        id: '238a5704c1124c3fa84246c60d5442cc'
+                        key: {
+                            list_id: {
+                                id: '0d8334e93d19412983871dd305e346de'
+                                key: {
+                                    name: 'x_enno_pivot_roadmap_item'
+                                    view: {
+                                        id: 'Default view'
+                                        key: {
+                                            name: 'NULL'
+                                        }
+                                    }
+                                    sys_domain: 'global'
+                                    element: 'NULL'
+                                    relationship: 'NULL'
+                                    parent: 'NULL'
+                                }
+                            }
+                            element: 'assessment'
+                        }
+                    },
+                    {
                         table: 'sys_db_object'
                         id: '25801180e0a04db1ab723e0d48d26d94'
                         key: {
@@ -2807,6 +2863,29 @@ declare global {
                         }
                     },
                     {
+                        table: 'sys_ui_list_element'
+                        id: '3e57cc638a084269992b79752e06cabd'
+                        key: {
+                            list_id: {
+                                id: '0d8334e93d19412983871dd305e346de'
+                                key: {
+                                    name: 'x_enno_pivot_roadmap_item'
+                                    view: {
+                                        id: 'Default view'
+                                        key: {
+                                            name: 'NULL'
+                                        }
+                                    }
+                                    sys_domain: 'global'
+                                    element: 'NULL'
+                                    relationship: 'NULL'
+                                    parent: 'NULL'
+                                }
+                            }
+                            element: 'sequence'
+                        }
+                    },
+                    {
                         table: 'sys_ui_element'
                         id: '3e86f8fcd7634fbc8eb4ef2195c4cfc6'
                         key: {
@@ -3238,6 +3317,29 @@ declare global {
                         key: {
                             name: 'x_enno_pivot_result'
                             element: 'duration_ms'
+                        }
+                    },
+                    {
+                        table: 'sys_ui_list_element'
+                        id: '4bc09d85134644619320a32baa9aeb9f'
+                        key: {
+                            list_id: {
+                                id: '0d8334e93d19412983871dd305e346de'
+                                key: {
+                                    name: 'x_enno_pivot_roadmap_item'
+                                    view: {
+                                        id: 'Default view'
+                                        key: {
+                                            name: 'NULL'
+                                        }
+                                    }
+                                    sys_domain: 'global'
+                                    element: 'NULL'
+                                    relationship: 'NULL'
+                                    parent: 'NULL'
+                                }
+                            }
+                            element: 'opportunity'
                         }
                     },
                     {
@@ -7392,6 +7494,29 @@ declare global {
                         key: {
                             name: 'x_enno_pivot_capability'
                             element: 'weight'
+                        }
+                    },
+                    {
+                        table: 'sys_ui_list_element'
+                        id: 'cad5bf9bbcbb41e5acb5be997da8eb43'
+                        key: {
+                            list_id: {
+                                id: '0d8334e93d19412983871dd305e346de'
+                                key: {
+                                    name: 'x_enno_pivot_roadmap_item'
+                                    view: {
+                                        id: 'Default view'
+                                        key: {
+                                            name: 'NULL'
+                                        }
+                                    }
+                                    sys_domain: 'global'
+                                    element: 'NULL'
+                                    relationship: 'NULL'
+                                    parent: 'NULL'
+                                }
+                            }
+                            element: 'phase'
                         }
                     },
                     {
