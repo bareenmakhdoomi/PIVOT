@@ -421,7 +421,7 @@ function createApi(base) {
     let body = null; try { body = text ? JSON.parse(text) : null; } catch (e) { body = null; }
     const data = body && body.result !== undefined ? body.result : body;
     if (res.status === 401) throw new Error('Your ServiceNow session has ended. Reload the page to sign in again.');
-    if (res.status === 403) throw new Error('You need a PIVOT role to use this workspace. Ask your PIVOT admin for access.');
+    if (res.status === 403) { const e = new Error('Ask your PIVOT admin for a PIVOT role.'); e.noAccess = true; throw e; } // PIV-008.02 AC 3
     if (!res.ok) {
       const e = (data && data.error) || (body && body.error);
       const text = typeof e === 'string' ? e : e ? [e.message, e.detail].filter(Boolean).join(' \u2013 ') : '';
@@ -1196,7 +1196,10 @@ function render(keepScroll) {
   if (keepScroll) window.scrollTo(0, y);
   if (focusId && $(focusId) && $(focusId) !== document.body) { const el = $(focusId); el.focus(); if (sel != null && el.setSelectionRange && /text|search/.test(el.type || 'text')) try { el.setSelectionRange(sel, sel); } catch (e) { /* number inputs */ } }
 }
-function go(view) { if (!RENDER[view]) view = 'Dashboard'; st.view = view; closeModal(true); toggleProfile(false); closeDrawer(); render(); window.scrollTo({ top: 0 }); const h = document.querySelector('#main .h1'); if (h) { h.setAttribute('tabindex', '-1'); h.focus({ preventScroll: true }); } }
+function viewSlug(v) { return String(v || '').toLowerCase().replace(/&/g, 'and').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, ''); }
+function viewFromParam(p) { if (!p) return ''; const want = viewSlug(p); return Object.keys(RENDER).find(k => viewSlug(k) === want || viewSlug(k).replace(/-and-/g, '-') === want) || ''; }
+function syncViewParam(view) { try { const u = new URL(window.location.href); if (u.searchParams.get('view') === viewSlug(view)) return; u.searchParams.set('view', viewSlug(view)); window.history.replaceState(window.history.state, '', u.toString()); } catch (e) { /* address not writable here */ } }
+function go(view) { if (!RENDER[view]) view = 'Dashboard'; st.view = view; syncViewParam(view); closeModal(true); toggleProfile(false); closeDrawer(); render(); window.scrollTo({ top: 0 }); const h = document.querySelector('#main .h1'); if (h) { h.setAttribute('tabindex', '-1'); h.focus({ preventScroll: true }); } }
 function openCapability(id) { const l = st.lib; l.q = ''; l.family = 'all'; l.errors = {}; l.note = ''; const c = S.capability(id); l.view = c && !c.active ? 'not_found' : 'active'; if (c && !c.family && isAdmin()) l.view = 'needs_mapping'; const list = libList(); l.page = Math.max(0, list.findIndex(x => x.id === id)); if (list.findIndex(x => x.id === id) < 0) { l.view = 'all'; l.page = Math.max(0, libList().findIndex(x => x.id === id)); } go('Capability Library'); }
 function closeDrawer() { const d = $('notificationDrawer'), t = $('notificationTrigger'); if (d && !d.hidden) { d.hidden = true; t.setAttribute('aria-expanded', 'false'); t.classList.remove('is-open'); } }
 
@@ -1311,6 +1314,7 @@ S.subscribe(ev => {
   if (modal) drawModal();
 });
 
+try { const startView = viewFromParam(new URL(window.location.href).searchParams.get('view')); if (startView) st.view = startView; } catch (e) { /* no address */ }
 render();
 }
 
@@ -1343,10 +1347,11 @@ function mount(host) {
   api.load()
     .then(snapshot => startWorkspace(createPV(snapshot, api)))
     .catch(err => {
-      main.innerHTML = '<section class="panel"><div class="empty-state" role="alert"><b>PIVOT could not load.</b><p class="record-desc">' + escapeHtml((err && err.message) || 'Unknown error.') + '</p><button class="btn primary" id="pivotRetry" type="button">Try again</button></div></section>';
+      const title = err && err.noAccess ? 'You do not have access to PIVOT' : 'PIVOT could not load.'; // PIV-008.02 AC 3
+      main.innerHTML = '<section class="panel"><div class="empty-state" role="alert"><b>' + title + '</b><p class="record-desc">' + escapeHtml((err && err.message) || 'Unknown error.') + '</p>' + (err && err.noAccess ? '' : '<button class="btn primary" id="pivotRetry" type="button">Try again</button>') + '</div></section>';
       const retry = document.getElementById('pivotRetry'); if (retry) retry.addEventListener('click', () => window.location.reload());
     });
 }
-window.x_enno_pivot_portal = { mount, version: '205ca0a12295' };
+window.x_enno_pivot_portal = { mount, version: '5fab7f2eaf86' };
 
 })();

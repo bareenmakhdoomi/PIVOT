@@ -391,7 +391,7 @@ export function createApi(base) {
     let body = null; try { body = text ? JSON.parse(text) : null; } catch (e) { body = null; }
     const data = body && body.result !== undefined ? body.result : body;
     if (res.status === 401) throw new Error('Your ServiceNow session has ended. Reload the page to sign in again.');
-    if (res.status === 403) throw new Error('You need a PIVOT role to use this workspace. Ask your PIVOT admin for access.');
+    if (res.status === 403) { const e = new Error('Ask your PIVOT admin for a PIVOT role.'); e.noAccess = true; throw e; } // PIV-008.02 AC 3
     if (!res.ok) {
       const e = (data && data.error) || (body && body.error);
       const text = typeof e === 'string' ? e : e ? [e.message, e.detail].filter(Boolean).join(' – ') : '';
