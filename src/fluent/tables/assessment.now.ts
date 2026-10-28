@@ -6,6 +6,7 @@ export const x_enno_pivot_assessment = Table({
     name: 'x_enno_pivot_assessment',
     label: 'Assessment',
     display: 'number',
+    audit: true, // PIV-003.06: creates, changes and deletes appear in the audit history
     autoNumber: { prefix: 'PVA', number: 1000, numberOfDigits: 7 },
     schema: {
         number: StringColumn({ label: 'Number', maxLength: 40, readOnly: true, default: 'javascript:global.getNextObjNumberPadded();' }),
@@ -21,7 +22,7 @@ export const x_enno_pivot_assessment = Table({
         overall_score: DecimalColumn({ label: 'Overall score', readOnly: true, hint: 'Weighted average of capability scores. Not Measured capabilities are excluded.' }),
         run_by: ReferenceColumn({ label: 'Run by', referenceTable: 'sys_user', readOnly: true, default: 'javascript:gs.getUserID()' }),
         duration: DurationColumn({ label: 'Duration', readOnly: true }),
-        log: MultiLineTextColumn({ label: 'Log', maxLength: 65000, readOnly: true }),
+        log: MultiLineTextColumn({ label: 'Log', maxLength: 65000, readOnly: true, attributes: { no_audit: true } }), // the run log changes many times per run – not audited
         scored_count: IntegerColumn({ label: 'Capabilities scored', readOnly: true }),
         not_measured_count: IntegerColumn({ label: 'Not measured', readOnly: true }),
         inactive_count: IntegerColumn({ label: 'Skipped as inactive', readOnly: true }),

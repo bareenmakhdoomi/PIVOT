@@ -6,7 +6,7 @@ export const x_enno_pivot_outcome_result = Table({
     name: 'x_enno_pivot_outcome_result',
     label: 'Outcome Result',
     schema: {
-        assessment: ReferenceColumn({ label: 'Assessment', referenceTable: 'x_enno_pivot_assessment', readOnly: true }),
+        assessment: ReferenceColumn({ label: 'Assessment', referenceTable: 'x_enno_pivot_assessment', readOnly: true, mandatory: true }),
         outcome: ReferenceColumn({ label: 'Business Outcome', referenceTable: 'x_enno_pivot_business_outcome', mandatory: true, readOnly: true }),
         baseline: DecimalColumn({ label: 'Baseline', readOnly: true }),
         actual: DecimalColumn({ label: 'Actual', readOnly: true }),
