@@ -387,6 +387,9 @@ function saveOutcome(f: any): Result {
     if (baselineChange && !admin) e.baseline = 'The baseline is locked after the first measurement. Only admins can change it (the change is audited).'
     const changeReason = String(f.baseline_change_reason || '').trim()
     if (baselineChange && admin && changeReason.length < 5) e.baseline_change_reason = 'Give a reason for changing the locked baseline.'
+    // PIV-007.04 – the owner (or an admin) may give the starting baseline while it is still empty; after that it is locked
+    const firstBaseline = !locked && f.baseline !== undefined && f.baseline !== null && String(f.baseline).trim() !== ''
+    if (firstBaseline && isNaN(Number(f.baseline))) e.baseline = 'Enter a number.'
     // PIV-024.02 – a sum or average needs a real field on the KPI table
     const isCalc = f.measurement_type !== 'manual'
     if (isCalc && (f.kpi_aggregate === 'sum' || f.kpi_aggregate === 'avg')) {
@@ -425,6 +428,7 @@ function saveOutcome(f: any): Result {
             gr.setValue('manual_value_date', manualDate)
         }
     }
+    if (firstBaseline) gr.setValue('baseline', Number(f.baseline)) // baseline date is set by the business rule
     if (baselineChange) {
         const before = str(gr, 'baseline')
         gr.setValue('baseline', Number(f.baseline))

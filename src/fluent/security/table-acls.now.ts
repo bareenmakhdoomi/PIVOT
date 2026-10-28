@@ -69,3 +69,8 @@ Acl({ $id: Now.ID['acl-result-write-all-admin'], type: 'record', table: 'x_enno_
 Acl({ $id: Now.ID['acl-outcome_result-create-row-admin'], type: 'record', table: 'x_enno_pivot_outcome_result', operation: 'create', decisionType: 'allow', roles: [admin], adminOverrides: true, active: true, description: 'PIV-007.05: PIVOT admins have full control (results are normally written by the assessment run).' })
 Acl({ $id: Now.ID['acl-outcome_result-write-row-admin'], type: 'record', table: 'x_enno_pivot_outcome_result', operation: 'write', decisionType: 'allow', roles: [admin], adminOverrides: true, active: true, description: 'PIV-007.05: PIVOT admins have full control.' })
 Acl({ $id: Now.ID['acl-outcome_result-write-all-admin'], type: 'record', table: 'x_enno_pivot_outcome_result', field: '*', operation: 'write', decisionType: 'allow', roles: [admin], adminOverrides: true, active: true, description: 'PIV-007.05: PIVOT admins can edit every field.' })
+
+// PIV-007.04 – a business owner may set the baseline of their own outcome only while it is empty (then it is locked – PIV-025.02)
+Acl({ $id: Now.ID['acl-business_outcome-write-baseline-owner-first'], type: 'record', table: 'x_enno_pivot_business_outcome', field: 'baseline', operation: 'write', decisionType: 'allow', roles: [business_owner], adminOverrides: true, active: true,
+    script: "answer = (current.isNewRecord() || current.owner == gs.getUserID()) && (current.isNewRecord() || current.baseline.nil());",
+    description: 'PIV-007.04: owners can enter the starting baseline on their own outcome until it is first set; after that only PIVOT admins can change it.' })

@@ -65,6 +65,10 @@ declare global {
                         table: 'sys_security_acl'
                         id: '5d9616d438e446baa65ddefeac4aef8a'
                     }
+                    'acl-business_outcome-write-baseline-owner-first': {
+                        table: 'sys_security_acl'
+                        id: 'b82216fbdaef49ddaa92376a7fd661ad'
+                    }
                     'acl-business_outcome-write-row-admin': {
                         table: 'sys_security_acl'
                         id: '629bb89e79314948adb13a306010213a'
@@ -2543,6 +2547,19 @@ declare global {
                             value: 'quarterly'
                             language: 'en'
                             dependent_value: 'NULL'
+                        }
+                    },
+                    {
+                        table: 'sys_security_acl_role'
+                        id: '2e1b8b8a27fa419d8c3a598409ee687c'
+                        key: {
+                            sys_security_acl: 'b82216fbdaef49ddaa92376a7fd661ad'
+                            sys_user_role: {
+                                id: '522249df388c4eed9cd2569ff4faf273'
+                                key: {
+                                    name: 'x_enno_pivot.business_owner'
+                                }
+                            }
                         }
                     },
                     {
