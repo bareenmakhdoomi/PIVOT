@@ -221,6 +221,14 @@ declare global {
                         table: 'sys_security_acl'
                         id: 'f590dd1b5b2c4bc5992a70300a401246'
                     }
+                    'assessment-related-list-results': {
+                        table: 'sys_ui_related_list_entry'
+                        id: '36cb39bf949a462abec8dd61e3590fb0'
+                    }
+                    'assessment-related-lists': {
+                        table: 'sys_ui_related_list'
+                        id: '7317b793ed73456e8276478a6a11223d'
+                    }
                     'atf-assessment-run': {
                         table: 'sys_atf_test'
                         id: '00baa202b31546329a931136feb0f392'
@@ -1664,6 +1672,29 @@ declare global {
                                     sys_domain: 'global'
                                 }
                             }
+                        }
+                    },
+                    {
+                        table: 'sys_ui_list_element'
+                        id: '1c8df78d675842fe93312a43dda2dd63'
+                        key: {
+                            list_id: {
+                                id: 'c8f1ea41dbff4a3ea2a307984c962c5e'
+                                key: {
+                                    name: 'x_enno_pivot_result'
+                                    view: {
+                                        id: 'Default view'
+                                        key: {
+                                            name: 'NULL'
+                                        }
+                                    }
+                                    sys_domain: 'global'
+                                    element: 'NULL'
+                                    relationship: 'NULL'
+                                    parent: 'NULL'
+                                }
+                            }
+                            element: 'actual_value'
                         }
                     },
                     {
@@ -5853,6 +5884,29 @@ declare global {
                         }
                     },
                     {
+                        table: 'sys_ui_list_element'
+                        id: '96db1283b4aa407787ce0d8be73f6cc9'
+                        key: {
+                            list_id: {
+                                id: 'c8f1ea41dbff4a3ea2a307984c962c5e'
+                                key: {
+                                    name: 'x_enno_pivot_result'
+                                    view: {
+                                        id: 'Default view'
+                                        key: {
+                                            name: 'NULL'
+                                        }
+                                    }
+                                    sys_domain: 'global'
+                                    element: 'NULL'
+                                    relationship: 'NULL'
+                                    parent: 'NULL'
+                                }
+                            }
+                            element: 'capability'
+                        }
+                    },
+                    {
                         table: 'sys_dictionary'
                         id: '96f053fcf3464050a135ba5eae618d3c'
                         key: {
@@ -5952,6 +6006,29 @@ declare global {
                         key: {
                             name: 'x_enno_pivot_assessment'
                             element: 'run_date'
+                        }
+                    },
+                    {
+                        table: 'sys_ui_list_element'
+                        id: '99514aae21124002ac7c1dc562eaa941'
+                        key: {
+                            list_id: {
+                                id: 'c8f1ea41dbff4a3ea2a307984c962c5e'
+                                key: {
+                                    name: 'x_enno_pivot_result'
+                                    view: {
+                                        id: 'Default view'
+                                        key: {
+                                            name: 'NULL'
+                                        }
+                                    }
+                                    sys_domain: 'global'
+                                    element: 'NULL'
+                                    relationship: 'NULL'
+                                    parent: 'NULL'
+                                }
+                            }
+                            element: 'measurement_status'
                         }
                     },
                     {
@@ -6770,6 +6847,29 @@ declare global {
                         }
                     },
                     {
+                        table: 'sys_ui_list_element'
+                        id: 'b4b172326f3a4806827737e9ad9bb15d'
+                        key: {
+                            list_id: {
+                                id: 'c8f1ea41dbff4a3ea2a307984c962c5e'
+                                key: {
+                                    name: 'x_enno_pivot_result'
+                                    view: {
+                                        id: 'Default view'
+                                        key: {
+                                            name: 'NULL'
+                                        }
+                                    }
+                                    sys_domain: 'global'
+                                    element: 'NULL'
+                                    relationship: 'NULL'
+                                    parent: 'NULL'
+                                }
+                            }
+                            element: 'utilization'
+                        }
+                    },
+                    {
                         table: 'sys_dictionary'
                         id: 'b4fd524657144288b58c8e936a826c67'
                         key: {
@@ -7529,6 +7629,23 @@ declare global {
                         }
                     },
                     {
+                        table: 'sys_ui_list'
+                        id: 'c8f1ea41dbff4a3ea2a307984c962c5e'
+                        key: {
+                            name: 'x_enno_pivot_result'
+                            view: {
+                                id: 'Default view'
+                                key: {
+                                    name: 'NULL'
+                                }
+                            }
+                            sys_domain: 'global'
+                            element: 'NULL'
+                            relationship: 'NULL'
+                            parent: 'NULL'
+                        }
+                    },
+                    {
                         table: 'sys_ui_policy'
                         id: 'c914ee7faff349f5980ce264585ac6c8'
                         key: {
@@ -7687,6 +7804,29 @@ declare global {
                             element: 'NULL'
                             relationship: 'NULL'
                             parent: 'NULL'
+                        }
+                    },
+                    {
+                        table: 'sys_ui_list_element'
+                        id: 'ccce1f1dc86f46a8a00536160590c6aa'
+                        key: {
+                            list_id: {
+                                id: 'c8f1ea41dbff4a3ea2a307984c962c5e'
+                                key: {
+                                    name: 'x_enno_pivot_result'
+                                    view: {
+                                        id: 'Default view'
+                                        key: {
+                                            name: 'NULL'
+                                        }
+                                    }
+                                    sys_domain: 'global'
+                                    element: 'NULL'
+                                    relationship: 'NULL'
+                                    parent: 'NULL'
+                                }
+                            }
+                            element: 'target_value'
                         }
                     },
                     {
@@ -8371,6 +8511,29 @@ declare global {
                             value: 'platform'
                             language: 'en'
                             dependent_value: 'NULL'
+                        }
+                    },
+                    {
+                        table: 'sys_ui_list_element'
+                        id: 'e42d13098c074fe48335964bfb90753c'
+                        key: {
+                            list_id: {
+                                id: 'c8f1ea41dbff4a3ea2a307984c962c5e'
+                                key: {
+                                    name: 'x_enno_pivot_result'
+                                    view: {
+                                        id: 'Default view'
+                                        key: {
+                                            name: 'NULL'
+                                        }
+                                    }
+                                    sys_domain: 'global'
+                                    element: 'NULL'
+                                    relationship: 'NULL'
+                                    parent: 'NULL'
+                                }
+                            }
+                            element: 'score'
                         }
                     },
                     {
