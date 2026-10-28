@@ -237,7 +237,13 @@ export function createPV(first, api) {
       const n = S.caps.filter(c => c.active).length;
       return { number: 'No run yet', none: true, run_date: null, run_by: 'system', byName: '—', trigger: 'Weekly schedule', status: 'none', duration: null, overall_score: null, previousScore: null, log: [], counts: { capabilities: n, scored: 0, notMeasured: n, low: 0 }, opportunities: S.opps.length };
     },
-    running() { const r = S.assessments.find(a => a.status === 'running' || a.status === 'queued'); return r ? store.assessment(r.number) : null; },
+    running() {
+      // A run counts as in progress only if it has started (run date + at least one log line) and is younger than
+      // 2 x the time limit (min 60 min) - the same rule the server uses; hand-made or crashed records are ignored.
+      const limitMs = Math.max(60, (Number(P('max_run_minutes')) || 0) * 2) * 60000;
+      const r = S.assessments.find(a => (a.status === 'running' || a.status === 'queued') && a.run_date && (Date.now() - a.run_date) < limitMs && (S.logs[a.number] || []).length);
+      return r ? store.assessment(r.number) : null;
+    },
     scoreHistory: () => S.assessments.map(a => ({ number: a.number, date: a.run_date, score: a.overall_score, status: a.status })),
     runNow() {
       if (!S.engine) return Promise.resolve({ ok: false, error: 'The assessment engine arrives in Sprint 4. Runs cannot be started from PIVOT yet.' });

@@ -64,7 +64,7 @@ export function runAssessment(trigger: 'weekly' | 'run_now', runBy: string): Run
     busy.addQuery('status', 'IN', 'queued,running')
     busy.query()
     while (busy.next()) {
-        const started = str(busy, 'run_date')
+        const started = str(busy, 'run_date') || str(busy, 'sys_created_on') // hand-made records have no run date
         const age = started ? (now() - new GlideDateTime(started).getNumericValue()) / 60000 : 0
         if (!limitMinutes || age < Math.max(60, limitMinutes * 2))
             return { ok: false, number: str(busy, 'number'), sysId: busy.getUniqueValue(), overallScore: null, message: 'Assessment ' + str(busy, 'number') + ' is already running. Only one assessment can run at a time.' }
