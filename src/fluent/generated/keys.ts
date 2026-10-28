@@ -161,6 +161,10 @@ declare global {
                         table: 'sys_security_acl'
                         id: '7c5687f89e074649aceb09bd60b8dbdc'
                     }
+                    'acl-outcome_result-create-row-admin': {
+                        table: 'sys_security_acl'
+                        id: '79bb2eea4792453cbea0426ca176ce4d'
+                    }
                     'acl-outcome_result-delete-row-admin': {
                         table: 'sys_security_acl'
                         id: '1ce896f1970842de9147724f87859dce'
@@ -173,9 +177,21 @@ declare global {
                         table: 'sys_security_acl'
                         id: 'fe45d00e54cc4a36b43ac4874a9f5f8a'
                     }
+                    'acl-outcome_result-write-all-admin': {
+                        table: 'sys_security_acl'
+                        id: '024c76b01b4e4f1f80639e8a3741aaa1'
+                    }
+                    'acl-outcome_result-write-row-admin': {
+                        table: 'sys_security_acl'
+                        id: '5d4bc96700534e01be0bb29fd9c620af'
+                    }
                     'acl-rest-workspace': {
                         table: 'sys_security_acl'
                         id: 'f7e586e453f24710bb2c6efcec936c86'
+                    }
+                    'acl-result-create-row-admin': {
+                        table: 'sys_security_acl'
+                        id: 'ebde995a006b48e8a40f0fb480e418bc'
                     }
                     'acl-result-delete-row-admin': {
                         table: 'sys_security_acl'
@@ -188,6 +204,14 @@ declare global {
                     'acl-result-read-row-viewer': {
                         table: 'sys_security_acl'
                         id: '17d7ca6f34684a07ad119c448f575f87'
+                    }
+                    'acl-result-write-all-admin': {
+                        table: 'sys_security_acl'
+                        id: 'e65984205aff4cb295e3d587223d21d8'
+                    }
+                    'acl-result-write-row-admin': {
+                        table: 'sys_security_acl'
+                        id: '4b39eaf4b35f43288f635cc783040e2f'
                     }
                     'acl-roadmap_item-create-row-admin': {
                         table: 'sys_security_acl'
@@ -1977,6 +2001,19 @@ declare global {
                         id: '21e4c2deb39e4ab2a803990d6a35f1a9'
                         key: {
                             name: 'x_enno_pivot_assessment'
+                        }
+                    },
+                    {
+                        table: 'sys_security_acl_role'
+                        id: '221a17d2c4064af493157d9e3a15ee5c'
+                        key: {
+                            sys_security_acl: '79bb2eea4792453cbea0426ca176ce4d'
+                            sys_user_role: {
+                                id: 'c469db8764964b89ab1a7cefb38ba83f'
+                                key: {
+                                    name: 'x_enno_pivot.admin'
+                                }
+                            }
                         }
                     },
                     {
@@ -3947,6 +3984,19 @@ declare global {
                         }
                     },
                     {
+                        table: 'sys_security_acl_role'
+                        id: '5a6bbaa33b7548cfa0b8c03c01b685d6'
+                        key: {
+                            sys_security_acl: '5d4bc96700534e01be0bb29fd9c620af'
+                            sys_user_role: {
+                                id: 'c469db8764964b89ab1a7cefb38ba83f'
+                                key: {
+                                    name: 'x_enno_pivot.admin'
+                                }
+                            }
+                        }
+                    },
+                    {
                         table: 'sys_ui_section'
                         id: '5a8c6a83e3c145c5916a2044d0c6fa69'
                         key: {
@@ -4136,6 +4186,19 @@ declare global {
                         key: {
                             name: 'x_enno_pivot_outcome_result'
                             element: 'reason'
+                        }
+                    },
+                    {
+                        table: 'sys_security_acl_role'
+                        id: '602b934dd26f460a88e1ba23d1b7f87c'
+                        key: {
+                            sys_security_acl: '4b39eaf4b35f43288f635cc783040e2f'
+                            sys_user_role: {
+                                id: 'c469db8764964b89ab1a7cefb38ba83f'
+                                key: {
+                                    name: 'x_enno_pivot.admin'
+                                }
+                            }
                         }
                     },
                     {
@@ -4587,6 +4650,19 @@ declare global {
                             value: 'not_measured'
                             language: 'en'
                             dependent_value: 'NULL'
+                        }
+                    },
+                    {
+                        table: 'sys_security_acl_role'
+                        id: '6e14675c36474feb827fe154784897d0'
+                        key: {
+                            sys_security_acl: '024c76b01b4e4f1f80639e8a3741aaa1'
+                            sys_user_role: {
+                                id: 'c469db8764964b89ab1a7cefb38ba83f'
+                                key: {
+                                    name: 'x_enno_pivot.admin'
+                                }
+                            }
                         }
                     },
                     {
@@ -5481,6 +5557,19 @@ declare global {
                         }
                     },
                     {
+                        table: 'sys_security_acl_role'
+                        id: '8aab3644229847fa8b5a3fb3555d4d97'
+                        key: {
+                            sys_security_acl: 'ebde995a006b48e8a40f0fb480e418bc'
+                            sys_user_role: {
+                                id: 'c469db8764964b89ab1a7cefb38ba83f'
+                                key: {
+                                    name: 'x_enno_pivot.admin'
+                                }
+                            }
+                        }
+                    },
+                    {
                         table: 'sys_db_object'
                         id: '8b2e71d03f0a4d8bab93276ca4e750a4'
                         key: {
@@ -5606,6 +5695,19 @@ declare global {
                         key: {
                             document_key: 'c78765c4e89f44dea6a1e3adb5917c48'
                             variable: '1778a7480f20101091d0f00c97767e03'
+                        }
+                    },
+                    {
+                        table: 'sys_security_acl_role'
+                        id: '8f09acd99e584a7fb30f360fb4ad08e5'
+                        key: {
+                            sys_security_acl: 'e65984205aff4cb295e3d587223d21d8'
+                            sys_user_role: {
+                                id: 'c469db8764964b89ab1a7cefb38ba83f'
+                                key: {
+                                    name: 'x_enno_pivot.admin'
+                                }
+                            }
                         }
                     },
                     {
