@@ -9,7 +9,7 @@ export const x_enno_pivot_assessment = Table({
     autoNumber: { prefix: 'PVA', number: 1000, numberOfDigits: 7 },
     schema: {
         number: StringColumn({ label: 'Number', maxLength: 40, readOnly: true, default: 'javascript:global.getNextObjNumberPadded();' }),
-        run_date: DateTimeColumn({ label: 'Run date', readOnly: true, default: 'javascript:gs.nowDateTime()' }),
+        run_date: DateTimeColumn({ label: 'Run date', readOnly: true, default: 'javascript:new GlideDateTime().getDisplayValue()' }),
         status: ChoiceColumn({
             label: 'Status', readOnly: true, default: 'queued',
             choices: { queued: { label: 'Queued', sequence: 10 }, running: { label: 'Running', sequence: 20 }, complete: { label: 'Complete', sequence: 30 }, failed: { label: 'Failed', sequence: 40 } },
