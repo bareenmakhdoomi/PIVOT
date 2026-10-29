@@ -36,10 +36,10 @@ Form({
     table: 'x_enno_pivot_opportunity',
     view: default_view,
     sections: [
-        { caption: 'Opportunity', content: [{ layout: 'two-column', leftElements: [{ field: 'number', type: 'table_field' }, { field: 'capability', type: 'table_field' }, { field: 'type', type: 'table_field' }, { field: 'assessment', type: 'table_field' }, { field: 'outcome', type: 'table_field' }], rightElements: [{ field: 'state', type: 'table_field' }, { field: 'assigned_to', type: 'table_field' }, { field: 'priority', type: 'table_field' }, { field: 'sys_domain', type: 'table_field' }] }] },
+        { caption: 'Opportunity', content: [{ layout: 'two-column', leftElements: [{ field: 'number', type: 'table_field' }, { field: 'capability', type: 'table_field' }, { field: 'type', type: 'table_field' }, { field: 'assessment', type: 'table_field' }, { field: 'outcome', type: 'table_field' }], rightElements: [{ field: 'state', type: 'table_field' }, { field: 'assignment_group', type: 'table_field' }, { field: 'assigned_to', type: 'table_field' }, { field: 'priority', type: 'table_field' }, { field: 'sys_domain', type: 'table_field' }] }] }, // PIV-032.02
         { caption: 'Description', content: [{ layout: 'one-column', elements: [{ field: 'description', type: 'table_field' }] }] },
         { caption: 'Priority', content: [{ layout: 'two-column', leftElements: [{ field: 'value', type: 'table_field' }, { field: 'business_impact', type: 'table_field' }, { field: 'effort', type: 'table_field' }], rightElements: [{ field: 'priority_reason', type: 'table_field' }] }] },
-        { caption: 'Decision', content: [{ layout: 'one-column', elements: [{ field: 'rejection_reason', type: 'table_field' }] }] },
+        { caption: 'Decision', content: [{ layout: 'one-column', elements: [{ field: 'rejection_reason', type: 'table_field' }, { field: 'work_notes', type: 'table_field' }, { type: 'formatter', formatterRef: 'Activities_Filtered' }] }] }, // PIV-032.01 / .03
     ],
 })
 

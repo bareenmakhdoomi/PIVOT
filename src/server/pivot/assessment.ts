@@ -6,6 +6,7 @@
 import { gs, GlideRecord, GlideAggregate, GlideDateTime } from '@servicenow/glide'
 import { SCOPE, PROPERTIES, scoreOf, utilizationOf, overallScore, outcomeStatus, periodDays } from './rules.ts'
 import { runDiscovery, LogEntry } from './discovery.ts'
+import { runGapRules } from './gaps.ts'
 
 const T = {
     capability: SCOPE + '_capability',
@@ -263,7 +264,12 @@ export function runAssessment(trigger: 'weekly' | 'run_now', runBy: string): Run
             }
         }
         add('info', 6, 'Outcomes: ' + outMeasured + ' measured, ' + outNot + ' Not Measured' + (baselines ? ', ' + baselines + ' baseline(s) captured' : '') + (outInactive ? ', ' + outInactive + ' inactive skipped' : '') + '.')
-        add('info', 7, 'Gap rules, priority and roadmap arrive in Sprint 4 – no opportunities were created by this run.')
+        save({})
+
+        // ---- 7 gap rules and priority (PIV-028–031)
+        const g = runGapRules(sysId, number, add)
+        add(g.errors ? 'warn' : 'info', 7, 'Gap rules: ' + g.created + ' opportunities created, ' + g.updated + ' updated, ' + g.resolved + ' gap(s) no longer detected' + (g.kept ? ', ' + g.kept + ' Rejected/Done kept closed' : '') + (g.errors ? ', ' + g.errors + ' error(s)' : '') + '.')
+        save({ opportunities_created: g.created })
 
         // ---- 10 complete
         const dur = new GlideDateTime('1970-01-01 00:00:00')

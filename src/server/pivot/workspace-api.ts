@@ -4,7 +4,7 @@
 // messages for the UI) and again in the table business rules.
 import { gs, GlideRecord, GlideRecordSecure, GlideDateTime } from '@servicenow/glide'
 import {
-    SCOPE, FAMILIES, PROPERTIES, Errors, initialsOf, priorityOf, priorityReason, validateScores, validateRejection,
+    SCOPE, FAMILIES, PROPERTIES, Errors, initialsOf, priorityOf, priorityReason, validateScores, validateRejection, OPP_ACTIVE,
     validateCapability, validateOutcome, validateProperty,
 } from './rules.ts'
 
@@ -178,8 +178,9 @@ function buildSnapshot() {
         if (str(op, 'assigned_to')) userIds.push(str(op, 'assigned_to'))
         opportunities.push({
             id: op.getUniqueValue(), number: str(op, 'number'), capability: str(op, 'capability'), outcome: str(op, 'outcome'), type: str(op, 'type'),
-            description: str(op, 'description'), value: num(op, 'value'), effort: num(op, 'effort'), business_impact: num(op, 'business_impact') || 0,
+            description: str(op, 'description'), value: num(op, 'value'), effort: num(op, 'effort'), business_impact: num(op, 'business_impact'),
             priority: num(op, 'priority'), priority_reason: str(op, 'priority_reason'), state: str(op, 'state') || 'open', assigned_to: str(op, 'assigned_to'),
+            assignment_group: str(op, 'assignment_group'), groupName: op.getDisplayValue('assignment_group') || '', gap_resolved: str(op, 'gap_resolved') === '1' || str(op, 'gap_resolved') === 'true',
             rejection_reason: str(op, 'rejection_reason'), assessment: numberOf[str(op, 'assessment')] || op.getDisplayValue('assessment') || '',
             created: ms(str(op, 'sys_created_on')), updated: ms(str(op, 'sys_updated_on')), activity: Array.isArray(activity) ? activity : [],
         })
@@ -278,17 +279,27 @@ function opportunityAction(kind: string, b: any): Result {
     const state = str(gr, 'state')
     switch (kind) {
         case 'accept':
-            if (state !== 'open') return { ok: false, error: 'Only open opportunities can be accepted.' }
+            if (state !== 'open') return { ok: false, error: 'Only new opportunities can be accepted.' }
             gr.setValue('state', 'accepted')
             addActivity(gr, 'Accepted.')
             return save(gr)
+        case 'start':
+            if (state !== 'accepted') return { ok: false, error: 'Accept the opportunity before starting work on it.' }
+            gr.setValue('state', 'in_progress')
+            addActivity(gr, 'Work started.')
+            return save(gr)
+        case 'reopen':
+            if (state !== 'done' && state !== 'rejected') return { ok: false, error: 'Only done or rejected opportunities can be reopened.' }
+            gr.setValue('state', 'open')
+            addActivity(gr, 'Reopened (was ' + (state === 'done' ? 'Done' : 'Rejected') + ').')
+            return save(gr)
         case 'done':
-            if (state !== 'accepted') return { ok: false, error: 'Accept the opportunity before closing it as done.' }
+            if (state !== 'accepted' && state !== 'in_progress') return { ok: false, error: 'Accept the opportunity before closing it as done.' }
             gr.setValue('state', 'done')
             addActivity(gr, 'Closed as done.')
             return save(gr)
         case 'reject': {
-            if (state !== 'open' && state !== 'accepted') return { ok: false, error: 'Only open or accepted opportunities can be rejected.' }
+            if (OPP_ACTIVE.indexOf(state) < 0) return { ok: false, error: 'Only new, accepted or in-progress opportunities can be rejected.' }
             const e = validateRejection(b.reason)
             if (hasErrors(e)) return invalid(e)
             const reason = String(b.reason).trim().slice(0, 500)
@@ -302,6 +313,15 @@ function opportunityAction(kind: string, b: any): Result {
         case 'assign': {
             const to = String(b.user || '')
             if (to && !isWorker(to)) return { ok: false, error: 'Assign to an active PIVOT analyst or admin.' }
+            const group = str(gr, 'assignment_group')
+            if (to && group) { // PIV-032.02
+                const m = new GlideRecord('sys_user_grmember')
+                m.addQuery('group', group)
+                m.addQuery('user', to)
+                m.setLimit(1)
+                m.query()
+                if (!m.hasNext()) return { ok: false, error: userName(to) + ' is not a member of the assignment group ' + gr.getDisplayValue('assignment_group') + '.' }
+            }
             gr.setValue('assigned_to', to)
             addActivity(gr, to ? 'Assigned to ' + userName(to) + '.' : 'Unassigned.')
             return save(gr)
@@ -315,11 +335,12 @@ function opportunityAction(kind: string, b: any): Result {
         case 'scores': {
             const e = validateScores(b.value, b.business_impact, b.effort)
             if (hasErrors(e)) return invalid(e)
-            const v = Number(b.value), i = Number(b.business_impact), ef = Number(b.effort)
+            const v = Number(b.value), i = b.business_impact === '' || b.business_impact === null || b.business_impact === undefined ? null : Number(b.business_impact), ef = Number(b.effort)
             const old = str(gr, 'priority_reason').split(' – ')[0] || '—'
-            const p = priorityOf(v, i, ef), reason = priorityReason(v, i, ef, p)
+            const wv = Number(gs.getProperty(SCOPE + '.priority_weight_value', '1')) || 1, wi = Number(gs.getProperty(SCOPE + '.priority_weight_impact', '1'))
+            const p = priorityOf(v, i, ef, wv, isNaN(wi) ? 1 : wi), reason = priorityReason(v, i, ef, p, wv, isNaN(wi) ? 1 : wi)
             gr.setValue('value', v)
-            gr.setValue('business_impact', i)
+            gr.setValue('business_impact', i === null ? '' : i)
             gr.setValue('effort', ef)
             addActivity(gr, 'Scores changed. Priority ' + old + ' → ' + reason.split(' – ')[0] + ' (' + PHASE_LABEL[phaseOf(p, props())] + ').')
             return save(gr)
@@ -332,7 +353,7 @@ function opportunityAction(kind: string, b: any): Result {
 function roadmapItems() {
     const items: any[] = []
     const rm = new GlideRecordSecure(T.roadmap)
-    rm.addQuery('opportunity.state', 'IN', 'open,accepted')
+    rm.addQuery('opportunity.state', 'IN', OPP_ACTIVE.join(','))
     rm.query()
     while (rm.next()) {
         const op = new GlideRecordSecure(T.opportunity)
@@ -512,6 +533,8 @@ function runAction(b: any): Result {
         case 'accept': return opportunityAction('accept', b)
         case 'reject': return opportunityAction('reject', b)
         case 'done': return opportunityAction('done', b)
+        case 'start': return opportunityAction('start', b)
+        case 'reopen': return opportunityAction('reopen', b)
         case 'assign': return opportunityAction('assign', b)
         case 'note': return opportunityAction('note', b)
         case 'scores': return opportunityAction('scores', b)

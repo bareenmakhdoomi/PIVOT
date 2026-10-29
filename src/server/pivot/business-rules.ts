@@ -1,7 +1,7 @@
 // Table business rules (before insert/update). They are the last line of defence: every write –
 // from the workspace, a form, a list edit or an import – passes the same PIVOT rules (design B6).
 import { gs, GlideDateTime, GlideRecord } from '@servicenow/glide'
-import { priorityOf, priorityReason, validateScores, validateRejection, validateCapability, validateOutcome, SCOPE } from './rules.ts'
+import { priorityOf, priorityReason, validateScores, validateRejection, validateTransition, validateCapability, validateOutcome, SCOPE, OPP_ACTIVE, OPP_STATE_LABEL } from './rules.ts'
 
 function stop(current: any, message: string) {
     gs.addErrorMessage(message)
@@ -12,24 +12,62 @@ function firstError(errors: { [k: string]: string }) {
     return keys.length ? errors[keys[0]] : ''
 }
 
-/** Opportunity: validate scores, recalculate priority + reason, require a rejection reason. */
+/** Opportunity: validate scores, recalculate priority + reason (PIV-031), require a rejection reason,
+ *  and allow only one open opportunity per capability and type (PIV-030.06). */
 export function opportunityBefore(current: any, previous: any) {
     try {
-        const v = current.getValue('value'), i = current.getValue('business_impact') || '0', e = current.getValue('effort')
+        const v = current.getValue('value'), i = current.getValue('business_impact'), e = current.getValue('effort')
         const hasScores = !!(v || e)
         if (hasScores) {
             const err = firstError(validateScores(v, i, e))
             if (err) return stop(current, err)
-            const p = priorityOf(Number(v), Number(i), Number(e))
+            const impact = i === null || i === '' ? null : Number(i)
+            const wv = Number(gs.getProperty(SCOPE + '.priority_weight_value', '1')) || 1
+            const wiRaw = gs.getProperty(SCOPE + '.priority_weight_impact', '1'), wi = wiRaw === '' || isNaN(Number(wiRaw)) ? 1 : Number(wiRaw)
+            const p = priorityOf(Number(v), impact, Number(e), wv, wi)
             current.setValue('priority', p)
-            current.setValue('priority_reason', priorityReason(Number(v), Number(i), Number(e), p))
+            current.setValue('priority_reason', priorityReason(Number(v), impact, Number(e), p, wv, wi))
         }
-        if (current.getValue('state') === 'rejected') {
+        const state = current.getValue('state'), before = previous ? previous.getValue('state') : ''
+        // PIV-032.01 – allowed state changes; Done and Rejected can only be reopened (back to New)
+        if (previous) {
+            const tErr = validateTransition(before, state)
+            if (tErr) return stop(current, tErr)
+        }
+        // PIV-032.03 – rejection reason (form, list edit, import, workspace)
+        if (state === 'rejected') {
             const err = firstError(validateRejection(current.getValue('rejection_reason')))
             if (err) return stop(current, err)
         }
-        if (previous && previous.getValue('state') === 'open' && current.getValue('state') === 'done')
-            return stop(current, 'Accept the opportunity before closing it as done.')
+        // PIV-032.02 – Assigned to must be a member of the assignment group
+        const group = current.getValue('assignment_group'), who = current.getValue('assigned_to')
+        if (group && who && (!previous || group !== previous.getValue('assignment_group') || who !== previous.getValue('assigned_to'))) {
+            const m = new GlideRecord('sys_user_grmember')
+            m.addQuery('group', group)
+            m.addQuery('user', who)
+            m.setLimit(1)
+            m.query()
+            if (!m.hasNext()) return stop(current, 'Assigned to must be a member of the assignment group.')
+        }
+        // PIV-032.01 – a work note records who changed the state
+        if (previous && before !== state) {
+            let text = 'State changed from ' + (OPP_STATE_LABEL[before] || before) + ' to ' + (OPP_STATE_LABEL[state] || state) + ' by ' + gs.getUserDisplayName() + '.'
+            if (before === 'rejected') {
+                text = 'Reopened by ' + gs.getUserDisplayName() + '. It was rejected because: ' + (previous.getValue('rejection_reason') || '—')
+                current.setValue('rejection_reason', '')
+            } else if (before === 'done') text = 'Reopened by ' + gs.getUserDisplayName() + ' (was Done).'
+            current.work_notes = text
+        }
+        if (OPP_ACTIVE.indexOf(state) > -1 && (!previous || previous.getValue('state') !== state || previous.getValue('type') !== current.getValue('type') || previous.getValue('capability') !== current.getValue('capability'))) {
+            const dup = new GlideRecord(SCOPE + '_opportunity')
+            dup.addQuery('capability', current.getValue('capability'))
+            dup.addQuery('type', current.getValue('type'))
+            dup.addQuery('state', 'IN', OPP_ACTIVE.join(','))
+            dup.addQuery('sys_id', '!=', current.getUniqueValue())
+            dup.setLimit(1)
+            dup.query()
+            if (dup.hasNext()) return stop(current, 'An open opportunity of this type already exists for this capability')
+        }
     } catch (ex) {
         gs.error('PIVOT opportunity rule failed: ' + ex)
     }

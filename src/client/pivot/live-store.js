@@ -13,11 +13,16 @@ const PROP_META = [
   ['default_days_back', 'Default look-back', 'days', 'Default look-back for new capabilities.'],
   ['priority_now', 'Priority for Now', '', 'Priority at or above this goes to Now.'],
   ['priority_next', 'Priority for Next', '', 'Priority at or above this (and below Now) goes to Next.'],
+  ['priority_weight_value', 'Priority weight: value', '×', 'Value is multiplied by this in the priority (0–10, default 1).'],
+  ['priority_weight_impact', 'Priority weight: business impact', '×', 'Business impact is multiplied by this in the priority (0–10, default 1).'],
+  ['gap_rule_config', 'Gap rule texts and defaults', 'JSON', 'Optional JSON per gap type: title, text, value, effort. Leave empty for the built-in defaults.'],
   ['slow_capability_seconds', 'Slow capability warning', 's', 'Log a warning when one capability takes longer.'],
   ['admin_group', 'Run email recipients', '', 'Who receives the run complete / failed emails.'],
   ['ai_enabled', 'AI features (Now Assist)', '', 'Turns all PIVOT AI features on or off. PIVOT works fully without them (NFR-AI-02).']
 ];
-const PROP_TYPES = { admin_group: 'string', ai_enabled: 'boolean' };
+const PROP_TYPES = { admin_group: 'string', ai_enabled: 'boolean', gap_rule_config: 'string' };
+// PIV-032.01 – active opportunity states (the gap rules refresh these; Done/Rejected are closed)
+const ACTIVE = ['open', 'accepted', 'in_progress'];
 const ROLE_RANK = ['viewer', 'business_owner', 'analyst', 'admin'];
 
 export function createPV(first, api) {
@@ -30,7 +35,7 @@ export function createPV(first, api) {
     source: { subscription: 'Subscription', store_app: 'Store app', plugin: 'Plugin', manual: 'Manual' },
     family: {}, status: { queued: 'Queued', running: 'Running', complete: 'Complete', failed: 'Failed', none: 'No run yet' },
     type: { shelfware: 'Shelfware', idle_licences: 'Idle licences', low_adoption: 'Low adoption', not_measured: 'Not measured', weak_outcome: 'Weak outcome', adoption_potential: 'Adoption potential' },
-    state: { open: 'Open', accepted: 'Accepted', rejected: 'Rejected', done: 'Done' },
+    state: { open: 'New', accepted: 'Accepted', in_progress: 'In progress', done: 'Done', rejected: 'Rejected' },
     phase: { now: 'Now', next: 'Next', later: 'Later' },
     outcome: { improved: 'Improved', on_target: 'On target', below_target: 'Below target', not_measured: 'Not measured' },
     direction: { higher_better: 'Higher is better', lower_better: 'Lower is better' },
@@ -89,12 +94,15 @@ export function createPV(first, api) {
     const reached = o.direction === 'lower_better' ? actual <= o.target : actual >= o.target;
     return { actual, improvement: imp == null ? null : r1(imp), status: reached ? 'on_target' : (imp > 0 ? 'improved' : 'below_target') };
   }
+  // PIV-031: same rule as the server (rules.ts). Empty business impact = no outcome data, not counted; weights apply.
+  function weights() { const wv = P('priority_weight_value'), wi = P('priority_weight_impact'); return [wv > 0 ? wv : 1, wi === 0 || wi > 0 ? wi : 1]; }
   function priorityReason(v, i, e, p) {
+    const [wv, wi] = weights(), vs = wv === 1 ? String(v) : wv + '×' + v;
+    if (i == null) return vs + ' ÷ ' + e + ' = ' + fmt.pri(p) + ' – no outcome data, impact not counted';
     const words = [];
     if (v >= 4) words.push('high value'); else if (v <= 2) words.push('low value');
     if (e <= 2) words.push('low effort'); else if (e >= 4) words.push('high effort');
-    if (i === 0) words.push('no outcome data yet, so no business impact counted');
-    return '(' + v + ' + ' + i + ') ÷ ' + e + ' = ' + fmt.pri(p) + (words.length ? ' – ' + words.join(', ') : '');
+    return '(' + vs + ' + ' + (wi === 1 ? String(i) : wi + '×' + i) + ') ÷ ' + e + ' = ' + fmt.pri(p) + (words.length ? ' – ' + words.join(', ') : '');
   }
   function previewRoles() {
     // Admins can preview every role; others their own roles and Viewer. The server always uses the real roles.
@@ -194,7 +202,7 @@ export function createPV(first, api) {
       x.score = r.score == null ? null : r.score; x.actual = r.actual == null ? null : r.actual;
       x.utilization = r.utilization != null ? r.utilization : null; x.measured = measured(c);
       x.familyLabel = c.family ? LABELS.family[c.family] || c.family : ''; x.sourceLabel = LABELS.source[c.source] || c.source || '—';
-      x.openOpps = S.opps.filter(o => o.capability === c.id && (o.state === 'open' || o.state === 'accepted')).length;
+      x.openOpps = S.opps.filter(o => o.capability === c.id && ACTIVE.includes(o.state)).length;
       x.trend = completedRuns().slice(-8).map(a => { const rr = (S.results[a.number] || {})[c.id]; return rr && rr.score != null ? rr.score : null; });
       return x;
     },
@@ -255,7 +263,7 @@ export function createPV(first, api) {
     opportunities(o) {
       o = o || {}; const q = (o.q || '').toLowerCase(), st = o.state || 'active';
       const rows = S.opps.filter(x => {
-        if (st === 'active' && !(x.state === 'open' || x.state === 'accepted')) return false;
+        if (st === 'active' && !ACTIVE.includes(x.state)) return false;
         if (st !== 'active' && st !== 'all' && x.state !== st) return false;
         if (o.type && o.type !== 'all' && x.type !== o.type) return false;
         if (o.phase && o.phase !== 'all' && x.phase !== o.phase) return false;
@@ -285,16 +293,19 @@ export function createPV(first, api) {
     },
     accept: num => (can('opportunity.work') ? act({ action: 'accept', number: num }) : denied()),
     reject: (num, reason) => (can('opportunity.work') ? act({ action: 'reject', number: num, reason }) : denied()),
+    startWork: num => (can('opportunity.work') ? act({ action: 'start', number: num }) : denied()),
+    reopen: num => (can('opportunity.work') ? act({ action: 'reopen', number: num }) : denied()),
+    isActive: s => ACTIVE.includes(s),
     markDone: num => (can('opportunity.work') ? act({ action: 'done', number: num }) : denied()),
     assign: (num, userId) => (can('opportunity.work') ? act({ action: 'assign', number: num, user: userId || '' }) : denied()),
     addNote: (num, text) => (can('opportunity.work') ? act({ action: 'note', number: num, text }) : denied()),
     editScores: (num, f) => (can('opportunity.work') ? act({ action: 'scores', number: num, value: f.value, business_impact: f.business_impact, effort: f.effort }) : denied('Only analysts and admins can change value, impact or effort.')),
-    preview(f) { const v = +f.value, i = +f.business_impact, e = +f.effort; if (!(e >= 1)) return null; const p = r2((v + i) / e); return { priority: p, phase: phaseOf(p), reason: priorityReason(v, i, e, p) }; },
+    preview(f) { const v = +f.value, blank = f.business_impact == null || String(f.business_impact).trim() === '', i = blank ? null : +f.business_impact, e = +f.effort; if (!(e >= 1)) return null; const [wv, wi] = weights(), p = r2((v * wv + (i == null ? 0 : i * wi)) / e); return { priority: p, phase: phaseOf(p), reason: priorityReason(v, i, e, p) }; },
 
     // ----- roadmap -----
     roadmap() {
       const out = { now: [], next: [], later: [] }; let manual = false;
-      S.opps.filter(x => x.state === 'open' || x.state === 'accepted').map(store._oppRow).forEach(x => { out[x.phase].push(x); });
+      S.opps.filter(x => ACTIVE.includes(x.state)).map(store._oppRow).forEach(x => { out[x.phase].push(x); });
       Object.keys(out).forEach(ph => {
         out[ph].sort((a, b) => (b.priority || 0) - (a.priority || 0) || a.number.localeCompare(b.number));
         const byPriority = out[ph].map(x => x.number), seq = x => (S.roadmapSeq[x.id] == null ? Infinity : S.roadmapSeq[x.id]);

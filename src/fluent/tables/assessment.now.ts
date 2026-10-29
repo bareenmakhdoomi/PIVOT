@@ -23,6 +23,7 @@ export const x_enno_pivot_assessment = Table({
         run_by: ReferenceColumn({ label: 'Run by', referenceTable: 'sys_user', readOnly: true, default: 'javascript:gs.getUserID()' }),
         duration: DurationColumn({ label: 'Duration', readOnly: true }),
         log: MultiLineTextColumn({ label: 'Log', maxLength: 65000, readOnly: true, attributes: { no_audit: true } }), // the run log changes many times per run – not audited
+        opportunities_created: IntegerColumn({ label: 'Opportunities created', readOnly: true, hint: 'New opportunities created by the gap rules in this run (PIV-028.02)' }),
         scored_count: IntegerColumn({ label: 'Capabilities scored', readOnly: true }),
         not_measured_count: IntegerColumn({ label: 'Not measured', readOnly: true }),
         inactive_count: IntegerColumn({ label: 'Skipped as inactive', readOnly: true }),
