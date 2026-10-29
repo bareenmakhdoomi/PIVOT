@@ -61,6 +61,10 @@ declare global {
                         table: 'sys_security_acl'
                         id: 'ed7d876b35f74cbba813c3d522fe7ec0'
                     }
+                    'acl-business_outcome-write-baseline_date-admin': {
+                        table: 'sys_security_acl'
+                        id: '46cf1543a9404341bb6db7b22095d6e3'
+                    }
                     'acl-business_outcome-write-baseline-admin': {
                         table: 'sys_security_acl'
                         id: '5d9616d438e446baa65ddefeac4aef8a'
@@ -69,6 +73,18 @@ declare global {
                         table: 'sys_security_acl'
                         id: 'b82216fbdaef49ddaa92376a7fd661ad'
                     }
+                    'acl-business_outcome-write-current_value_date-admin': {
+                        table: 'sys_security_acl'
+                        id: '87ee8bb9e1a64b808ceaebbe015bf72f'
+                    }
+                    'acl-business_outcome-write-current_value-admin': {
+                        table: 'sys_security_acl'
+                        id: '3a796b2fe8cd4ce994250191a3f00c2c'
+                    }
+                    'acl-business_outcome-write-manual_value_by-admin': {
+                        table: 'sys_security_acl'
+                        id: 'cea297bf6d794f37806ea9da0ca056f6'
+                    }
                     'acl-business_outcome-write-row-admin': {
                         table: 'sys_security_acl'
                         id: '629bb89e79314948adb13a306010213a'
@@ -76,6 +92,10 @@ declare global {
                     'acl-business_outcome-write-row-business_owner': {
                         table: 'sys_security_acl'
                         id: '2a7d78a4d4c3480a888cc6e3879506b0'
+                    }
+                    'acl-business_outcome-write-status-admin': {
+                        table: 'sys_security_acl'
+                        id: '31e3edfc017340498ab909597becd3fc'
                     }
                     'acl-capability-create-row-admin': {
                         table: 'sys_security_acl'
@@ -2499,6 +2519,19 @@ declare global {
                         }
                     },
                     {
+                        table: 'sys_security_acl_role'
+                        id: '24c2c73a9fd44b5399fa4a8a1521563a'
+                        key: {
+                            sys_security_acl: 'cea297bf6d794f37806ea9da0ca056f6'
+                            sys_user_role: {
+                                id: 'c469db8764964b89ab1a7cefb38ba83f'
+                                key: {
+                                    name: 'x_enno_pivot.admin'
+                                }
+                            }
+                        }
+                    },
+                    {
                         table: 'sys_db_object'
                         id: '25801180e0a04db1ab723e0d48d26d94'
                         key: {
@@ -3167,6 +3200,19 @@ declare global {
                         }
                     },
                     {
+                        table: 'sys_security_acl_role'
+                        id: '361a6114b9fd43a28248b6abb9a04e19'
+                        key: {
+                            sys_security_acl: '87ee8bb9e1a64b808ceaebbe015bf72f'
+                            sys_user_role: {
+                                id: 'c469db8764964b89ab1a7cefb38ba83f'
+                                key: {
+                                    name: 'x_enno_pivot.admin'
+                                }
+                            }
+                        }
+                    },
+                    {
                         table: 'sys_choice'
                         id: '36b3ceea10a74458a68df751951e2042'
                         key: {
@@ -3699,6 +3745,19 @@ declare global {
                                 }
                             }
                             field: 'kpi_table'
+                        }
+                    },
+                    {
+                        table: 'sys_security_acl_role'
+                        id: '42b91b73cb414ddab17fe0e953e149b6'
+                        key: {
+                            sys_security_acl: '3a796b2fe8cd4ce994250191a3f00c2c'
+                            sys_user_role: {
+                                id: 'c469db8764964b89ab1a7cefb38ba83f'
+                                key: {
+                                    name: 'x_enno_pivot.admin'
+                                }
+                            }
                         }
                     },
                     {
@@ -6352,6 +6411,19 @@ declare global {
                         }
                     },
                     {
+                        table: 'sys_security_acl_role'
+                        id: '80c1a89fe0e6496182fdef0cd64842b0'
+                        key: {
+                            sys_security_acl: '31e3edfc017340498ab909597becd3fc'
+                            sys_user_role: {
+                                id: 'c469db8764964b89ab1a7cefb38ba83f'
+                                key: {
+                                    name: 'x_enno_pivot.admin'
+                                }
+                            }
+                        }
+                    },
+                    {
                         table: 'sys_ui_element'
                         id: '81400b5770504ec881bbebb93558147d'
                         key: {
@@ -6867,6 +6939,19 @@ declare global {
                             value: 'run_now'
                             language: 'en'
                             dependent_value: 'NULL'
+                        }
+                    },
+                    {
+                        table: 'sys_security_acl_role'
+                        id: '91df50b5d9bd44c19cb8958c5627281b'
+                        key: {
+                            sys_security_acl: '46cf1543a9404341bb6db7b22095d6e3'
+                            sys_user_role: {
+                                id: 'c469db8764964b89ab1a7cefb38ba83f'
+                                key: {
+                                    name: 'x_enno_pivot.admin'
+                                }
+                            }
                         }
                     },
                     {
