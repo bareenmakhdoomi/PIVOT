@@ -8,7 +8,7 @@ export const x_enno_pivot_roadmap_item = Table({
     schema: {
         assessment: ReferenceColumn({ label: 'Assessment', referenceTable: 'x_enno_pivot_assessment', readOnly: true }),
         opportunity: ReferenceColumn({ label: 'Opportunity', referenceTable: 'x_enno_pivot_opportunity', mandatory: true, readOnly: true }),
-        phase: ChoiceColumn({
+        phase: ChoiceColumn({ dropdown: 'dropdown_with_none',
             label: 'Phase', readOnly: true,
             choices: { now: { label: 'Now', sequence: 10 }, next: { label: 'Next', sequence: 20 }, later: { label: 'Later', sequence: 30 } },
         }),

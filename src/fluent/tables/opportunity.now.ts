@@ -13,7 +13,7 @@ export const x_enno_pivot_opportunity = Table({
         assessment: ReferenceColumn({ label: 'Assessment', referenceTable: 'x_enno_pivot_assessment', readOnly: true, hint: 'Last run that found or updated it' }),
         capability: ReferenceColumn({ label: 'Capability', referenceTable: 'x_enno_pivot_capability', mandatory: true, readOnly: true }),
         outcome: ReferenceColumn({ label: 'Business outcome', referenceTable: 'x_enno_pivot_business_outcome', readOnly: true }),
-        type: ChoiceColumn({
+        type: ChoiceColumn({ dropdown: 'dropdown_with_none',
             label: 'Type', readOnly: true,
             choices: {
                 shelfware: { label: 'Shelfware', sequence: 10 }, idle_licences: { label: 'Idle licences', sequence: 20 },
@@ -30,7 +30,7 @@ export const x_enno_pivot_opportunity = Table({
         business_impact: IntegerColumn({ label: 'Business impact', hint: '0–5 from the linked outcome: Below target 3, On target 1, Improved 0. Empty = no outcome data, not counted (PIV-031.02).' }),
         priority: DecimalColumn({ label: 'Priority', readOnly: true, scale: 2 }),
         priority_reason: StringColumn({ label: 'Priority reason', maxLength: 500, readOnly: true }),
-        state: ChoiceColumn({
+        state: ChoiceColumn({ dropdown: 'dropdown_without_none',
             label: 'State', default: 'open',
             // PIV-032.01 – New → Accepted → In progress → Done, Rejected from any active state; Done/Rejected only reopen.
             // The value of New stays 'open' so existing records and reports keep working.

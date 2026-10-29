@@ -26,7 +26,7 @@ export const x_enno_pivot_capability = Table({
                 spm: { label: 'Strategic Portfolio Management', sequence: 70 }, platform: { label: 'Platform', sequence: 80 }, other: { label: 'Other', sequence: 90 },
             },
         }),
-        source: ChoiceColumn({
+        source: ChoiceColumn({ dropdown: 'dropdown_without_none',
             label: 'Source', readOnly: true, default: 'manual',
             hint: 'Set by discovery (subscription = licence / entitlement); Manual for capabilities an admin adds by hand.',
             choices: { subscription: { label: 'Subscription (entitlement)', sequence: 10 }, store_app: { label: 'Store app', sequence: 20 }, plugin: { label: 'Plugin', sequence: 30 }, manual: { label: 'Manual', sequence: 40 } },

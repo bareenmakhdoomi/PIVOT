@@ -14,17 +14,17 @@ export const x_enno_pivot_business_outcome = Table({
         capability: ReferenceColumn({ label: 'Capability', referenceTable: 'x_enno_pivot_capability', mandatory: true }),
         objective: MultiLineTextColumn({ label: 'Objective', maxLength: 500, mandatory: true }),
         kpi: StringColumn({ label: 'KPI', maxLength: 200, mandatory: true }),
-        direction: ChoiceColumn({
+        direction: ChoiceColumn({ dropdown: 'dropdown_without_none',
             label: 'Direction', mandatory: true, default: 'higher_better',
             choices: { higher_better: { label: 'Higher is better', sequence: 10 }, lower_better: { label: 'Lower is better', sequence: 20 } },
         }),
-        measurement_type: ChoiceColumn({
+        measurement_type: ChoiceColumn({ dropdown: 'dropdown_without_none',
             label: 'Measurement type', mandatory: true, default: 'calculated',
             choices: { calculated: { label: 'Calculated', sequence: 10 }, manual: { label: 'Entered manually', sequence: 20 } },
         }),
         kpi_table: TableNameColumn({ label: 'KPI table' }),
         kpi_filter: ConditionsColumn({ label: 'KPI filter', dependent: 'kpi_table' }),
-        kpi_aggregate: ChoiceColumn({
+        kpi_aggregate: ChoiceColumn({ dropdown: 'dropdown_without_none',
             label: 'KPI aggregate', default: 'count',
             choices: { count: { label: 'Count', sequence: 10 }, sum: { label: 'Sum', sequence: 20 }, avg: { label: 'Average', sequence: 30 } },
         }),
@@ -39,13 +39,13 @@ export const x_enno_pivot_business_outcome = Table({
         manual_value_by: ReferenceColumn({ label: 'Value entered by', referenceTable: 'sys_user', readOnly: true }),
         manual_value_date: DateColumn({ label: 'Value date', hint: 'Date the manual value applies to. Cannot be in the future.' }),
         target: DecimalColumn({ label: 'Target', mandatory: true }),
-        period: ChoiceColumn({
+        period: ChoiceColumn({ dropdown: 'dropdown_without_none',
             label: 'Period', default: 'monthly',
             choices: { monthly: { label: 'Monthly', sequence: 10 }, quarterly: { label: 'Quarterly', sequence: 20 }, yearly: { label: 'Yearly', sequence: 30 } },
         }),
         owner: ReferenceColumn({ label: 'Owner', referenceTable: 'sys_user', mandatory: true, default: 'javascript:gs.getUserID()' }),
         expected_benefit: StringColumn({ label: 'Expected benefit', maxLength: 500 }),
-        status: ChoiceColumn({
+        status: ChoiceColumn({ dropdown: 'dropdown_without_none',
             label: 'Status', readOnly: true, default: 'not_measured',
             choices: { improved: { label: 'Improved', sequence: 10 }, on_target: { label: 'On target', sequence: 20 }, below_target: { label: 'Below target', sequence: 30 }, not_measured: { label: 'Not measured', sequence: 40 } },
         }),

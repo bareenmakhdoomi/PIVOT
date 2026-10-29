@@ -28,9 +28,10 @@ export function opportunityBefore(current: any, previous: any) {
             current.setValue('priority', p)
             current.setValue('priority_reason', priorityReason(Number(v), impact, Number(e), p, wv, wi))
         }
-        const state = current.getValue('state'), before = previous ? previous.getValue('state') : ''
+        // On insert the platform passes an empty previous record – treat it as no previous state
+        const state = current.getValue('state'), before = previous && !current.isNewRecord() ? previous.getValue('state') || '' : ''
         // PIV-032.01 – allowed state changes; Done and Rejected can only be reopened (back to New)
-        if (previous) {
+        if (before) {
             const tErr = validateTransition(before, state)
             if (tErr) return stop(current, tErr)
         }
@@ -50,7 +51,7 @@ export function opportunityBefore(current: any, previous: any) {
             if (!m.hasNext()) return stop(current, 'Assigned to must be a member of the assignment group.')
         }
         // PIV-032.01 – a work note records who changed the state
-        if (previous && before !== state) {
+        if (before && before !== state) {
             let text = 'State changed from ' + (OPP_STATE_LABEL[before] || before) + ' to ' + (OPP_STATE_LABEL[state] || state) + ' by ' + gs.getUserDisplayName() + '.'
             if (before === 'rejected') {
                 text = 'Reopened by ' + gs.getUserDisplayName() + '. It was rejected because: ' + (previous.getValue('rejection_reason') || '—')

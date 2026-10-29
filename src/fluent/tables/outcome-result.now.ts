@@ -13,7 +13,7 @@ export const x_enno_pivot_outcome_result = Table({
         actual: DecimalColumn({ label: 'Actual', readOnly: true }),
         target: DecimalColumn({ label: 'Target', readOnly: true }),
         improvement_pct: DecimalColumn({ label: 'Improvement %', readOnly: true }),
-        outcome_status: ChoiceColumn({
+        outcome_status: ChoiceColumn({ dropdown: 'dropdown_without_none',
             label: 'Outcome status', readOnly: true, default: 'not_measured',
             hint: 'On target: actual meets or beats the target. Improved: better than the baseline but not at target. Below target: equal to or worse than the baseline. Not measured: no baseline, no actual or no target.',
             choices: { improved: { label: 'Improved', sequence: 10 }, on_target: { label: 'On target', sequence: 20 }, below_target: { label: 'Below target', sequence: 30 }, not_measured: { label: 'Not measured', sequence: 40 } },

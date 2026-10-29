@@ -14,7 +14,7 @@ export const x_enno_pivot_result = Table({
         target_value: DecimalColumn({ label: 'Target value', readOnly: true }),
         score: DecimalColumn({ label: 'Score', readOnly: true, hint: 'Score = actual / target x 100, capped at 100. Licensed but not installed scores 0; missing data shows Not Measured (empty, not 0).' }),
         utilization: DecimalColumn({ label: 'Utilization %', readOnly: true, hint: 'Utilization = allocated / purchased x 100. Empty when no purchased count exists.' }),
-        measurement_status: ChoiceColumn({
+        measurement_status: ChoiceColumn({ dropdown: 'dropdown_without_none',
             label: 'Measurement status', readOnly: true, default: 'not_measured',
             choices: { measured: { label: 'Measured', sequence: 10 }, not_measured: { label: 'Not measured', sequence: 20 }, not_installed: { label: 'Licensed, not installed', sequence: 30 } },
         }),
