@@ -358,7 +358,7 @@ function roadmapItems() {
     while (rm.next()) {
         const op = new GlideRecordSecure(T.opportunity)
         if (!op.get(str(rm, 'opportunity'))) continue
-        items.push({ id: rm.getUniqueValue(), number: str(op, 'number'), priority: num(op, 'priority') || 0 })
+        items.push({ id: rm.getUniqueValue(), number: str(op, 'number'), priority: num(op, 'priority') || 0, value: num(op, 'value') || 0 })
     }
     return items
 }
@@ -383,7 +383,7 @@ function reorder(b: any): Result {
 
 function resetRoadmap(): Result {
     if (!canWork()) return deny('Only analysts and admins can change the roadmap order.')
-    const items = roadmapItems().sort((x, y) => y.priority - x.priority || (x.number < y.number ? -1 : 1))
+    const items = roadmapItems().sort((x, y) => y.priority - x.priority || y.value - x.value || (x.number < y.number ? -1 : 1)) // PIV-033.04: equal priority → higher value first
     for (let i = 0; i < items.length; i++) if (!setSequence(items[i].id, i + 1)) return deny('You cannot change the roadmap order.')
     return { ok: true }
 }

@@ -307,7 +307,7 @@ export function createPV(first, api) {
       const out = { now: [], next: [], later: [] }; let manual = false;
       S.opps.filter(x => ACTIVE.includes(x.state)).map(store._oppRow).forEach(x => { out[x.phase].push(x); });
       Object.keys(out).forEach(ph => {
-        out[ph].sort((a, b) => (b.priority || 0) - (a.priority || 0) || a.number.localeCompare(b.number));
+        out[ph].sort((a, b) => (b.priority || 0) - (a.priority || 0) || (b.value || 0) - (a.value || 0) || a.number.localeCompare(b.number)); // PIV-033.04
         const byPriority = out[ph].map(x => x.number), seq = x => (S.roadmapSeq[x.id] == null ? Infinity : S.roadmapSeq[x.id]);
         if (out[ph].some(x => S.roadmapSeq[x.id] != null)) out[ph].sort((a, b) => seq(a) - seq(b) || byPriority.indexOf(a.number) - byPriority.indexOf(b.number));
         const isManual = out[ph].some((x, i) => x.number !== byPriority[i]); manual = manual || isManual;

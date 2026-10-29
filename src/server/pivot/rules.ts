@@ -331,3 +331,21 @@ export function evaluateGaps(c: GapCapability, outcomes: GapOutcome[], t: { util
     }
     return { gaps, notes }
 }
+
+/** PIV-033.02 / .03 – roadmap phase from priority: Now at or above priority_now (2), Next from priority_next (1)
+ *  to below Now, Later below that or without a priority. */
+export function roadmapPhase(priority: number | null, nowAt: number, nextAt: number): 'now' | 'next' | 'later' {
+    if (priority === null || priority === undefined || isNaN(Number(priority))) return 'later'
+    const p = Number(priority)
+    return p >= nowAt ? 'now' : p >= nextAt ? 'next' : 'later'
+}
+
+export type RoadmapEntry = { id: string; number: string; priority: number | null; value: number | null }
+/** PIV-033.04 – order inside a phase: priority high → low, then value high → low, then number. Returns sequence 1..n per phase. */
+export function planRoadmap(entries: RoadmapEntry[], nowAt: number, nextAt: number): { [phase: string]: RoadmapEntry[] } {
+    const out: { [phase: string]: RoadmapEntry[] } = { now: [], next: [], later: [] }
+    entries.forEach((e) => out[roadmapPhase(e.priority, nowAt, nextAt)].push(e))
+    const key = (x: number | null) => (x === null || x === undefined ? -1 : Number(x))
+    Object.keys(out).forEach((ph) => out[ph].sort((a, b) => key(b.priority) - key(a.priority) || key(b.value) - key(a.value) || (a.number < b.number ? -1 : a.number > b.number ? 1 : 0)))
+    return out
+}

@@ -1,12 +1,13 @@
 // PIV-018 … PIV-025 – the PIVOT assessment run (design B9), steps 1–6 and 10:
 //   1 start · 2 discovery · 3 usage measurement · 4 scoring + Platform Value Score · 5 licence utilization
 //   6 business outcome KPIs (baseline captured on the first measurement) · 10 complete.
-// Steps 7–9 (gap rules, priority, roadmap) arrive in Sprint 4.
+// Step 7 gap rules and priority (PIV-028–031), step 8 roadmap (PIV-033).
 // Every count is a GlideAggregate (never a row-by-row loop). Only PIVOT tables are written.
 import { gs, GlideRecord, GlideAggregate, GlideDateTime } from '@servicenow/glide'
 import { SCOPE, PROPERTIES, scoreOf, utilizationOf, overallScore, outcomeStatus, periodDays } from './rules.ts'
 import { runDiscovery, LogEntry } from './discovery.ts'
 import { runGapRules } from './gaps.ts'
+import { generate as generateRoadmap } from './roadmap.ts'
 
 const T = {
     capability: SCOPE + '_capability',
@@ -270,6 +271,11 @@ export function runAssessment(trigger: 'weekly' | 'run_now', runBy: string): Run
         const g = runGapRules(sysId, number, add)
         add(g.errors ? 'warn' : 'info', 7, 'Gap rules: ' + g.created + ' opportunities created, ' + g.updated + ' updated, ' + g.resolved + ' gap(s) no longer detected' + (g.kept ? ', ' + g.kept + ' Rejected/Done kept closed' : '') + (g.errors ? ', ' + g.errors + ' error(s)' : '') + '.')
         save({ opportunities_created: g.created })
+
+        // ---- 8 roadmap (PIV-033): Now / Next / Later by priority, rebuilt every run
+        const rm = generateRoadmap(sysId)
+        add(rm.ok ? 'info' : 'error', 8, rm.message)
+        save({})
 
         // ---- 10 complete
         const dur = new GlideDateTime('1970-01-01 00:00:00')

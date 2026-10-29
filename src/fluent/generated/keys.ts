@@ -349,6 +349,14 @@ declare global {
                         table: 'sys_atf_step'
                         id: 'cee2616fda6f49c4ba8e4489e83ed3fb'
                     }
+                    'atf-roadmap-boundaries': {
+                        table: 'sys_atf_test'
+                        id: '2391b84c5958446c9c858a796bd0fc86'
+                    }
+                    'atf-roadmap-boundaries-step': {
+                        table: 'sys_atf_step'
+                        id: '3d49e196933d4062a4d55b84afb5d507'
+                    }
                     'atf-scoring-rules': {
                         table: 'sys_atf_test'
                         id: '58caa09b0a7947e7afea99a5c128a567'
@@ -717,6 +725,10 @@ declare global {
                         table: 'sys_script_include'
                         id: '6d35717a655b4621a7e33adeb5ee6df8'
                     }
+                    'si-pivot-roadmap': {
+                        table: 'sys_script_include'
+                        id: '48846a59fc7c4fbba6869ace581507fb'
+                    }
                     src_server_pivot_assessment_ts: {
                         table: 'sys_module'
                         id: 'cb1759e39e104df69041b9681b8d5198'
@@ -732,6 +744,10 @@ declare global {
                     src_server_pivot_gaps_ts: {
                         table: 'sys_module'
                         id: '46585f9aaf8a4f448850ae68f629e937'
+                    }
+                    src_server_pivot_roadmap_ts: {
+                        table: 'sys_module'
+                        id: '324b7e49f08e43a683ab6144243861b1'
                     }
                     src_server_pivot_rules_ts: {
                         table: 'sys_module'
@@ -6181,6 +6197,15 @@ declare global {
                         }
                     },
                     {
+                        table: 'sys_element_mapping'
+                        id: '7b64c34144ca4f929627451ae21bb1c7'
+                        key: {
+                            id: '3d49e196933d4062a4d55b84afb5d507'
+                            table: 'var__m_atf_input_variable_41de4a935332120028bc29cac2dc349a'
+                            field: 'script'
+                        }
+                    },
+                    {
                         table: 'sys_documentation'
                         id: '7b70c4d9012a4a51945f7d57de7f74d1'
                         key: {
@@ -8160,6 +8185,14 @@ declare global {
                         key: {
                             name: 'x_enno_pivot_capability'
                             element: 'allocated_count'
+                        }
+                    },
+                    {
+                        table: 'sys_variable_value'
+                        id: 'b240a5125acc453482dd7ef7e0eeb646'
+                        key: {
+                            document_key: '3d49e196933d4062a4d55b84afb5d507'
+                            variable: '42f2564b73031300440211d8faf6a777'
                         }
                     },
                     {
@@ -10803,6 +10836,14 @@ declare global {
                             name: 'x_enno_pivot_opportunity'
                             element: 'priority_reason'
                             language: 'en'
+                        }
+                    },
+                    {
+                        table: 'sys_variable_value'
+                        id: 'f39893781cf348cfa61892e16387580e'
+                        key: {
+                            document_key: '3d49e196933d4062a4d55b84afb5d507'
+                            variable: '989d9e235324220002c6435723dc3484'
                         }
                     },
                     {

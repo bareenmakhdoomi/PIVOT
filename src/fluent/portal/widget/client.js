@@ -1,7 +1,7 @@
 api.controller = function ($element, $timeout) {
     /* Generated from client.template.js by scripts/build-portal-bundle.mjs – edit the template, not client.js.
        Loads the PIVOT workspace (UI script pivot_portal) for this exact build and mounts it. */
-    var VERSION = '6e616d737183';
+    var VERSION = 'f0f09f3267f1';
     var host = $element[0].querySelector('.x-enno-pivot-host');
     function fail() {
         host.innerHTML = '<p style="padding:24px">PIVOT could not load its script. Ask your PIVOT admin to check the UI script x_enno_pivot.pivot_portal.</p>';
