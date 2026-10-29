@@ -29,7 +29,7 @@ Record({
 List({
     table: 'x_enno_pivot_outcome_result',
     view: default_view,
-    columns: ['outcome', 'actual', 'target', 'improvement_pct', 'outcome_status', 'baseline'],
+    columns: ['assessment', 'outcome', 'baseline', 'actual', 'target', 'improvement_pct', 'outcome_status'], // PIV-026.08
 })
 
 // PIV-003.07 – Assessment list default columns

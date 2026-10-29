@@ -192,7 +192,7 @@ export function outcomeStatus(o: { baseline: number | null; target: number | nul
     const span = o.target - o.baseline
     const imp = span === 0 ? null : Math.round(((actual - o.baseline) / span) * 1000) / 10
     const reached = o.direction === 'lower_better' ? actual <= o.target : actual >= o.target
-    return { status: reached ? 'on_target' : imp !== null && imp > 0 ? 'improved' : 'below_target', improvement: imp, reason: '' }
+    return { status: reached ? 'on_target' : imp !== null && imp > 0 ? 'improved' : 'below_target', improvement: imp, reason: span === 0 ? 'Target equals baseline' : '' }
 }
 
 /** Look-back window for a KPI period. */

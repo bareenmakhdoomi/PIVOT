@@ -142,3 +142,17 @@ export function roadmapItemBefore(current: any) {
         gs.error('PIVOT roadmap item rule failed: ' + ex)
     }
 }
+
+/** Business outcome form (PIV-026.08 AC 3): explain the empty Outcome Results list before the first run. */
+export function outcomeDisplay(current: any) {
+    try {
+        if (current.isNewRecord()) return
+        const r = new GlideRecord(SCOPE + '_outcome_result')
+        r.addQuery('outcome', current.getUniqueValue())
+        r.setLimit(1)
+        r.query()
+        if (!r.hasNext()) gs.addInfoMessage('No outcome results yet. Run an assessment to measure this KPI.')
+    } catch (ex) {
+        gs.error('PIVOT outcome display rule failed: ' + ex)
+    }
+}

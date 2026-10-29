@@ -136,7 +136,7 @@ function buildSnapshot() {
         logs[n] = entries
         assessments.unshift({
             id: a.getUniqueValue(), number: n, run_date: ms(str(a, 'run_date')), run_by: runBy || 'system',
-            trigger: str(a, 'trigger') === 'run_now' ? 'Run Now' : 'Weekly schedule', status: str(a, 'status') || 'queued',
+            trigger: str(a, 'trigger') === 'run_now' ? 'Run Now' : 'Weekly schedule', status: str(a, 'status') === 'complete_with_warnings' ? 'complete' : str(a, 'status') || 'queued', withWarnings: str(a, 'status') === 'complete_with_warnings',
             duration: str(a, 'duration') ? ms(str(a, 'duration')) : null, overall_score: num(a, 'overall_score'), error: errEntry ? errEntry.message : '',
         })
     }

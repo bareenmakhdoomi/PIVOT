@@ -33,6 +33,8 @@ export const x_enno_pivot_business_outcome = Table({
         baseline_date: DateColumn({ label: 'Baseline date', readOnly: true }),
         baseline_change_reason: StringColumn({ label: 'Baseline change reason', maxLength: 500 }),
         current_value: DecimalColumn({ label: 'Current', readOnly: true }),
+        current_value_date: DateColumn({ label: 'Current value date', readOnly: true, hint: 'Date of the assessment that measured the current value (PIV-026.07). Kept when a later run is Not Measured.' }),
+        active: BooleanColumn({ label: 'Active', default: 'true', hint: 'Inactive outcomes are skipped by assessment runs (PIV-026.01).' }),
         manual_value: DecimalColumn({ label: 'Manual value', hint: 'For KPIs entered manually: the latest value. Used by the next assessment run.' }),
         manual_value_by: ReferenceColumn({ label: 'Value entered by', referenceTable: 'sys_user', readOnly: true }),
         manual_value_date: DateColumn({ label: 'Value date', hint: 'Date the manual value applies to. Cannot be in the future.' }),

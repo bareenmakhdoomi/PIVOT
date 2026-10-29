@@ -13,7 +13,7 @@ export const x_enno_pivot_assessment = Table({
         run_date: DateTimeColumn({ label: 'Run date', readOnly: true, default: 'javascript:new GlideDateTime().getDisplayValue()' }),
         status: ChoiceColumn({
             label: 'Status', readOnly: true, default: 'queued',
-            choices: { queued: { label: 'Queued', sequence: 10 }, running: { label: 'Running', sequence: 20 }, complete: { label: 'Complete', sequence: 30 }, failed: { label: 'Failed', sequence: 40 } },
+            choices: { queued: { label: 'Queued', sequence: 10 }, running: { label: 'Running', sequence: 20 }, complete: { label: 'Complete', sequence: 30 }, complete_with_warnings: { label: 'Completed with warnings', sequence: 35 }, failed: { label: 'Failed', sequence: 40 } },
         }),
         trigger: ChoiceColumn({
             label: 'Trigger', readOnly: true, default: 'weekly',

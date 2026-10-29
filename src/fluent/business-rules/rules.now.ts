@@ -1,6 +1,6 @@
 import '@servicenow/sdk/global'
 import { BusinessRule } from '@servicenow/sdk/core'
-import { opportunityBefore, capabilityBefore, outcomeBefore, roadmapItemDefaults, assessmentBefore, resultBefore, roadmapItemBefore } from '../../server/pivot/business-rules'
+import { opportunityBefore, capabilityBefore, outcomeBefore, roadmapItemDefaults, assessmentBefore, resultBefore, roadmapItemBefore, outcomeDisplay } from '../../server/pivot/business-rules'
 
 // PIV-020/021/030 – PIVOT rules (design B6) enforced on every write, whatever the source.
 BusinessRule({
@@ -98,4 +98,15 @@ BusinessRule({
     active: true,
     script: roadmapItemBefore,
     description: 'PIV-004.04: sequence must be 0 or greater.',
+})
+
+BusinessRule({
+    $id: Now.ID['br-outcome-display-no-results'],
+    name: 'PIVOT – Outcome: explain empty results',
+    table: 'x_enno_pivot_business_outcome',
+    when: 'display',
+    order: 100,
+    active: true,
+    script: outcomeDisplay,
+    description: 'PIV-026.08: before the first run the form says "No outcome results yet. Run an assessment to measure this KPI."',
 })
