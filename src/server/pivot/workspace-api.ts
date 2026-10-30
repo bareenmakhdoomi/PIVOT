@@ -7,6 +7,7 @@ import {
     SCOPE, FAMILIES, PROPERTIES, Errors, initialsOf, priorityOf, priorityReason, validateScores, validateRejection, OPP_ACTIVE,
     validateCapability, validateOutcome, validateProperty,
 } from './rules.ts'
+import { startRunNow } from './assessment.ts'
 
 const T = {
     capability: SCOPE + '_capability',
@@ -225,7 +226,7 @@ function buildSnapshot() {
         me: { id: me, role: myRoles[0] || 'viewer', roles: myRoles.length ? myRoles : ['viewer'] },
         users, families: FAMILIES, properties: p,
         capabilities, assessments, logs, results, outcomeResults, opportunities, roadmap, outcomes,
-        engineAvailable: false, aiAvailable: false,
+        engineAvailable: true, // PIV-034 – the assessment engine (weekly job and Run Now) aiAvailable: false,
     }
 }
 
@@ -538,6 +539,11 @@ function runAction(b: any): Result {
         case 'assign': return opportunityAction('assign', b)
         case 'note': return opportunityAction('note', b)
         case 'scores': return opportunityAction('scores', b)
+        case 'runNow': { // PIV-036 – PIVOT admins only; queued and run in the background by x_enno_pivot.run_assessment
+            if (!isRole('admin')) return deny('Only PIVOT admins can start a run.')
+            const r = startRunNow(gs.getUserID())
+            return r.ok ? { ok: true, number: r.number, note: r.message } : { ok: false, error: r.message }
+        }
         case 'reorder': return reorder(b)
         case 'resetRoadmap': return resetRoadmap()
         case 'saveOutcome': return saveOutcome(b.fields || {})

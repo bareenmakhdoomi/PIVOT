@@ -256,7 +256,7 @@ export function createPV(first, api) {
     runNow() {
       if (!S.engine) return Promise.resolve({ ok: false, error: 'The assessment engine arrives in Sprint 4. Runs cannot be started from PIVOT yet.' });
       if (!can('assessment.run')) return denied('Only PIVOT admins can start a run.');
-      return Promise.resolve({ ok: false, error: 'Run Now is not available yet.' });
+      return act({ action: 'runNow' }); // PIV-036 – queued on the server and run in the background by the event
     },
 
     // ----- opportunities -----
