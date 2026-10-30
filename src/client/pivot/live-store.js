@@ -124,7 +124,21 @@ export function createPV(first, api) {
     }
   }
   const NETWORK_ERROR = 'PIVOT could not reach the instance. Check your connection and try again.';
-  function reload() { return api.load().then(snap => { ingest(snap); emit({ type: 'data' }); }); }
+  function reload() { return api.load().then(snap => { ingest(snap); emit({ type: 'data' }); watchRun(); }); }
+  // PIV-063.07 – live progress: while a run is Queued or Running, ask GET /assessments/running every 5 s
+  // (small answer: number, step n of 10, last log message); when it is empty the run has ended → reload once.
+  let progressTimer = null;
+  function watchRun() {
+    const active = S.assessments.some(a => a.status === 'running' || a.status === 'queued');
+    if (!active || progressTimer || !api.running) { if (!active) S.progress = null; return; }
+    progressTimer = setInterval(() => {
+      api.running().then(p => {
+        if (!p || !p.number) { clearInterval(progressTimer); progressTimer = null; S.progress = null; reload().catch(() => {}); return; }
+        const changed = !S.progress || S.progress.step !== p.step || S.progress.last_message !== p.last_message;
+        S.progress = p; if (changed) emit({ type: 'run', number: p.number });
+      }).catch(() => {});
+    }, 5000);
+  }
   function act(body, opts) {
     return api.act(body)
       .then(r => {
@@ -249,14 +263,18 @@ export function createPV(first, api) {
       // A run counts as in progress only if it has started (run date + at least one log line) and is younger than
       // 2 x the time limit (min 60 min) - the same rule the server uses; hand-made or crashed records are ignored.
       const limitMs = Math.max(60, (Number(P('max_run_minutes')) || 0) * 2) * 60000;
-      const r = S.assessments.find(a => (a.status === 'running' || a.status === 'queued') && a.run_date && (Date.now() - a.run_date) < limitMs && (S.logs[a.number] || []).length);
-      return r ? store.assessment(r.number) : null;
+      const p = S.progress;
+      const r = S.assessments.find(a => (p && p.number === a.number) || ((a.status === 'running' || a.status === 'queued') && a.run_date && (Date.now() - a.run_date) < limitMs && (S.logs[a.number] || []).length));
+      if (!r) return null;
+      const x = store.assessment(r.number);
+      if (p && p.number === r.number && p.step) { const last = x.log[x.log.length - 1]; if (!last || last.step !== p.step || last.message !== p.last_message) x.log.push({ ts: Date.now(), level: 'info', step: p.step, message: p.last_message }); x.status = p.status || x.status; }
+      return x;
     },
     scoreHistory: () => S.assessments.map(a => ({ number: a.number, date: a.run_date, score: a.overall_score, status: a.status })),
     runNow() {
       if (!S.engine) return Promise.resolve({ ok: false, error: 'The assessment engine arrives in Sprint 4. Runs cannot be started from PIVOT yet.' });
       if (!can('assessment.run')) return denied('Only PIVOT admins can start a run.');
-      return Promise.resolve({ ok: false, error: 'Run Now is not available yet.' });
+      return act({ action: 'runNow' }); // PIV-036 – queued on the server and run in the background by the event
     },
 
     // ----- opportunities -----
@@ -398,6 +416,7 @@ export function createPV(first, api) {
   };
 
   ingest(first);
+  watchRun();
   return { store, ai, fmt, LABELS };
 }
 
@@ -418,6 +437,7 @@ export function createApi(base) {
   });
   return {
     load: () => fetch(base + '/bootstrap', { method: 'GET', headers: headers(), credentials: 'same-origin' }).then(handle),
+    running: () => fetch(base + '/assessments/running', { method: 'GET', headers: headers(), credentials: 'same-origin' }).then(handle),
     act: body => fetch(base + '/action', { method: 'POST', headers: headers(), credentials: 'same-origin', body: JSON.stringify(body) }).then(handle)
   };
 }
