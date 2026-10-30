@@ -833,10 +833,6 @@ declare global {
                         table: 'sys_module'
                         id: '487af0a88f9640e9bb6cc1a995fbc57b'
                     }
-                    validate_entitled_count: {
-                        table: 'sys_script'
-                        id: '928b0e91de6942659fc8c803931e0d81'
-                    }
                     'style-outcome-below_target': {
                         table: 'sys_ui_style'
                         id: '79a7e449237f478790e012d456427f0f'
@@ -872,6 +868,10 @@ declare global {
                     'ua-run-assessment-now': {
                         table: 'sys_ui_action'
                         id: '5d54632e693c46d98093fe46adf968f5'
+                    }
+                    validate_entitled_count: {
+                        table: 'sys_script'
+                        id: '928b0e91de6942659fc8c803931e0d81'
                     }
                 }
                 composite: [
