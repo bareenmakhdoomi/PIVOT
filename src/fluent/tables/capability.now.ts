@@ -2,6 +2,7 @@ import '@servicenow/sdk/global'
 import {
     Table, StringColumn, ChoiceColumn, BooleanColumn, IntegerColumn, DecimalColumn,
     ReferenceColumn, TableNameColumn, ConditionsColumn, FieldNameColumn, DateTimeColumn, DomainIdColumn,
+    
 } from '@servicenow/sdk/core'
 
 // PIV-002 Capability – one record per licensed subscription, installed store app or active plugin (design B3)

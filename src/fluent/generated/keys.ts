@@ -269,6 +269,18 @@ declare global {
                         table: 'sys_script'
                         id: 'bd119d2057534c34a236d8ae25879806'
                     }
+                    clear_filter_on_table_change: {
+                        table: 'sys_script'
+                        id: 'db3dd5a64fb64eb3aa0ea6a1c9e899b9'
+                    }
+                    measure_filter_onload_script: {
+                        table: 'sys_script_client'
+                        id: '7d3a5458a260404a9e8d1ce11269f784'
+                    }
+                    measure_table_onchange_script: {
+                        table: 'sys_script_client'
+                        id: '2f8d40022b944db3bee48139cb500806'
+                    }
                     package_json: {
                         table: 'sys_module'
                         id: '96a7857d9dc642e591d1491c9aa06c55'
