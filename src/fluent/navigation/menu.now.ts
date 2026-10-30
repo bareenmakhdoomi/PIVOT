@@ -92,6 +92,16 @@ Record({
     data: { title: 'Business Outcomes', application: pivotMenu, link_type: 'FILTER', name: 'x_enno_pivot_business_outcome', filter: 'ORDERBYkpi', roles: ['x_enno_pivot.admin'], active: true, order: 360 },
 })
 Record({
+    $id: Now.ID['pivot-module-security-test-logs'],
+    table: 'sys_app_module',
+    data: { title: 'Security Test Logs', application: pivotMenu, link_type: 'FILTER', name: 'x_enno_pivot_security_test_log', filter: 'ORDERBYDESCtested_at', roles: ['x_enno_pivot.security_tester', 'x_enno_pivot.admin'], active: true, order: 370 },
+})
+Record({
+    $id: Now.ID['pivot-module-security-defects'],
+    table: 'sys_app_module',
+    data: { title: 'Security Defects', application: pivotMenu, link_type: 'FILTER', name: 'x_enno_pivot_security_defect', filter: 'statusINopen,in_progress^ORDERBYDESCsys_created_on', roles: ['x_enno_pivot.security_tester', 'x_enno_pivot.admin'], active: true, order: 380 },
+})
+Record({
     $id: Now.ID['pivot-module-properties'],
     table: 'sys_app_module',
     data: { title: 'Properties', application: pivotMenu, link_type: 'FILTER', name: 'sys_properties', filter: 'nameSTARTSWITHx_enno_pivot.', roles: ['x_enno_pivot.admin'], active: true, order: 230 },

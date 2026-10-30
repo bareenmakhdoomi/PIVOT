@@ -1,6 +1,6 @@
 import '@servicenow/sdk/global'
 import { Acl } from '@servicenow/sdk/core'
-import { viewer, analyst, business_owner, admin } from '../roles/roles.now'
+import { viewer, analyst, business_owner, admin, security_tester } from '../roles/roles.now'
 
 // PIV-007 – table and field ACLs from the approved access matrix (design B10).
 // Result and Outcome Result are written by the assessment run only (no create/write ACLs).
@@ -83,3 +83,17 @@ Acl({ $id: Now.ID['acl-outcome_result-write-all-admin'], type: 'record', table: 
 Acl({ $id: Now.ID['acl-business_outcome-write-baseline-owner-first'], type: 'record', table: 'x_enno_pivot_business_outcome', field: 'baseline', operation: 'write', decisionType: 'allow', roles: [business_owner], adminOverrides: true, active: true,
     script: "answer = (current.isNewRecord() || current.owner == gs.getUserID()) && (current.isNewRecord() || current.baseline.nil());",
     description: 'PIV-007.04: owners can enter the starting baseline on their own outcome until it is first set; after that only PIVOT admins can change it.' })
+
+// STRY0015278 – security testers record results and read the resulting defects; admins manage defects.
+Acl({ $id: Now.ID['acl-security_test_log-read-row-tester'], type: 'record', table: 'x_enno_pivot_security_test_log', operation: 'read', decisionType: 'allow', roles: [security_tester, admin], adminOverrides: true, active: true, description: 'Security testers and admins can review test logs.' })
+Acl({ $id: Now.ID['acl-security_test_log-read-all-tester'], type: 'record', table: 'x_enno_pivot_security_test_log', field: '*', operation: 'read', decisionType: 'allow', roles: [security_tester, admin], adminOverrides: true, active: true, description: 'Security testers and admins can read all test log fields.' })
+Acl({ $id: Now.ID['acl-security_test_log-create-row-tester'], type: 'record', table: 'x_enno_pivot_security_test_log', operation: 'create', decisionType: 'allow', roles: [security_tester, admin], adminOverrides: true, active: true, description: 'Security testers and admins can log test results.' })
+Acl({ $id: Now.ID['acl-security_test_log-write-row-tester'], type: 'record', table: 'x_enno_pivot_security_test_log', operation: 'write', decisionType: 'allow', roles: [security_tester, admin], adminOverrides: true, active: true, description: 'Security testers and admins can update test logs.' })
+Acl({ $id: Now.ID['acl-security_test_log-write-all-tester'], type: 'record', table: 'x_enno_pivot_security_test_log', field: '*', operation: 'write', decisionType: 'allow', roles: [security_tester, admin], adminOverrides: true, active: true, description: 'Security testers and admins can update all test log fields.' })
+Acl({ $id: Now.ID['acl-security_test_log-delete-row-admin'], type: 'record', table: 'x_enno_pivot_security_test_log', operation: 'delete', decisionType: 'allow', roles: [admin], adminOverrides: true, active: true, description: 'Only PIVOT admins can delete test logs.' })
+Acl({ $id: Now.ID['acl-security_defect-read-row-tester'], type: 'record', table: 'x_enno_pivot_security_defect', operation: 'read', decisionType: 'allow', roles: [security_tester, admin], adminOverrides: true, active: true, description: 'Security testers and admins can review defects.' })
+Acl({ $id: Now.ID['acl-security_defect-read-all-tester'], type: 'record', table: 'x_enno_pivot_security_defect', field: '*', operation: 'read', decisionType: 'allow', roles: [security_tester, admin], adminOverrides: true, active: true, description: 'Security testers and admins can read all defect fields.' })
+Acl({ $id: Now.ID['acl-security_defect-create-row-admin'], type: 'record', table: 'x_enno_pivot_security_defect', operation: 'create', decisionType: 'allow', roles: [admin], adminOverrides: true, active: true, description: 'Only PIVOT admins can manually create security defects.' })
+Acl({ $id: Now.ID['acl-security_defect-write-row-admin'], type: 'record', table: 'x_enno_pivot_security_defect', operation: 'write', decisionType: 'allow', roles: [admin], adminOverrides: true, active: true, description: 'Only PIVOT admins can manage security defects.' })
+Acl({ $id: Now.ID['acl-security_defect-write-all-admin'], type: 'record', table: 'x_enno_pivot_security_defect', field: '*', operation: 'write', decisionType: 'allow', roles: [admin], adminOverrides: true, active: true, description: 'Only PIVOT admins can update all defect fields.' })
+Acl({ $id: Now.ID['acl-security_defect-delete-row-admin'], type: 'record', table: 'x_enno_pivot_security_defect', operation: 'delete', decisionType: 'allow', roles: [admin], adminOverrides: true, active: true, description: 'Only PIVOT admins can delete security defects.' })

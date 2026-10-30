@@ -21,3 +21,7 @@ export const admin = Role({
     description: 'Everything in PIVOT: measurement settings, family mapping, baselines, properties and Run Now.',
     containsRoles: [analyst, viewer],
 })
+export const security_tester = Role({
+    name: 'x_enno_pivot.security_tester',
+    description: 'Records security test results and reviews the defects raised by failed checks.',
+})
