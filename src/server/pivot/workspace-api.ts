@@ -4,9 +4,10 @@
 // messages for the UI) and again in the table business rules.
 import { gs, GlideRecord, GlideRecordSecure, GlideDateTime } from '@servicenow/glide'
 import {
-    SCOPE, FAMILIES, PROPERTIES, Errors, initialsOf, priorityOf, priorityReason, validateScores, validateRejection,
+    SCOPE, FAMILIES, PROPERTIES, Errors, initialsOf, priorityOf, priorityReason, validateScores, validateRejection, OPP_ACTIVE,
     validateCapability, validateOutcome, validateProperty,
 } from './rules.ts'
+import { startRunNow } from './assessment.ts'
 
 const T = {
     capability: SCOPE + '_capability',
@@ -136,7 +137,7 @@ function buildSnapshot() {
         logs[n] = entries
         assessments.unshift({
             id: a.getUniqueValue(), number: n, run_date: ms(str(a, 'run_date')), run_by: runBy || 'system',
-            trigger: str(a, 'trigger') === 'run_now' ? 'Run Now' : 'Weekly schedule', status: str(a, 'status') || 'queued',
+            trigger: str(a, 'trigger') === 'run_now' ? 'Run Now' : 'Weekly schedule', status: str(a, 'status') === 'complete_with_warnings' ? 'complete' : str(a, 'status') || 'queued', withWarnings: str(a, 'status') === 'complete_with_warnings',
             duration: str(a, 'duration') ? ms(str(a, 'duration')) : null, overall_score: num(a, 'overall_score'), error: errEntry ? errEntry.message : '',
         })
     }
@@ -178,8 +179,9 @@ function buildSnapshot() {
         if (str(op, 'assigned_to')) userIds.push(str(op, 'assigned_to'))
         opportunities.push({
             id: op.getUniqueValue(), number: str(op, 'number'), capability: str(op, 'capability'), outcome: str(op, 'outcome'), type: str(op, 'type'),
-            description: str(op, 'description'), value: num(op, 'value'), effort: num(op, 'effort'), business_impact: num(op, 'business_impact') || 0,
+            description: str(op, 'description'), value: num(op, 'value'), effort: num(op, 'effort'), business_impact: num(op, 'business_impact'),
             priority: num(op, 'priority'), priority_reason: str(op, 'priority_reason'), state: str(op, 'state') || 'open', assigned_to: str(op, 'assigned_to'),
+            assignment_group: str(op, 'assignment_group'), groupName: op.getDisplayValue('assignment_group') || '', gap_resolved: str(op, 'gap_resolved') === '1' || str(op, 'gap_resolved') === 'true',
             rejection_reason: str(op, 'rejection_reason'), assessment: numberOf[str(op, 'assessment')] || op.getDisplayValue('assessment') || '',
             created: ms(str(op, 'sys_created_on')), updated: ms(str(op, 'sys_updated_on')), activity: Array.isArray(activity) ? activity : [],
         })
@@ -224,7 +226,7 @@ function buildSnapshot() {
         me: { id: me, role: myRoles[0] || 'viewer', roles: myRoles.length ? myRoles : ['viewer'] },
         users, families: FAMILIES, properties: p,
         capabilities, assessments, logs, results, outcomeResults, opportunities, roadmap, outcomes,
-        engineAvailable: false, aiAvailable: false,
+        engineAvailable: true, aiAvailable: false, // PIV-034 – the assessment engine (weekly job and Run Now)
     }
 }
 
@@ -278,17 +280,27 @@ function opportunityAction(kind: string, b: any): Result {
     const state = str(gr, 'state')
     switch (kind) {
         case 'accept':
-            if (state !== 'open') return { ok: false, error: 'Only open opportunities can be accepted.' }
+            if (state !== 'open') return { ok: false, error: 'Only new opportunities can be accepted.' }
             gr.setValue('state', 'accepted')
             addActivity(gr, 'Accepted.')
             return save(gr)
+        case 'start':
+            if (state !== 'accepted') return { ok: false, error: 'Accept the opportunity before starting work on it.' }
+            gr.setValue('state', 'in_progress')
+            addActivity(gr, 'Work started.')
+            return save(gr)
+        case 'reopen':
+            if (state !== 'done' && state !== 'rejected') return { ok: false, error: 'Only done or rejected opportunities can be reopened.' }
+            gr.setValue('state', 'open')
+            addActivity(gr, 'Reopened (was ' + (state === 'done' ? 'Done' : 'Rejected') + ').')
+            return save(gr)
         case 'done':
-            if (state !== 'accepted') return { ok: false, error: 'Accept the opportunity before closing it as done.' }
+            if (state !== 'accepted' && state !== 'in_progress') return { ok: false, error: 'Accept the opportunity before closing it as done.' }
             gr.setValue('state', 'done')
             addActivity(gr, 'Closed as done.')
             return save(gr)
         case 'reject': {
-            if (state !== 'open' && state !== 'accepted') return { ok: false, error: 'Only open or accepted opportunities can be rejected.' }
+            if (OPP_ACTIVE.indexOf(state) < 0) return { ok: false, error: 'Only new, accepted or in-progress opportunities can be rejected.' }
             const e = validateRejection(b.reason)
             if (hasErrors(e)) return invalid(e)
             const reason = String(b.reason).trim().slice(0, 500)
@@ -302,9 +314,20 @@ function opportunityAction(kind: string, b: any): Result {
         case 'assign': {
             const to = String(b.user || '')
             if (to && !isWorker(to)) return { ok: false, error: 'Assign to an active PIVOT analyst or admin.' }
+            const group = str(gr, 'assignment_group')
+            if (to && group) { // PIV-032.02
+                const m = new GlideRecord('sys_user_grmember')
+                m.addQuery('group', group)
+                m.addQuery('user', to)
+                m.setLimit(1)
+                m.query()
+                if (!m.hasNext()) return { ok: false, error: userName(to) + ' is not a member of the assignment group ' + gr.getDisplayValue('assignment_group') + '.' }
+            }
             gr.setValue('assigned_to', to)
             addActivity(gr, to ? 'Assigned to ' + userName(to) + '.' : 'Unassigned.')
-            return save(gr)
+            const r = save(gr)
+            if (r.ok) r.note = to ? 'Assigned to ' + userName(to) + '.' : 'Unassigned.'
+            return r
         }
         case 'note': {
             const text = String(b.text || '').trim()
@@ -315,11 +338,12 @@ function opportunityAction(kind: string, b: any): Result {
         case 'scores': {
             const e = validateScores(b.value, b.business_impact, b.effort)
             if (hasErrors(e)) return invalid(e)
-            const v = Number(b.value), i = Number(b.business_impact), ef = Number(b.effort)
+            const v = Number(b.value), i = b.business_impact === '' || b.business_impact === null || b.business_impact === undefined ? null : Number(b.business_impact), ef = Number(b.effort)
             const old = str(gr, 'priority_reason').split(' – ')[0] || '—'
-            const p = priorityOf(v, i, ef), reason = priorityReason(v, i, ef, p)
+            const wv = Number(gs.getProperty(SCOPE + '.priority_weight_value', '1')) || 1, wi = Number(gs.getProperty(SCOPE + '.priority_weight_impact', '1'))
+            const p = priorityOf(v, i, ef, wv, isNaN(wi) ? 1 : wi), reason = priorityReason(v, i, ef, p, wv, isNaN(wi) ? 1 : wi)
             gr.setValue('value', v)
-            gr.setValue('business_impact', i)
+            gr.setValue('business_impact', i === null ? '' : i)
             gr.setValue('effort', ef)
             addActivity(gr, 'Scores changed. Priority ' + old + ' → ' + reason.split(' – ')[0] + ' (' + PHASE_LABEL[phaseOf(p, props())] + ').')
             return save(gr)
@@ -332,12 +356,12 @@ function opportunityAction(kind: string, b: any): Result {
 function roadmapItems() {
     const items: any[] = []
     const rm = new GlideRecordSecure(T.roadmap)
-    rm.addQuery('opportunity.state', 'IN', 'open,accepted')
+    rm.addQuery('opportunity.state', 'IN', OPP_ACTIVE.join(','))
     rm.query()
     while (rm.next()) {
         const op = new GlideRecordSecure(T.opportunity)
         if (!op.get(str(rm, 'opportunity'))) continue
-        items.push({ id: rm.getUniqueValue(), number: str(op, 'number'), priority: num(op, 'priority') || 0 })
+        items.push({ id: rm.getUniqueValue(), number: str(op, 'number'), priority: num(op, 'priority') || 0, value: num(op, 'value') || 0 })
     }
     return items
 }
@@ -362,7 +386,7 @@ function reorder(b: any): Result {
 
 function resetRoadmap(): Result {
     if (!canWork()) return deny('Only analysts and admins can change the roadmap order.')
-    const items = roadmapItems().sort((x, y) => y.priority - x.priority || (x.number < y.number ? -1 : 1))
+    const items = roadmapItems().sort((x, y) => y.priority - x.priority || y.value - x.value || (x.number < y.number ? -1 : 1)) // PIV-033.04: equal priority → higher value first
     for (let i = 0; i < items.length; i++) if (!setSequence(items[i].id, i + 1)) return deny('You cannot change the roadmap order.')
     return { ok: true }
 }
@@ -387,6 +411,9 @@ function saveOutcome(f: any): Result {
     if (baselineChange && !admin) e.baseline = 'The baseline is locked after the first measurement. Only admins can change it (the change is audited).'
     const changeReason = String(f.baseline_change_reason || '').trim()
     if (baselineChange && admin && changeReason.length < 5) e.baseline_change_reason = 'Give a reason for changing the locked baseline.'
+    // PIV-007.04 – the owner (or an admin) may give the starting baseline while it is still empty; after that it is locked
+    const firstBaseline = !locked && f.baseline !== undefined && f.baseline !== null && String(f.baseline).trim() !== ''
+    if (firstBaseline && isNaN(Number(f.baseline))) e.baseline = 'Enter a number.'
     // PIV-024.02 – a sum or average needs a real field on the KPI table
     const isCalc = f.measurement_type !== 'manual'
     if (isCalc && (f.kpi_aggregate === 'sum' || f.kpi_aggregate === 'avg')) {
@@ -425,6 +452,7 @@ function saveOutcome(f: any): Result {
             gr.setValue('manual_value_date', manualDate)
         }
     }
+    if (firstBaseline) gr.setValue('baseline', Number(f.baseline)) // baseline date is set by the business rule
     if (baselineChange) {
         const before = str(gr, 'baseline')
         gr.setValue('baseline', Number(f.baseline))
@@ -508,9 +536,16 @@ function runAction(b: any): Result {
         case 'accept': return opportunityAction('accept', b)
         case 'reject': return opportunityAction('reject', b)
         case 'done': return opportunityAction('done', b)
+        case 'start': return opportunityAction('start', b)
+        case 'reopen': return opportunityAction('reopen', b)
         case 'assign': return opportunityAction('assign', b)
         case 'note': return opportunityAction('note', b)
         case 'scores': return opportunityAction('scores', b)
+        case 'runNow': { // PIV-036 – PIVOT admins only; queued and run in the background by x_enno_pivot.run_assessment
+            if (!isRole('admin')) return deny('Only PIVOT admins can start a run.')
+            const r = startRunNow(gs.getUserID())
+            return r.ok ? { ok: true, number: r.number, note: r.message } : { ok: false, error: r.message }
+        }
         case 'reorder': return reorder(b)
         case 'resetRoadmap': return resetRoadmap()
         case 'saveOutcome': return saveOutcome(b.fields || {})
@@ -521,11 +556,23 @@ function runAction(b: any): Result {
     return { ok: false, error: 'Unknown action.' }
 }
 
+// PIV-063.04 – every successful action answers { ok: true, note }
+const DEFAULT_NOTE: { [a: string]: string } = {
+    accept: 'Accepted. It stays on the roadmap until it is closed as done.', done: 'Closed as done.', start: 'Work started. The opportunity is now In progress.',
+    reopen: 'Reopened. The opportunity is New again.', assign: 'Assignment saved.', note: 'Note added.', scores: 'Scores saved.', reorder: 'Order changed.',
+    resetRoadmap: 'Roadmap back in priority order.', saveOutcome: 'Outcome saved.', updateCapability: 'Measurement settings saved.', mapFamily: 'Product family saved.', setProp: 'Saved.',
+}
+export function runActionWithNote(b: any): Result {
+    const r = runAction(b || {})
+    if (r.ok && !r.note) r.note = DEFAULT_NOTE[String(b && b.action)] || 'Saved.'
+    return r
+}
+
 export function action(request: any, response: any) {
     try {
         const body = request.body ? request.body.data : null
         response.setStatus(200)
-        response.setBody(runAction(body || {}) as any)
+        response.setBody(runActionWithNote(body || {}) as any)
     } catch (ex) {
         gs.error('PIVOT workspace action failed: ' + ex)
         response.setStatus(500)

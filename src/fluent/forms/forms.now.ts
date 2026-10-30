@@ -7,7 +7,7 @@ Form({
     view: default_view,
     sections: [
         { caption: 'Capability', content: [{ layout: 'two-column', leftElements: [{ field: 'number', type: 'table_field' }, { field: 'name', type: 'table_field' }, { field: 'product_family', type: 'table_field' }, { field: 'source', type: 'table_field' }, { field: 'active', type: 'table_field' }], rightElements: [{ field: 'licensed', type: 'table_field' }, { field: 'installed', type: 'table_field' }, { field: 'entitled_count', type: 'table_field' }, { field: 'allocated_count', type: 'table_field' }, { field: 'app_scope', type: 'table_field' }] }] },
-        { caption: 'Measurement', content: [{ layout: 'two-column', leftElements: [{ field: 'measure_table', type: 'table_field' }, { field: 'date_field', type: 'table_field' }, { field: 'days_back', type: 'table_field' }], rightElements: [{ field: 'target_value', type: 'table_field' }, { field: 'weight', type: 'table_field' }, { field: 'linked_app', type: 'table_field' }] }] },
+        { caption: 'Measurement', content: [{ layout: 'two-column', leftElements: [{ field: 'measure_table', type: 'table_field' }, { field: 'date_field', type: 'table_field' }, { field: 'days_back', type: 'table_field' }], rightElements: [{ field: 'target_value', type: 'table_field' }, { field: 'weight', type: 'table_field' }] }] },
         { caption: 'Measurement filter', content: [{ layout: 'one-column', elements: [{ field: 'measure_filter', type: 'table_field' }] }] },
         { caption: 'Discovery', content: [{ layout: 'two-column', leftElements: [{ field: 'last_discovered', type: 'table_field' }, { field: 'source_id', type: 'table_field' }, { field: 'version', type: 'table_field' }, { field: 'linked_app', type: 'table_field' }], rightElements: [{ field: 'not_found', type: 'table_field' }, { field: 'sys_domain', type: 'table_field' }] }] },
     ],
@@ -27,8 +27,8 @@ Form({
     table: 'x_enno_pivot_result',
     view: default_view,
     sections: [
-        { caption: 'Result', content: [{ layout: 'two-column', leftElements: [{ field: 'assessment', type: 'table_field' }, { field: 'capability', type: 'table_field' }, { field: 'licensed', type: 'table_field' }, { field: 'installed', type: 'table_field' }, { field: 'weight', type: 'table_field' }], rightElements: [{ field: 'measurement_status', type: 'table_field' }, { field: 'actual_value', type: 'table_field' }, { field: 'target_value', type: 'table_field' }, { field: 'score', type: 'table_field' }, { field: 'reason', type: 'table_field' }, { field: 'sys_domain', type: 'table_field' }] }] },
-        { caption: 'Measurement', content: [{ layout: 'two-column', leftElements: [{ field: 'measure_table', type: 'table_field' }, { field: 'filter_used', type: 'table_field' }, { field: 'days_back', type: 'table_field' }, { field: 'duration_ms', type: 'table_field' }], rightElements: [{ field: 'entitled_count', type: 'table_field' }, { field: 'allocated_count', type: 'table_field' }, { field: 'utilization', type: 'table_field' }, { field: 'over_allocated', type: 'table_field' }] }] },
+        { caption: 'Result', content: [{ layout: 'two-column', leftElements: [{ field: 'assessment', type: 'table_field' }, { field: 'capability', type: 'table_field' }, { field: 'licensed', type: 'table_field' }, { field: 'installed', type: 'table_field' }, { field: 'weight', type: 'table_field' }], rightElements: [{ field: 'score', type: 'table_field' }, { field: 'utilization', type: 'table_field' }, { field: 'measurement_status', type: 'table_field' }, { field: 'actual_value', type: 'table_field' }, { field: 'target_value', type: 'table_field' }, { field: 'reason', type: 'table_field' }, { field: 'sys_domain', type: 'table_field' }] }] }, // PIV-003.07: assessment, capability, then score and utilization
+        { caption: 'Measurement', content: [{ layout: 'two-column', leftElements: [{ field: 'measure_table', type: 'table_field' }, { field: 'filter_used', type: 'table_field' }, { field: 'days_back', type: 'table_field' }, { field: 'duration_ms', type: 'table_field' }], rightElements: [{ field: 'entitled_count', type: 'table_field' }, { field: 'allocated_count', type: 'table_field' }, { field: 'over_allocated', type: 'table_field' }] }] },
     ],
 })
 
@@ -36,10 +36,10 @@ Form({
     table: 'x_enno_pivot_opportunity',
     view: default_view,
     sections: [
-        { caption: 'Opportunity', content: [{ layout: 'two-column', leftElements: [{ field: 'number', type: 'table_field' }, { field: 'capability', type: 'table_field' }, { field: 'type', type: 'table_field' }, { field: 'assessment', type: 'table_field' }, { field: 'outcome', type: 'table_field' }], rightElements: [{ field: 'state', type: 'table_field' }, { field: 'assigned_to', type: 'table_field' }, { field: 'priority', type: 'table_field' }, { field: 'sys_domain', type: 'table_field' }] }] },
+        { caption: 'Opportunity', content: [{ layout: 'two-column', leftElements: [{ field: 'number', type: 'table_field' }, { field: 'capability', type: 'table_field' }, { field: 'type', type: 'table_field' }, { field: 'assessment', type: 'table_field' }, { field: 'outcome', type: 'table_field' }], rightElements: [{ field: 'state', type: 'table_field' }, { field: 'assignment_group', type: 'table_field' }, { field: 'assigned_to', type: 'table_field' }, { field: 'priority', type: 'table_field' }, { field: 'sys_domain', type: 'table_field' }] }] }, // PIV-032.02
         { caption: 'Description', content: [{ layout: 'one-column', elements: [{ field: 'description', type: 'table_field' }] }] },
         { caption: 'Priority', content: [{ layout: 'two-column', leftElements: [{ field: 'value', type: 'table_field' }, { field: 'business_impact', type: 'table_field' }, { field: 'effort', type: 'table_field' }], rightElements: [{ field: 'priority_reason', type: 'table_field' }] }] },
-        { caption: 'Decision', content: [{ layout: 'one-column', elements: [{ field: 'rejection_reason', type: 'table_field' }] }] },
+        { caption: 'Decision', content: [{ layout: 'one-column', elements: [{ field: 'rejection_reason', type: 'table_field' }, { field: 'work_notes', type: 'table_field' }, { type: 'formatter', formatterRef: 'Activities_Filtered' }] }] }, // PIV-032.01 / .03
     ],
 })
 
