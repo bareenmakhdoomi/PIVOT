@@ -1,11 +1,13 @@
 // PIV-018 … PIV-025 – the PIVOT assessment run (design B9), steps 1–6 and 10:
 //   1 start · 2 discovery · 3 usage measurement · 4 scoring + Platform Value Score · 5 licence utilization
 //   6 business outcome KPIs (baseline captured on the first measurement) · 10 complete.
-// Steps 7–9 (gap rules, priority, roadmap) arrive in Sprint 4.
+// Step 7 gap rules and priority (PIV-028–031), step 8 roadmap (PIV-033).
 // Every count is a GlideAggregate (never a row-by-row loop). Only PIVOT tables are written.
 import { gs, GlideRecord, GlideAggregate, GlideDateTime } from '@servicenow/glide'
 import { SCOPE, PROPERTIES, scoreOf, utilizationOf, overallScore, outcomeStatus, periodDays } from './rules.ts'
 import { runDiscovery, LogEntry } from './discovery.ts'
+import { runGapRules } from './gaps.ts'
+import { generate as generateRoadmap } from './roadmap.ts'
 
 const T = {
     capability: SCOPE + '_capability',
@@ -43,6 +45,7 @@ function aggregate(table: string, filter: string, dateField: string, daysBack: n
         const from = new GlideDateTime()
         from.addDaysUTC(-daysBack)
         ga.addQuery(dateField, '>=', from.getValue())
+        ga.addQuery(dateField, '<=', new GlideDateTime().getValue()) // PIV-018: only the last N days – future-dated rows are not counted
     }
     const fn = agg === 'count' ? 'COUNT' : agg === 'sum' ? 'SUM' : 'AVG'
     if (agg === 'count') (ga as any).addAggregate('COUNT')
@@ -63,7 +66,7 @@ export function runAssessment(trigger: 'weekly' | 'run_now', runBy: string): Run
     busy.addQuery('status', 'IN', 'queued,running')
     busy.query()
     while (busy.next()) {
-        const started = str(busy, 'run_date')
+        const started = str(busy, 'run_date') || str(busy, 'sys_created_on') // hand-made records have no run date
         const age = started ? (now() - new GlideDateTime(started).getNumericValue()) / 60000 : 0
         if (!limitMinutes || age < Math.max(60, limitMinutes * 2))
             return { ok: false, number: str(busy, 'number'), sysId: busy.getUniqueValue(), overallScore: null, message: 'Assessment ' + str(busy, 'number') + ' is already running. Only one assessment can run at a time.' }
@@ -183,8 +186,14 @@ export function runAssessment(trigger: 'weekly' | 'run_now', runBy: string): Run
         save({ overall_score: pvs === null ? '' : pvs, scored_count: measured, not_measured_count: notMeasured, inactive_count: inactive, slow_count: slow })
 
         // ---- 6 business outcomes
-        let outMeasured = 0, outNot = 0, baselines = 0
+        let outMeasured = 0, outNot = 0, baselines = 0, outInactive = 0
+        const inactOut = new GlideAggregate(T.outcome)
+        inactOut.addQuery('active', '=', false)
+        ;(inactOut as any).addAggregate('COUNT')
+        inactOut.query()
+        if (inactOut.next()) outInactive = Number((inactOut as any).getAggregate('COUNT')) || 0
         const o = new GlideRecord(T.outcome)
+        o.addEncodedQuery('active=true^ORactiveISEMPTY') // PIV-026.01 – inactive outcomes are skipped (empty = rows from before the field existed)
         o.query()
         while (o.next()) {
             let actual: number | null = null, reason = ''
@@ -221,19 +230,32 @@ export function runAssessment(trigger: 'weekly' | 'run_now', runBy: string): Run
                     baselines++
                 }
                 const st = outcomeStatus({ baseline: num(o, 'baseline'), target: num(o, 'target'), direction: str(o, 'direction') }, actual)
+                if (st.reason === 'Target equals baseline') add('warn', 6, 'Outcome "' + str(o, 'kpi') + '": target equals baseline – improvement cannot be calculated.')
+                // PIV-026.02 – one Outcome Result per outcome per assessment: update it if the step runs again
                 const or = new GlideRecord(T.outcomeResult)
-                or.initialize()
+                or.addQuery('assessment', sysId)
+                or.addQuery('outcome', o.getUniqueValue())
+                or.setLimit(1)
+                or.query()
+                const exists = or.next()
+                if (!exists) or.initialize()
                 or.setValue('assessment', sysId)
                 or.setValue('outcome', o.getUniqueValue())
-                if (num(o, 'baseline') !== null) or.setValue('baseline', num(o, 'baseline'))
-                if (actual !== null) or.setValue('actual', actual)
-                if (num(o, 'target') !== null) or.setValue('target', num(o, 'target'))
-                if (st.improvement !== null) or.setValue('improvement_pct', st.improvement)
+                or.setValue('capability', str(o, 'capability'))
+                or.setValue('baseline', num(o, 'baseline') === null ? '' : num(o, 'baseline'))
+                or.setValue('actual', actual === null ? '' : actual) // PIV-026.06 – no value is made up
+                or.setValue('target', num(o, 'target') === null ? '' : num(o, 'target'))
+                or.setValue('improvement_pct', st.improvement === null ? '' : st.improvement)
                 or.setValue('outcome_status', st.status)
                 or.setValue('reason', reason || st.reason)
-                or.insert()
-                if (actual !== null) o.setValue('current_value', actual)
-                o.setValue('status', st.status)
+                if (exists) or.update()
+                else or.insert()
+                // PIV-026.07 – a Not Measured run keeps the previous current value and its date
+                if (actual !== null) {
+                    o.setValue('current_value', actual)
+                    o.setValue('current_value_date', new GlideDateTime().getValue().split(' ')[0])
+                }
+                o.setValue('status', st.status) // PIV-027.06 – latest status on the outcome (audited)
                 o.update()
                 if (st.status === 'not_measured') outNot++
                 else outMeasured++
@@ -242,14 +264,24 @@ export function runAssessment(trigger: 'weekly' | 'run_now', runBy: string): Run
                 add('error', 6, 'Outcome "' + str(o, 'kpi') + '" could not be measured: ' + ex)
             }
         }
-        add('info', 6, 'Outcomes: ' + outMeasured + ' measured, ' + outNot + ' Not Measured' + (baselines ? ', ' + baselines + ' baseline(s) captured' : '') + '.')
-        add('info', 7, 'Gap rules, priority and roadmap arrive in Sprint 4 – no opportunities were created by this run.')
+        add('info', 6, 'Outcomes: ' + outMeasured + ' measured, ' + outNot + ' Not Measured' + (baselines ? ', ' + baselines + ' baseline(s) captured' : '') + (outInactive ? ', ' + outInactive + ' inactive skipped' : '') + '.')
+        save({})
+
+        // ---- 7 gap rules and priority (PIV-028–031)
+        const g = runGapRules(sysId, number, add)
+        add(g.errors ? 'warn' : 'info', 7, 'Gap rules: ' + g.created + ' opportunities created, ' + g.updated + ' updated, ' + g.resolved + ' gap(s) no longer detected' + (g.kept ? ', ' + g.kept + ' Rejected/Done kept closed' : '') + (g.errors ? ', ' + g.errors + ' error(s)' : '') + '.')
+        save({ opportunities_created: g.created })
+
+        // ---- 8 roadmap (PIV-033): Now / Next / Later by priority, rebuilt every run
+        const rm = generateRoadmap(sysId)
+        add(rm.ok ? 'info' : 'error', 8, rm.message)
+        save({})
 
         // ---- 10 complete
         const dur = new GlideDateTime('1970-01-01 00:00:00')
         dur.add(now() - startMs)
         add(log.some((l) => l.level === 'error') ? 'warn' : 'info', 10, 'Complete in ' + Math.round((now() - startMs) / 1000) + ' s' + (log.some((l) => l.level !== 'info') ? ' with warnings – see the log.' : '.'))
-        save({ status: 'complete', duration: dur.getValue() })
+        save({ status: log.some((l) => l.level === 'error') ? 'complete_with_warnings' : 'complete', duration: dur.getValue() }) // PIV-026.01 AC 3
         return { ok: true, number, sysId, overallScore: pvs, message: number + ' complete. Platform Value Score ' + (pvs === null ? 'Not Measured' : pvs) + '.' }
     } catch (ex) {
         add('error', 10, 'Run failed: ' + ex)
