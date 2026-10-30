@@ -226,7 +226,7 @@ function buildSnapshot() {
         me: { id: me, role: myRoles[0] || 'viewer', roles: myRoles.length ? myRoles : ['viewer'] },
         users, families: FAMILIES, properties: p,
         capabilities, assessments, logs, results, outcomeResults, opportunities, roadmap, outcomes,
-        engineAvailable: true, // PIV-034 – the assessment engine (weekly job and Run Now) aiAvailable: false,
+        engineAvailable: true, aiAvailable: false, // PIV-034 – the assessment engine (weekly job and Run Now)
     }
 }
 
@@ -325,7 +325,9 @@ function opportunityAction(kind: string, b: any): Result {
             }
             gr.setValue('assigned_to', to)
             addActivity(gr, to ? 'Assigned to ' + userName(to) + '.' : 'Unassigned.')
-            return save(gr)
+            const r = save(gr)
+            if (r.ok) r.note = to ? 'Assigned to ' + userName(to) + '.' : 'Unassigned.'
+            return r
         }
         case 'note': {
             const text = String(b.text || '').trim()
@@ -554,11 +556,23 @@ function runAction(b: any): Result {
     return { ok: false, error: 'Unknown action.' }
 }
 
+// PIV-063.04 – every successful action answers { ok: true, note }
+const DEFAULT_NOTE: { [a: string]: string } = {
+    accept: 'Accepted. It stays on the roadmap until it is closed as done.', done: 'Closed as done.', start: 'Work started. The opportunity is now In progress.',
+    reopen: 'Reopened. The opportunity is New again.', assign: 'Assignment saved.', note: 'Note added.', scores: 'Scores saved.', reorder: 'Order changed.',
+    resetRoadmap: 'Roadmap back in priority order.', saveOutcome: 'Outcome saved.', updateCapability: 'Measurement settings saved.', mapFamily: 'Product family saved.', setProp: 'Saved.',
+}
+export function runActionWithNote(b: any): Result {
+    const r = runAction(b || {})
+    if (r.ok && !r.note) r.note = DEFAULT_NOTE[String(b && b.action)] || 'Saved.'
+    return r
+}
+
 export function action(request: any, response: any) {
     try {
         const body = request.body ? request.body.data : null
         response.setStatus(200)
-        response.setBody(runAction(body || {}) as any)
+        response.setBody(runActionWithNote(body || {}) as any)
     } catch (ex) {
         gs.error('PIVOT workspace action failed: ' + ex)
         response.setStatus(500)
