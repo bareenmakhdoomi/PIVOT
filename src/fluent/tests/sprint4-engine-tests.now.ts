@@ -93,7 +93,8 @@ Test({
     var ua = new GlideRecord('sys_ui_action'); ua.addQuery('action_name', 'pivot_run_assessment_now'); ua.query();
     assertEqual({ name: 'UI action exists', shouldbe: true, value: ua.next() });
     assertEqual({ name: 'condition false for analyst', shouldbe: false, value: gs.hasRole('x_enno_pivot.admin') });
-    assertEqual({ name: 'condition is the admin role', shouldbe: "gs.hasRole('x_enno_pivot.admin')", value: ua.getValue('condition') });
+    var role = new GlideRecord('sys_ui_action_role'); role.addQuery('sys_ui_action', ua.getUniqueValue()); role.addQuery('sys_user_role.name', 'x_enno_pivot.admin'); role.query();
+    assertEqual({ name: 'button requires x_enno_pivot.admin', shouldbe: true, value: role.hasNext() });
     var on = function (f) { return ua.getValue(f) == 'true' || ua.getValue(f) == '1' ? '1' : '0'; };
     assertEqual({ name: 'shown on the list (banner button, show insert, show update)', shouldbe: '1,1,1', value: on('list_banner_button') + ',' + on('show_insert') + ',' + on('show_update') });
     stepResult.setOutputMessage('The button is not shown to analysts.');

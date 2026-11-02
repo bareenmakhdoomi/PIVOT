@@ -102,7 +102,9 @@ UiAction({
     showUpdate: true,
     showQuery: false,
     roles: [admin],
-    condition: "gs.hasRole('x_enno_pivot.admin')",
+    // No condition: on a list a condition makes the platform check it against selected rows, so a banner button with a
+    // condition does nothing when no row is selected. The role on the UI action hides it from non-admins and the script
+    // refuses anyone without x_enno_pivot.admin (PIV-036.04).
     hint: 'Starts a PIVOT assessment in the background. Only one assessment can run at a time.',
     order: 100,
     script: `(function () {
