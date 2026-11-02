@@ -118,7 +118,7 @@ UiAction({
     xhr.open('POST', '/api/x_enno_pivot/v1/workspace/action', true);
     xhr.setRequestHeader('Content-Type', 'application/json');
     xhr.setRequestHeader('Accept', 'application/json');
-    xhr.setRequestHeader('X-UserToken', window.g_ck || '');
+    xhr.setRequestHeader('X-UserToken', typeof g_ck !== 'undefined' ? g_ck : ''); // scoped client code has no window
     xhr.onreadystatechange = function () {
         if (xhr.readyState !== 4) return;
         var body = null;
