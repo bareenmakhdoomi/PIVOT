@@ -23,11 +23,13 @@ function boot() {
     const api = createApi(API_BASE)
     api.load()
         .then((snapshot: any) => startWorkspace(createPV(snapshot, api)))
-        .catch((err: Error) => {
+        .catch((err: Error & { noAccess?: boolean }) => {
+            // PIV-008.02 AC 3: no PIVOT role → a clear message and no data (the API returned 403 and nothing else)
+            const title = err && err.noAccess ? 'You do not have access to PIVOT' : 'PIVOT could not load.'
             main.innerHTML =
-                '<section class="panel"><div class="empty-state" role="alert"><b>PIVOT could not load.</b><p class="record-desc">' +
+                '<section class="panel"><div class="empty-state" role="alert"><b>' + title + '</b><p class="record-desc">' +
                 escapeHtml((err && err.message) || 'Unknown error.') +
-                '</p><button class="btn primary" id="pivotRetry" type="button">Try again</button></div></section>'
+                '</p>' + (err && err.noAccess ? '' : '<button class="btn primary" id="pivotRetry" type="button">Try again</button>') + '</div></section>'
             const retry = document.getElementById('pivotRetry')
             if (retry) retry.addEventListener('click', () => window.location.reload())
         })

@@ -24,7 +24,8 @@ function mount(host) {
   api.load()
     .then(snapshot => startWorkspace(createPV(snapshot, api)))
     .catch(err => {
-      main.innerHTML = '<section class="panel"><div class="empty-state" role="alert"><b>PIVOT could not load.</b><p class="record-desc">' + escapeHtml((err && err.message) || 'Unknown error.') + '</p><button class="btn primary" id="pivotRetry" type="button">Try again</button></div></section>';
+      const title = err && err.noAccess ? 'You do not have access to PIVOT' : 'PIVOT could not load.'; // PIV-008.02 AC 3
+      main.innerHTML = '<section class="panel"><div class="empty-state" role="alert"><b>' + title + '</b><p class="record-desc">' + escapeHtml((err && err.message) || 'Unknown error.') + '</p>' + (err && err.noAccess ? '' : '<button class="btn primary" id="pivotRetry" type="button">Try again</button>') + '</div></section>';
       const retry = document.getElementById('pivotRetry'); if (retry) retry.addEventListener('click', () => window.location.reload());
     });
 }

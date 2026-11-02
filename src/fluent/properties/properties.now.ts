@@ -27,3 +27,9 @@ Property({ $id: Now.ID['prop-max-run-minutes'], name: 'x_enno_pivot.max_run_minu
     description: 'Maximum assessment run time in minutes (PIV-022). Capabilities not measured when the limit is reached are Not Measured with reason "Run time limit reached". 0 = no limit.' })
 Property({ $id: Now.ID['prop-timing-log'], name: 'x_enno_pivot.timing_log', type: 'boolean', value: false, roles: access,
     description: 'When true, the assessment run log shows how long each measured capability took (PIV-022.02). Slow capabilities are always logged.' })
+Property({ $id: Now.ID['prop-priority-weight-value'], name: 'x_enno_pivot.priority_weight_value', type: 'string', value: '1', roles: access,
+    description: 'Weight of Value in Priority = (value × weight + business impact × weight) ÷ effort (PIV-031.06). 1 = the simple formula.' })
+Property({ $id: Now.ID['prop-priority-weight-impact'], name: 'x_enno_pivot.priority_weight_impact', type: 'string', value: '1', roles: access,
+    description: 'Weight of Business impact in the priority formula (PIV-031.06). 1 = the simple formula.' })
+Property({ $id: Now.ID['prop-gap-rule-config'], name: 'x_enno_pivot.gap_rule_config', type: 'string', value: '', roles: access,
+    description: 'Optional JSON with the approved opportunity wording and default value / effort per gap type, e.g. {"shelfware":{"title":"…","text":"{capability} is licensed but not installed…","value":4,"effort":3}}. Placeholders: {capability} {measured} {threshold} {kpi} {current} {target} {purchased} {allocated} {assessment}. Empty = PIVOT defaults (PIV-028.07 / .08).' })
