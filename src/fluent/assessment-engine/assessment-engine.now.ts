@@ -99,6 +99,7 @@ UiAction({
     list: { showBannerButton: true },
     showInsert: false,
     showUpdate: false,
+    showQuery: true, // list banner buttons only appear on lists when "Show query" is set
     roles: [admin],
     condition: "gs.hasRole('x_enno_pivot.admin')",
     hint: 'Starts a PIVOT assessment in the background. Only one assessment can run at a time.',

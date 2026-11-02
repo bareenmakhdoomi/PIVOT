@@ -78,8 +78,9 @@ export function busyRun(): { number: string; sysId: string; status: string } | n
         const started = str(busy, 'run_date') || str(busy, 'sys_created_on') // hand-made records have no run date
         const age = started ? (now() - new GlideDateTime(started).getNumericValue()) / 60000 : 0
         if (age < Math.max(60, limitMinutes * 2)) return { number: str(busy, 'number'), sysId: busy.getUniqueValue(), status: str(busy, 'status') }
+        const was = str(busy, 'status')
         busy.setValue('status', 'failed')
-        busy.setValue('log', JSON.stringify([{ ts: now(), level: 'error', step: 10, message: 'Set to Failed: it stayed ' + str(busy, 'status') + ' for ' + Math.round(age) + ' minutes (crashed or created by hand).' }]))
+        busy.setValue('log', JSON.stringify([{ ts: now(), level: 'error', step: 10, message: 'Set to Failed: it stayed ' + was + ' for ' + Math.round(age) + ' minutes (crashed or created by hand).' }]))
         busy.update()
     }
     return null
