@@ -75,8 +75,7 @@ function loadUsers(extraIds: string[]) {
     const users: { [id: string]: any } = {}
     const roleOf: { [id: string]: string } = {}
     const hr = new GlideRecord('sys_user_has_role')
-    hr.addQuery('role.name', 'STARTSWITH', SCOPE + '.')
-    hr.addQuery('user.active', true)
+    hr.addEncodedQuery('role.nameSTARTSWITH' + SCOPE + '.^user.active=true')
     hr.setLimit(2000)
     hr.query()
     while (hr.next()) {
@@ -260,13 +259,12 @@ function save(gr: any): Result {
 }
 function userName(id: string) {
     const u = new GlideRecord('sys_user')
-    return u.get(id) ? str(u, 'name') : ''
+    return u.get('sys_id', id) ? str(u, 'name') : ''
 }
 function isWorker(userId: string) {
+    if (!/^[0-9a-f]{32}$/i.test(userId)) return false
     const hr = new GlideRecord('sys_user_has_role')
-    hr.addQuery('user', userId)
-    hr.addQuery('user.active', true)
-    hr.addQuery('role.name', 'IN', SCOPE + '.analyst,' + SCOPE + '.admin')
+    hr.addEncodedQuery('user=' + userId + '^user.active=true^role.nameIN' + SCOPE + '.analyst,' + SCOPE + '.admin')
     hr.setLimit(1)
     hr.query()
     return hr.hasNext()
@@ -317,8 +315,8 @@ function opportunityAction(kind: string, b: any): Result {
             const group = str(gr, 'assignment_group')
             if (to && group) { // PIV-032.02
                 const m = new GlideRecord('sys_user_grmember')
-                m.addQuery('group', group)
-                m.addQuery('user', to)
+                if (!/^[0-9a-f]{32}$/i.test(group) || !/^[0-9a-f]{32}$/i.test(to)) return { ok: false, error: 'Choose a valid user and assignment group.' }
+                m.addEncodedQuery('group=' + group + '^user=' + to)
                 m.setLimit(1)
                 m.query()
                 if (!m.hasNext()) return { ok: false, error: userName(to) + ' is not a member of the assignment group ' + gr.getDisplayValue('assignment_group') + '.' }
@@ -463,13 +461,13 @@ function saveOutcome(f: any): Result {
     let ownerNote = ''
     if (ownerId) {
         const u = new GlideRecord('sys_user')
-        if (u.get(ownerId) && !bool(u, 'active')) ownerNote = ' Owner is inactive – choose an active owner.'
+        if (u.get('sys_id', ownerId) && !bool(u, 'active')) ownerNote = ' Owner is inactive – choose an active owner.'
     }
     if (isNew) {
         let owner = me
         if (admin && f.owner && f.owner !== me) {
             const u = new GlideRecord('sys_user')
-            if (u.get(String(f.owner)) && bool(u, 'active')) owner = String(f.owner)
+            if (u.get('sys_id', String(f.owner)) && bool(u, 'active')) owner = String(f.owner)
         }
         gr.setValue('owner', owner)
         const id = gr.insert()
