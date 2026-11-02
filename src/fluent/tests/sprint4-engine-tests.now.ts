@@ -94,7 +94,8 @@ Test({
     assertEqual({ name: 'UI action exists', shouldbe: true, value: ua.next() });
     assertEqual({ name: 'condition false for analyst', shouldbe: false, value: gs.hasRole('x_enno_pivot.admin') });
     assertEqual({ name: 'condition is the admin role', shouldbe: "gs.hasRole('x_enno_pivot.admin')", value: ua.getValue('condition') });
-    assertEqual({ name: 'shown on the list (banner button + show query)', shouldbe: '1,1', value: (ua.getValue('list_banner_button') == 'true' || ua.getValue('list_banner_button') == '1' ? '1' : '0') + ',' + (ua.getValue('show_query') == 'true' || ua.getValue('show_query') == '1' ? '1' : '0') });
+    var on = function (f) { return ua.getValue(f) == 'true' || ua.getValue(f) == '1' ? '1' : '0'; };
+    assertEqual({ name: 'shown on the list (banner button, show insert, show update)', shouldbe: '1,1,1', value: on('list_banner_button') + ',' + on('show_insert') + ',' + on('show_update') });
     stepResult.setOutputMessage('The button is not shown to analysts.');
     return true;
 })(outputs, steps, params, stepResult, assertEqual);`,

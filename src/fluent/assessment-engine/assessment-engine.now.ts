@@ -97,9 +97,10 @@ UiAction({
     actionName: 'pivot_run_assessment_now',
     active: true,
     list: { showBannerButton: true },
-    showInsert: false,
-    showUpdate: false,
-    showQuery: true, // list banner buttons only appear on lists when "Show query" is set
+    // List banner buttons follow the platform's own (e.g. "New"): Show insert and Show update on, Show query off.
+    showInsert: true,
+    showUpdate: true,
+    showQuery: false,
     roles: [admin],
     condition: "gs.hasRole('x_enno_pivot.admin')",
     hint: 'Starts a PIVOT assessment in the background. Only one assessment can run at a time.',
