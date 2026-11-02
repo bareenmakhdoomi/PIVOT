@@ -90,6 +90,9 @@ ScriptAction({
 })
 
 // PIV-036.03 / .04 / .05 / .06 – "Run assessment now" list banner button, PIVOT admins only.
+// It is a client action: the classic list only submits server actions for selected rows ("No records selected").
+// The click posts runNow to the PIVOT API (same rules as the workspace: admins only, one run at a time), shows the
+// answer as a message on the list (no reload, so the message stays) – the run itself happens in the background.
 UiAction({
     $id: Now.ID['ua-run-assessment-now'],
     table: 'x_enno_pivot_assessment',
@@ -101,20 +104,31 @@ UiAction({
     showInsert: true,
     showUpdate: true,
     showQuery: false,
+    client: { isClient: true, isUi16Compatible: true, isUi11Compatible: true, onClick: 'pivotRunAssessmentNow()' },
+    isolateScript: false,
     roles: [admin],
-    // No condition: on a list a condition makes the platform check it against selected rows, so a banner button with a
-    // condition does nothing when no row is selected. The role on the UI action hides it from non-admins and the script
-    // refuses anyone without x_enno_pivot.admin (PIV-036.04).
     hint: 'Starts a PIVOT assessment in the background. Only one assessment can run at a time.',
     order: 100,
-    script: `(function () {
-    if (!gs.hasRole('x_enno_pivot.admin')) {
-        gs.addErrorMessage('Only PIVOT admins can start an assessment.');
-    } else {
-        var r = require('x_enno_pivot/pivot/0.0.1/src/server/pivot/assessment.ts').startRunNow(gs.getUserID());
-        if (r.ok) gs.addInfoMessage('Assessment started. Refresh this list to see progress.');
-        else gs.addErrorMessage(r.message);
-    }
-    action.setRedirectURL('x_enno_pivot_assessment_list.do?sysparm_query=ORDERBYDESCsys_created_on');
-})();`,
+    script: `function pivotRunAssessmentNow() {
+    var show = function (text, type) {
+        try { GlideUI.get().clearOutputMessages(); GlideUI.get().addOutputMessage({ msg: text, type: type, preventDuplicates: true }); }
+        catch (e) { alert(text); }
+    };
+    var xhr = new XMLHttpRequest();
+    xhr.open('POST', '/api/x_enno_pivot/v1/workspace/action', true);
+    xhr.setRequestHeader('Content-Type', 'application/json');
+    xhr.setRequestHeader('Accept', 'application/json');
+    xhr.setRequestHeader('X-UserToken', window.g_ck || '');
+    xhr.onreadystatechange = function () {
+        if (xhr.readyState !== 4) return;
+        var body = null;
+        try { body = JSON.parse(xhr.responseText); } catch (e) { body = null; }
+        var r = body && body.result ? body.result : body;
+        if (xhr.status === 200 && r && r.ok) show(r.note || 'Assessment started. Refresh this list to see progress.', 'info');
+        else if (xhr.status === 403) show('Only PIVOT admins can start an assessment.', 'error');
+        else show((r && r.error) || 'The assessment could not be started.', 'error');
+    };
+    xhr.send(JSON.stringify({ action: 'runNow' }));
+    return false;
+}`,
 })
