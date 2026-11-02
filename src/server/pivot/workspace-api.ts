@@ -180,7 +180,7 @@ function buildSnapshot() {
         opportunities.push({
             id: op.getUniqueValue(), number: str(op, 'number'), capability: str(op, 'capability'), outcome: str(op, 'outcome'), type: str(op, 'type'),
             description: str(op, 'description'), value: num(op, 'value'), effort: num(op, 'effort'), business_impact: num(op, 'business_impact'),
-            priority: num(op, 'priority'), priority_reason: str(op, 'priority_reason'), state: str(op, 'state') || 'open', assigned_to: str(op, 'assigned_to'),
+            priority: num(op, 'priority'), priority_reason: str(op, 'priority_reason'), state: str(op, 'state') || 'new', assigned_to: str(op, 'assigned_to'),
             assignment_group: str(op, 'assignment_group'), groupName: op.getDisplayValue('assignment_group') || '', gap_resolved: str(op, 'gap_resolved') === '1' || str(op, 'gap_resolved') === 'true',
             rejection_reason: str(op, 'rejection_reason'), assessment: numberOf[str(op, 'assessment')] || op.getDisplayValue('assessment') || '',
             created: ms(str(op, 'sys_created_on')), updated: ms(str(op, 'sys_updated_on')), activity: Array.isArray(activity) ? activity : [],
@@ -280,7 +280,7 @@ function opportunityAction(kind: string, b: any): Result {
     const state = str(gr, 'state')
     switch (kind) {
         case 'accept':
-            if (state !== 'open') return { ok: false, error: 'Only new opportunities can be accepted.' }
+            if (state !== 'new' && state !== 'open') return { ok: false, error: 'Only new opportunities can be accepted.' }
             gr.setValue('state', 'accepted')
             addActivity(gr, 'Accepted.')
             return save(gr)
@@ -291,7 +291,7 @@ function opportunityAction(kind: string, b: any): Result {
             return save(gr)
         case 'reopen':
             if (state !== 'done' && state !== 'rejected') return { ok: false, error: 'Only done or rejected opportunities can be reopened.' }
-            gr.setValue('state', 'open')
+            gr.setValue('state', 'new')
             addActivity(gr, 'Reopened (was ' + (state === 'done' ? 'Done' : 'Rejected') + ').')
             return save(gr)
         case 'done':

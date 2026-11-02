@@ -67,23 +67,24 @@ export function validateRejection(reason: unknown): Errors {
     return String(reason).trim().length < 10 ? { rejection_reason: 'Enter a reason of at least 10 characters.' } : {}
 }
 
-/** PIV-032.01 – opportunity state flow. New (value 'open') → Accepted → In progress → Done; Rejected from any active state.
+/** PIV-032.01 – opportunity state flow. New → Accepted → In progress → Done; Rejected from any active state.
  *  Done and Rejected can only be reopened (back to New). Active states are the ones the gap rules refresh. */
-export const OPP_ACTIVE = ['open', 'accepted', 'in_progress']
-export const OPP_STATE_LABEL: { [s: string]: string } = { open: 'New', accepted: 'Accepted', in_progress: 'In progress', done: 'Done', rejected: 'Rejected' }
+export const OPP_ACTIVE = ['new', 'open', 'accepted', 'in_progress']
+export const OPP_STATE_LABEL: { [s: string]: string } = { new: 'New', open: 'New', accepted: 'Accepted', in_progress: 'In progress', done: 'Done', rejected: 'Rejected' }
 export const OPP_NEXT: { [s: string]: string[] } = {
+    new: ['accepted', 'rejected'],
     open: ['accepted', 'rejected'],
     accepted: ['in_progress', 'done', 'rejected'],
     in_progress: ['done', 'accepted', 'rejected'],
-    done: ['open'],
-    rejected: ['open'],
+    done: ['new'],
+    rejected: ['new'],
 }
 export function validateTransition(from: string, to: string): string {
     if (!from || from === to) return ''
     const next = OPP_NEXT[from]
     if (!next || next.indexOf(to) > -1) return ''
     if (from === 'done' || from === 'rejected') return 'A ' + OPP_STATE_LABEL[from] + ' opportunity can only be reopened.'
-    return 'From ' + OPP_STATE_LABEL[from] + ' you can move to ' + next.map((n) => (n === 'open' ? 'New' : OPP_STATE_LABEL[n])).join(', ') + '.'
+    return 'From ' + OPP_STATE_LABEL[from] + ' you can move to ' + next.map((n) => OPP_STATE_LABEL[n] || n).join(', ') + '.'
 }
 
 export const TABLE_NAME = /^[a-z0-9_]+$/

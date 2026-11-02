@@ -196,6 +196,7 @@ export function opportunities(request: any) {
     const q: string[] = []
     const state = param(request, 'state') || 'active'
     if (state === 'active') q.push('stateIN' + OPP_ACTIVE.join(','))
+    else if (state === 'new') q.push('stateINnew,open')
     else if (state !== 'all') q.push('state=' + safe(state))
     if (param(request, 'type')) q.push('type=' + safe(param(request, 'type')))
     if (param(request, 'capability')) q.push('capability=' + safe(param(request, 'capability')))

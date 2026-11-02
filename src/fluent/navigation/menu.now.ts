@@ -29,7 +29,7 @@ Record({
     table: 'sys_app_module',
     data: {
         title: 'My Opportunities', application: pivotMenu, link_type: 'FILTER', name: 'x_enno_pivot_opportunity',
-        filter: 'assigned_to=javascript:gs.getUserID()^stateINopen,accepted,in_progress^ORDERBYDESCpriority',
+        filter: 'assigned_to=javascript:gs.getUserID()^stateINnew,open,accepted,in_progress^ORDERBYDESCpriority',
         hint: 'Opportunities assigned to me that are not done or rejected', roles: ['x_enno_pivot.viewer'], active: true, order: 110,
     },
 })
@@ -79,12 +79,12 @@ Record({
 Record({
     $id: Now.ID['pivot-module-opportunities'],
     table: 'sys_app_module',
-    data: { title: 'Opportunities', application: pivotMenu, link_type: 'FILTER', name: 'x_enno_pivot_opportunity', filter: 'stateINopen,accepted,in_progress^ORDERBYDESCpriority', roles: ['x_enno_pivot.admin'], active: true, order: 350 },
+    data: { title: 'Opportunities', application: pivotMenu, link_type: 'FILTER', name: 'x_enno_pivot_opportunity', filter: 'stateINnew,open,accepted,in_progress^ORDERBYDESCpriority', roles: ['x_enno_pivot.admin'], active: true, order: 350 },
 })
 Record({
     $id: Now.ID['pivot-module-gap-resolved'],
     table: 'sys_app_module',
-    data: { title: 'Gap no longer detected', application: pivotMenu, link_type: 'FILTER', name: 'x_enno_pivot_opportunity', filter: 'gap_resolved=true^stateINopen,accepted,in_progress^ORDERBYDESCsys_updated_on', hint: 'Open opportunities whose gap the last run no longer found – confirm and close them (PIV-030.05).', roles: ['x_enno_pivot.admin'], active: true, order: 355 },
+    data: { title: 'Gap no longer detected', application: pivotMenu, link_type: 'FILTER', name: 'x_enno_pivot_opportunity', filter: 'gap_resolved=true^stateINnew,open,accepted,in_progress^ORDERBYDESCsys_updated_on', hint: 'Open opportunities whose gap the last run no longer found – confirm and close them (PIV-030.05).', roles: ['x_enno_pivot.admin'], active: true, order: 355 },
 })
 Record({
     $id: Now.ID['pivot-module-outcomes'],

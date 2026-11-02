@@ -19,6 +19,7 @@ export const x_enno_pivot_opportunity = Table({
                 shelfware: { label: 'Shelfware', sequence: 10 }, idle_licences: { label: 'Idle licences', sequence: 20 },
                 low_adoption: { label: 'Low adoption', sequence: 30 }, not_measured: { label: 'Not measured', sequence: 40 },
                 weak_outcome: { label: 'Weak outcome', sequence: 50 }, adoption_potential: { label: 'Adoption potential', sequence: 60 },
+                adoption: { label: 'Adoption', sequence: 70 }, license: { label: 'License', sequence: 80 },
             },
         }),
         short_description: StringColumn({ label: 'Short description', maxLength: 160 }),
@@ -31,10 +32,9 @@ export const x_enno_pivot_opportunity = Table({
         priority: DecimalColumn({ label: 'Priority', readOnly: true, scale: 2 }),
         priority_reason: StringColumn({ label: 'Priority reason', maxLength: 500, readOnly: true }),
         state: ChoiceColumn({ dropdown: 'dropdown_without_none',
-            label: 'State', default: 'open',
-            // PIV-032.01 – New → Accepted → In progress → Done, Rejected from any active state; Done/Rejected only reopen.
-            // The value of New stays 'open' so existing records and reports keep working.
-            choices: { open: { label: 'New', sequence: 10 }, accepted: { label: 'Accepted', sequence: 20 }, in_progress: { label: 'In progress', sequence: 30 }, done: { label: 'Done', sequence: 40 }, rejected: { label: 'Rejected', sequence: 50 } },
+            label: 'State', default: 'new',
+            // PIV-032.01 / STRY0015244 – New → Accepted → In progress → Done; Rejected from any active state.
+            choices: { new: { label: 'New', sequence: 10 }, accepted: { label: 'Accepted', sequence: 20 }, in_progress: { label: 'In progress', sequence: 30 }, rejected: { label: 'Rejected', sequence: 40 }, done: { label: 'Done', sequence: 50 } },
         }),
         // PIV-032.02 – owner of the action; with a group, only its members can be chosen
         assignment_group: ReferenceColumn({ label: 'Assignment group', referenceTable: 'sys_user_group', referenceQual: 'active=true' }),

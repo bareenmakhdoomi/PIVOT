@@ -22,7 +22,7 @@ const PROP_META = [
 ];
 const PROP_TYPES = { admin_group: 'string', ai_enabled: 'boolean', gap_rule_config: 'string' };
 // PIV-032.01 – active opportunity states (the gap rules refresh these; Done/Rejected are closed)
-const ACTIVE = ['open', 'accepted', 'in_progress'];
+const ACTIVE = ['new', 'open', 'accepted', 'in_progress'];
 const ROLE_RANK = ['viewer', 'business_owner', 'analyst', 'admin'];
 
 export function createPV(first, api) {
@@ -34,8 +34,8 @@ export function createPV(first, api) {
   const LABELS = {
     source: { subscription: 'Subscription', store_app: 'Store app', plugin: 'Plugin', manual: 'Manual' },
     family: {}, status: { queued: 'Queued', running: 'Running', complete: 'Complete', failed: 'Failed', none: 'No run yet' },
-    type: { shelfware: 'Shelfware', idle_licences: 'Idle licences', low_adoption: 'Low adoption', not_measured: 'Not measured', weak_outcome: 'Weak outcome', adoption_potential: 'Adoption potential' },
-    state: { open: 'New', accepted: 'Accepted', in_progress: 'In progress', done: 'Done', rejected: 'Rejected' },
+    type: { shelfware: 'Shelfware', idle_licences: 'Idle licences', low_adoption: 'Low adoption', not_measured: 'Not measured', weak_outcome: 'Weak outcome', adoption_potential: 'Adoption potential', adoption: 'Adoption', license: 'License' },
+    state: { new: 'New', open: 'New', accepted: 'Accepted', in_progress: 'In progress', done: 'Done', rejected: 'Rejected' },
     phase: { now: 'Now', next: 'Next', later: 'Later' },
     outcome: { improved: 'Improved', on_target: 'On target', below_target: 'Below target', not_measured: 'Not measured' },
     direction: { higher_better: 'Higher is better', lower_better: 'Lower is better' },
@@ -282,7 +282,7 @@ export function createPV(first, api) {
       o = o || {}; const q = (o.q || '').toLowerCase(), st = o.state || 'active';
       const rows = S.opps.filter(x => {
         if (st === 'active' && !ACTIVE.includes(x.state)) return false;
-        if (st !== 'active' && st !== 'all' && x.state !== st) return false;
+        if (st !== 'active' && st !== 'all' && !(st === 'new' ? x.state === 'new' || x.state === 'open' : x.state === st)) return false;
         if (o.type && o.type !== 'all' && x.type !== o.type) return false;
         if (o.phase && o.phase !== 'all' && x.phase !== o.phase) return false;
         if (o.capability && x.capability !== o.capability) return false;

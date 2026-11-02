@@ -104,7 +104,7 @@ export function runGapRules(assessmentId: string, assessmentNumber: string, add:
                     n.setValue('capability', capId)
                     n.setValue('assessment', assessmentId)
                     n.setValue('type', g.type)
-                    n.setValue('state', 'open')
+                    n.setValue('state', 'new')
                     n.setValue('measured_value', g.measured)
                     n.setValue('short_description', title)
                     n.setValue('description', text)

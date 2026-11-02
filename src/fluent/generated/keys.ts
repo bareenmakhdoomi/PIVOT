@@ -533,6 +533,14 @@ declare global {
                         table: 'sys_atf_step'
                         id: '4801386de9394dc18bffa9bc33e90dce'
                     }
+                    'atf-stry0015244-opportunity-choices': {
+                        table: 'sys_atf_test'
+                        id: '2c00bb3446e545a19a8178050a889ec5'
+                    }
+                    'atf-stry0015244-opportunity-choices-check': {
+                        table: 'sys_atf_step'
+                        id: '6a12d36bde834973ae27c79d4766226b'
+                    }
                     bom_json: {
                         table: 'sys_module'
                         id: 'f0918765f8b240bf92054b27586857dd'
@@ -585,6 +593,10 @@ declare global {
                         table: 'sys_ui_related_list'
                         id: 'f1c3f75c4e554e5393151dfa4b41d5fe'
                     }
+                    clear_filter_on_table_change: {
+                        table: 'sys_script'
+                        id: 'db3dd5a64fb64eb3aa0ea6a1c9e899b9'
+                    }
                     'cs-opportunity-rejection-submit': {
                         table: 'sys_script_client'
                         id: 'adb352eefffc4509879e84046b961c0a'
@@ -613,6 +625,14 @@ declare global {
                         table: 'sysevent_register'
                         id: '029dc37ba9a844308a5d8fc81b74d45c'
                     }
+                    measure_filter_onload_script: {
+                        table: 'sys_script_client'
+                        id: '7d3a5458a260404a9e8d1ce11269f784'
+                    }
+                    measure_table_onchange_script: {
+                        table: 'sys_script_client'
+                        id: '2f8d40022b944db3bee48139cb500806'
+                    }
                     'opportunity-related-list-roadmap-items': {
                         table: 'sys_ui_related_list_entry'
                         id: '3b37b036b8aa451cb1aa137b6a9c8794'
@@ -628,18 +648,6 @@ declare global {
                     'outcome-related-lists': {
                         table: 'sys_ui_related_list'
                         id: '8a572f99f0cb444bbcc4cd21775e7549'
-                    }
-                    clear_filter_on_table_change: {
-                        table: 'sys_script'
-                        id: 'db3dd5a64fb64eb3aa0ea6a1c9e899b9'
-                    }
-                    measure_filter_onload_script: {
-                        table: 'sys_script_client'
-                        id: '7d3a5458a260404a9e8d1ce11269f784'
-                    }
-                    measure_table_onchange_script: {
-                        table: 'sys_script_client'
-                        id: '2f8d40022b944db3bee48139cb500806'
                     }
                     package_json: {
                         table: 'sys_module'
@@ -1076,10 +1084,6 @@ declare global {
                     'ua-run-assessment-now': {
                         table: 'sys_ui_action'
                         id: '5d54632e693c46d98093fe46adf968f5'
-                    }
-                    validate_entitled_count: {
-                        table: 'sys_script'
-                        id: '928b0e91de6942659fc8c803931e0d81'
                     }
                     validate_entitled_count: {
                         table: 'sys_script'
@@ -2044,6 +2048,14 @@ declare global {
                         }
                     },
                     {
+                        table: 'sys_variable_value'
+                        id: '148c61d32d4b48448d0ddc406d460f28'
+                        key: {
+                            document_key: 'e272648d95de435895468bb4c628c0af'
+                            variable: '989d9e235324220002c6435723dc3484'
+                        }
+                    },
+                    {
                         table: 'sys_security_acl_role'
                         id: '14f7e5b3bf2c40ceb16fde2e70f75496'
                         key: {
@@ -2054,14 +2066,6 @@ declare global {
                                     name: 'x_enno_pivot.admin'
                                 }
                             }
-                        }
-                    },
-                    {
-                        table: 'sys_variable_value'
-                        id: '148c61d32d4b48448d0ddc406d460f28'
-                        key: {
-                            document_key: 'e272648d95de435895468bb4c628c0af'
-                            variable: '989d9e235324220002c6435723dc3484'
                         }
                     },
                     {
@@ -3174,6 +3178,14 @@ declare global {
                         }
                     },
                     {
+                        table: 'sys_variable_value'
+                        id: '282b006d39ba4becaba774fb2186eae9'
+                        key: {
+                            document_key: '6a12d36bde834973ae27c79d4766226b'
+                            variable: '989d9e235324220002c6435723dc3484'
+                        }
+                    },
+                    {
                         table: 'sys_dictionary'
                         id: '287669a7eb674168844d92819a33f59b'
                         key: {
@@ -3664,6 +3676,7 @@ declare global {
                     {
                         table: 'sys_choice'
                         id: '32367984df4f4dd4b4905cc1d9f2f346'
+                        deleted: true
                         key: {
                             name: 'x_enno_pivot_opportunity'
                             element: 'state'
@@ -3812,6 +3825,17 @@ declare global {
                         key: {
                             name: 'x_enno_pivot_roadmap_item'
                             element: 'sequence'
+                        }
+                    },
+                    {
+                        table: 'sys_choice'
+                        id: '341ebd780dff4c1598ccf83b1c75217c'
+                        key: {
+                            name: 'x_enno_pivot_opportunity'
+                            element: 'type'
+                            value: 'license'
+                            language: 'en'
+                            dependent_value: 'NULL'
                         }
                     },
                     {
@@ -4675,6 +4699,17 @@ declare global {
                         }
                     },
                     {
+                        table: 'sys_choice'
+                        id: '45844dfb5f2b4824a6f9e6c19db40e06'
+                        key: {
+                            name: 'x_enno_pivot_opportunity'
+                            element: 'type'
+                            value: 'adoption'
+                            language: 'en'
+                            dependent_value: 'NULL'
+                        }
+                    },
+                    {
                         table: 'sys_ui_policy_action'
                         id: '460c61d1f27d4ed59cdb9bb4257eb118'
                         key: {
@@ -5285,19 +5320,19 @@ declare global {
                         }
                     },
                     {
-                        table: 'sys_variable_value'
-                        id: '50e0b6531eed43618f046ad7c7b85259'
-                        key: {
-                            document_key: 'a7061fddacca4c768bbf4efbed882acc'
-                            variable: '6f69fc4aff6433008d3f5d9ad53bf18c'
-                        }
-                    },
-                    {
                         table: 'sys_dictionary'
                         id: '50c5a328f4ac4e1997b262da892dbeea'
                         key: {
                             name: 'x_enno_pivot_security_test_log'
                             element: 'actual_result'
+                        }
+                    },
+                    {
+                        table: 'sys_variable_value'
+                        id: '50e0b6531eed43618f046ad7c7b85259'
+                        key: {
+                            document_key: 'a7061fddacca4c768bbf4efbed882acc'
+                            variable: '6f69fc4aff6433008d3f5d9ad53bf18c'
                         }
                     },
                     {
@@ -6645,20 +6680,20 @@ declare global {
                         }
                     },
                     {
-                        table: 'sys_variable_value'
-                        id: '6c60bcfff9064e6eaab4fc270c94db77'
-                        key: {
-                            document_key: '44375c9fa89743699722b2bb46db32bf'
-                            variable: '1985e0ceff2433008d3f5d9ad53bf1ba'
-                        }
-                    },
-                    {
                         table: 'sys_documentation'
                         id: '6acf3575c3de439489af945d0a88b6c2'
                         key: {
                             name: 'x_enno_pivot_security_defect'
                             element: 'sys_domain'
                             language: 'en'
+                        }
+                    },
+                    {
+                        table: 'sys_variable_value'
+                        id: '6c60bcfff9064e6eaab4fc270c94db77'
+                        key: {
+                            document_key: '44375c9fa89743699722b2bb46db32bf'
+                            variable: '1985e0ceff2433008d3f5d9ad53bf1ba'
                         }
                     },
                     {
@@ -8266,14 +8301,6 @@ declare global {
                         }
                     },
                     {
-                        table: 'sys_variable_value'
-                        id: '8f414a586fc84e538160f980148cfa64'
-                        key: {
-                            document_key: 'f5a290a2f758462987403c19d3b9d3e2'
-                            variable: '989d9e235324220002c6435723dc3484'
-                        }
-                    },
-                    {
                         table: 'sys_security_acl_role'
                         id: '8f14809e5c5c47f38316fe5c229c3f41'
                         key: {
@@ -8284,6 +8311,14 @@ declare global {
                                     name: 'x_enno_pivot.admin'
                                 }
                             }
+                        }
+                    },
+                    {
+                        table: 'sys_variable_value'
+                        id: '8f414a586fc84e538160f980148cfa64'
+                        key: {
+                            document_key: 'f5a290a2f758462987403c19d3b9d3e2'
+                            variable: '989d9e235324220002c6435723dc3484'
                         }
                     },
                     {
@@ -9345,6 +9380,15 @@ declare global {
                         }
                     },
                     {
+                        table: 'sys_element_mapping'
+                        id: 'a169c1ca0ec34f1f8bcab22e9e0e4238'
+                        key: {
+                            id: '6a12d36bde834973ae27c79d4766226b'
+                            table: 'var__m_atf_input_variable_41de4a935332120028bc29cac2dc349a'
+                            field: 'script'
+                        }
+                    },
+                    {
                         table: 'sys_variable_value'
                         id: 'a1be37de46ce4a9ca3cc88e5c9f449ea'
                         key: {
@@ -9883,14 +9927,6 @@ declare global {
                         }
                     },
                     {
-                        table: 'sys_variable_value'
-                        id: 'afa68f505dea48cd890acf28634974d5'
-                        key: {
-                            document_key: '16276da57dc0435f81c088ed3853d81d'
-                            variable: '42f2564b73031300440211d8faf6a777'
-                        }
-                    },
-                    {
                         table: 'sys_ui_element'
                         id: 'af054e0f97274f6db1dfcda0ce22d4c8'
                         key: {
@@ -9910,6 +9946,14 @@ declare global {
                             }
                             element: 'number'
                             position: '1'
+                        }
+                    },
+                    {
+                        table: 'sys_variable_value'
+                        id: 'afa68f505dea48cd890acf28634974d5'
+                        key: {
+                            document_key: '16276da57dc0435f81c088ed3853d81d'
+                            variable: '42f2564b73031300440211d8faf6a777'
                         }
                     },
                     {
@@ -11354,19 +11398,19 @@ declare global {
                         }
                     },
                     {
-                        table: 'sys_variable_value'
-                        id: 'cb25cdec33004f7fb781b8ff3b7405ee'
-                        key: {
-                            document_key: 'a7061fddacca4c768bbf4efbed882acc'
-                            variable: '1778a7480f20101091d0f00c97767e03'
-                        }
-                    },
-                    {
                         table: 'sys_dictionary'
                         id: 'cb0fc55ab41248deb70e604ead3f1188'
                         key: {
                             name: 'x_enno_pivot_security_test_log'
                             element: 'sys_domain'
+                        }
+                    },
+                    {
+                        table: 'sys_variable_value'
+                        id: 'cb25cdec33004f7fb781b8ff3b7405ee'
+                        key: {
+                            document_key: 'a7061fddacca4c768bbf4efbed882acc'
+                            variable: '1778a7480f20101091d0f00c97767e03'
                         }
                     },
                     {
@@ -11757,14 +11801,6 @@ declare global {
                         }
                     },
                     {
-                        table: 'sys_variable_value'
-                        id: 'd28c418a396b4c3fb6a12e40f3e0b37f'
-                        key: {
-                            document_key: '44375c9fa89743699722b2bb46db32bf'
-                            variable: '6f69fc4aff6433008d3f5d9ad53bf18c'
-                        }
-                    },
-                    {
                         table: 'sys_documentation'
                         id: 'd2520197232c4809a449468430dd465d'
                         key: {
@@ -11793,6 +11829,14 @@ declare global {
                             }
                             element: 'check_name'
                             position: '2'
+                        }
+                    },
+                    {
+                        table: 'sys_variable_value'
+                        id: 'd28c418a396b4c3fb6a12e40f3e0b37f'
+                        key: {
+                            document_key: '44375c9fa89743699722b2bb46db32bf'
+                            variable: '6f69fc4aff6433008d3f5d9ad53bf18c'
                         }
                     },
                     {
@@ -12004,6 +12048,17 @@ declare global {
                         }
                     },
                     {
+                        table: 'sys_choice'
+                        id: 'd81457ce7bb44fb08d69b69a992506c6'
+                        key: {
+                            name: 'x_enno_pivot_opportunity'
+                            element: 'state'
+                            value: 'new'
+                            language: 'en'
+                            dependent_value: 'NULL'
+                        }
+                    },
+                    {
                         table: 'sys_ui_element'
                         id: 'd8905943207341f8978ee62b3a1093d6'
                         key: {
@@ -12057,19 +12112,19 @@ declare global {
                         }
                     },
                     {
-                        table: 'sys_variable_value'
-                        id: 'd9b2dc91ec384c65acb11b52ca3112ce'
-                        key: {
-                            document_key: '340d4a9758f84c8ba5024d02333da41b'
-                            variable: '989d9e235324220002c6435723dc3484'
-                        }
-                    },
-                    {
                         table: 'sys_dictionary'
                         id: 'd94f34b274ec4d14bdff56ffacdab23b'
                         key: {
                             name: 'x_enno_pivot_security_test_log'
                             element: 'NULL'
+                        }
+                    },
+                    {
+                        table: 'sys_variable_value'
+                        id: 'd9b2dc91ec384c65acb11b52ca3112ce'
+                        key: {
+                            document_key: '340d4a9758f84c8ba5024d02333da41b'
+                            variable: '989d9e235324220002c6435723dc3484'
                         }
                     },
                     {
@@ -12975,6 +13030,14 @@ declare global {
                             }
                             element: 'role'
                             position: '7'
+                        }
+                    },
+                    {
+                        table: 'sys_variable_value'
+                        id: 'ee09ded27226499f93c1cca0de193c3d'
+                        key: {
+                            document_key: '6a12d36bde834973ae27c79d4766226b'
+                            variable: '42f2564b73031300440211d8faf6a777'
                         }
                     },
                     {
