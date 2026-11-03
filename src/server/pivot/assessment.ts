@@ -137,7 +137,9 @@ export function run(assessmentId: string, opts?: RunOptions): RunSummary {
     }
 
     const limitMinutes = Number(prop('max_run_minutes')) || 0
-    const startMs = now()
+    const runStartedAt = new GlideDateTime()
+    const runStartedAtValue = runStartedAt.getValue()
+    const startMs = runStartedAt.getNumericValue()
     const log: LogEntry[] = []
     const add = (level: LogEntry['level'], step: number, message: string) => log.push({ ts: now(), level, step, message })
     const save = (fields: { [k: string]: any }) => {
@@ -159,7 +161,7 @@ export function run(assessmentId: string, opts?: RunOptions): RunSummary {
     if (!str(a, 'run_by')) a.setValue('run_by', gs.getUserID())
     const trigger = str(a, 'trigger')
     add('info', 1, 'Started by ' + gs.getUserDisplayName() + ' (' + (trigger === 'run_now' ? 'Run Now' : 'weekly schedule') + ').' + (limitMinutes ? ' Time limit ' + limitMinutes + ' min.' : ' No time limit set.'))
-    save({ status: 'running', run_date: new GlideDateTime().getValue() })
+    save({ status: 'running', run_date: runStartedAtValue })
 
     // One step: runs fn, logs "<name>: <count> <unit> (<detail>) in <s> s". A throw carries the step name.
     let current = ''
@@ -176,7 +178,7 @@ export function run(assessmentId: string, opts?: RunOptions): RunSummary {
     try {
         // ---- [2] discover
         step(2, 'discover', () => {
-            const d = runDiscovery()
+            const d = runDiscovery(runStartedAtValue)
             d.log.forEach((l) => log.push(l))
             const caps = d.licences.created + d.licences.updated + d.apps.created + d.apps.updated + d.plugins.created + d.plugins.updated
             return { count: caps, unit: 'capabilities created or updated', detail: d.licences.read + ' licences, ' + d.apps.read + ' store apps, ' + d.plugins.read + ' plugins read' }

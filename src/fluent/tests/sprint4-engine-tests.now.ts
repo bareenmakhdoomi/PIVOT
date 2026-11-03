@@ -18,7 +18,7 @@ Test({
         var a = new GlideRecord('x_enno_pivot_assessment'); a.get(id);
         var log = JSON.parse(a.getValue('log') || '[]'), out = [];
         for (var i = 0; i < log.length; i++) { var m = /^([a-z]+): \\d+ .* in [\\d.]+ s$/.exec(log[i].message); if (m) out.push(m[1]); }
-        return { status: a.getValue('status'), steps: out.join(','), log: a.getValue('log') || '', duration: a.getValue('duration') };
+        return { status: a.getValue('status'), steps: out.join(','), log: a.getValue('log') || '', duration: a.getValue('duration'), runDate: a.getValue('run_date') };
     };
     var ok = A.runAssessment('run_now', gs.getUserID());
     assertEqual({ name: 'run started', shouldbe: true, value: !!ok.sysId });
@@ -26,6 +26,20 @@ Test({
     assertEqual({ name: 'status Complete', shouldbe: true, value: r1.status == 'complete' || r1.status == 'complete_with_warnings' });
     assertEqual({ name: '8 steps in order', shouldbe: 'discover,measure,score,outcomes,gaps,priority,roadmap,notify', value: r1.steps });
     assertEqual({ name: 'duration filled', shouldbe: true, value: !!r1.duration });
+    var discovery = /discover: (\\d+) capabilities created or updated/.exec(r1.log);
+    if (discovery && Number(discovery[1]) > 0) {
+        var found = new GlideRecord('x_enno_pivot_capability');
+        found.addNotNullQuery('source_id');
+        found.addQuery('last_discovered', r1.runDate);
+        found.query();
+        var foundCount = 0, allMarkedFound = true;
+        while (found.next()) {
+            foundCount++;
+            if (found.getValue('not_found') == '1' || found.getValue('not_found') == 'true') allMarkedFound = false;
+        }
+        assertEqual({ name: 'discovered capability uses assessment run start', shouldbe: true, value: foundCount > 0 });
+        assertEqual({ name: 'discovered capabilities are marked found', shouldbe: true, value: allMarkedFound });
+    }
     var bad = A.runAssessment('run_now', gs.getUserID(), { failAt: 'priority' });
     var r2 = names(bad.sysId);
     assertEqual({ name: 'forced failure → Failed', shouldbe: 'failed', value: r2.status });

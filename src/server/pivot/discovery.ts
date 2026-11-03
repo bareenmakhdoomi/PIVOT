@@ -41,9 +41,8 @@ const toInt = (v: string): number => {
 }
 const tableExists = (t: string) => new GlideRecord(t).isValid()
 
-export function runDiscovery(): DiscoverySummary {
-    const runStart = new GlideDateTime()
-    const startValue = runStart.getValue()
+export function runDiscovery(runStartedAt?: string): DiscoverySummary {
+    const startValue = runStartedAt || new GlideDateTime().getValue()
     const log: LogEntry[] = []
     const add = (level: LogEntry['level'], message: string) => log.push({ ts: new GlideDateTime().getNumericValue(), level, step: STEP, message })
     const zero = (): Counts => ({ read: 0, created: 0, updated: 0, skipped: 0 })
