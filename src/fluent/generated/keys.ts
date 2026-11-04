@@ -541,6 +541,14 @@ declare global {
                         table: 'sys_atf_step'
                         id: '6a12d36bde834973ae27c79d4766226b'
                     }
+                    'atf-stry0015312-capability-linked-app': {
+                        table: 'sys_atf_test'
+                        id: '28b65913a13447e0ad87ff2e1fe9eaa5'
+                    }
+                    'atf-stry0015312-capability-linked-app-check': {
+                        table: 'sys_atf_step'
+                        id: '21ff9018dd4a4720b0d697ae1e4b77e9'
+                    }
                     bom_json: {
                         table: 'sys_module'
                         id: 'f0918765f8b240bf92054b27586857dd'
@@ -596,6 +604,22 @@ declare global {
                     clear_filter_on_table_change: {
                         table: 'sys_script'
                         id: 'db3dd5a64fb64eb3aa0ea6a1c9e899b9'
+                    }
+                    'cs-capability-linked-app-guidance-licensed': {
+                        table: 'sys_script_client'
+                        id: 'c82f0ff77c484f0e9722bc3230b248ab'
+                    }
+                    'cs-capability-linked-app-guidance-link': {
+                        table: 'sys_script_client'
+                        id: '652872369acb4e22b9de075ddff6ba78'
+                    }
+                    'cs-capability-linked-app-guidance-load': {
+                        table: 'sys_script_client'
+                        id: '97e9dfa8be7b47d8a92f7ee9036f10db'
+                    }
+                    'cs-capability-linked-app-guidance-submit': {
+                        table: 'sys_script_client'
+                        id: '21204f0172cf4472b03f5a73b34d57a5'
                     }
                     'cs-opportunity-rejection-submit': {
                         table: 'sys_script_client'
@@ -6037,6 +6061,15 @@ declare global {
                         }
                     },
                     {
+                        table: 'sys_element_mapping'
+                        id: '5d60503bb9254040be0ff6eb80d84255'
+                        key: {
+                            id: '21ff9018dd4a4720b0d697ae1e4b77e9'
+                            table: 'var__m_atf_input_variable_41de4a935332120028bc29cac2dc349a'
+                            field: 'script'
+                        }
+                    },
+                    {
                         table: 'sys_ui_element'
                         id: '5da99c38b71d4ff1816ee00dfb89c711'
                         key: {
@@ -6091,6 +6124,14 @@ declare global {
                                 }
                             }
                             sys_domain: 'global'
+                        }
+                    },
+                    {
+                        table: 'sys_variable_value'
+                        id: '5e0ac5a26a624b028de138be56488d43'
+                        key: {
+                            document_key: '21ff9018dd4a4720b0d697ae1e4b77e9'
+                            variable: '42f2564b73031300440211d8faf6a777'
                         }
                     },
                     {
@@ -6460,6 +6501,14 @@ declare global {
                             name: 'x_enno_pivot_opportunity'
                             element: 'outcome'
                             language: 'en'
+                        }
+                    },
+                    {
+                        table: 'sys_variable_value'
+                        id: '65aee2314cf0462e99922ece31a68bf1'
+                        key: {
+                            document_key: '21ff9018dd4a4720b0d697ae1e4b77e9'
+                            variable: '989d9e235324220002c6435723dc3484'
                         }
                     },
                     {
