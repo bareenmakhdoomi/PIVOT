@@ -209,7 +209,7 @@ function buildSnapshot() {
             kpi_aggregate: str(bo, 'kpi_aggregate') || 'count', kpi_field: str(bo, 'kpi_field'), baseline: num(bo, 'baseline'),
             baseline_date: str(bo, 'baseline_date') ? ms(str(bo, 'baseline_date') + ' 12:00:00') : null, baseline_change_reason: str(bo, 'baseline_change_reason'),
             target: num(bo, 'target'), period: str(bo, 'period') || 'monthly', owner: str(bo, 'owner'), expected_benefit: str(bo, 'expected_benefit'),
-            important_objective: bool(bo, 'important_objective'), low_volume_expected: bool(bo, 'low_volume_expected'),
+            important_objective: bool(bo, 'important_objective'), low_volume_expected: bool(bo, 'low_volume_expected'), active: bool(bo, 'active'),
             manual_value: num(bo, 'manual_value'), manual_value_date: str(bo, 'manual_value_date'), manual_value_by: str(bo, 'manual_value_by'),
         })
     }

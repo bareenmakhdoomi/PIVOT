@@ -421,8 +421,8 @@ function createPV(first, api) {
     insights() {
       const out = [], res = latestRes(), ores = latestOutRes();
       S.outcomes.forEach(o => {
-        const r = res[o.capability], or = ores[o.id] || {}, c = cap(o.capability); if (!r || r.score == null || !c) return;
-        if (r.score >= P('high_usage_threshold') && or.status === 'below_target') out.push({ kind: 'high_usage_below_target', capability: c.name, capabilityId: c.id, outcome: o.kpi, score: r.score, text: c.name + ' is used a lot (score ' + Math.round(r.score) + ') but \u201c' + o.kpi + '\u201d is below target.' });
+        const r = res[o.capability], or = ores[o.id] || {}, c = cap(o.capability); if (!r || r.score == null || !c || o.active === false) return; // PIV-040: active outcomes only, as the gap rules
+        if (r.score >= P('high_usage_threshold') && or.status === 'below_target') out.push({ kind: 'high_usage_below_target', capability: c.name, capabilityId: c.id, outcome: o.kpi, score: r.score, current: or.actual, target: o.target, text: c.name + ' is used a lot (score ' + Math.round(r.score) + ') but \u201c' + o.kpi + '\u201d is below target: ' + (or.actual == null ? '\u2014' : fmt.num(or.actual, 1)) + ' against a target of ' + (o.target == null ? '\u2014' : fmt.num(o.target, 1)) + '.' });
         if (r.score < P('low_score_threshold') && o.important_objective) out.push({ kind: 'low_usage_important', capability: c.name, capabilityId: c.id, outcome: o.objective, score: r.score, text: c.name + ' has low usage (score ' + Math.round(r.score) + ') but supports an important objective: \u201c' + o.objective + '\u201d.' });
       });
       return out;
@@ -1391,6 +1391,6 @@ function mount(host) {
       const retry = document.getElementById('pivotRetry'); if (retry) retry.addEventListener('click', () => window.location.reload());
     });
 }
-window.x_enno_pivot_portal = { mount, version: 'f6b5c062a13b' };
+window.x_enno_pivot_portal = { mount, version: '8eaefdc5ec42' };
 
 })();

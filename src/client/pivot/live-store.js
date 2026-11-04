@@ -391,8 +391,8 @@ export function createPV(first, api) {
     insights() {
       const out = [], res = latestRes(), ores = latestOutRes();
       S.outcomes.forEach(o => {
-        const r = res[o.capability], or = ores[o.id] || {}, c = cap(o.capability); if (!r || r.score == null || !c) return;
-        if (r.score >= P('high_usage_threshold') && or.status === 'below_target') out.push({ kind: 'high_usage_below_target', capability: c.name, capabilityId: c.id, outcome: o.kpi, score: r.score, text: c.name + ' is used a lot (score ' + Math.round(r.score) + ') but “' + o.kpi + '” is below target.' });
+        const r = res[o.capability], or = ores[o.id] || {}, c = cap(o.capability); if (!r || r.score == null || !c || o.active === false) return; // PIV-040: active outcomes only, as the gap rules
+        if (r.score >= P('high_usage_threshold') && or.status === 'below_target') out.push({ kind: 'high_usage_below_target', capability: c.name, capabilityId: c.id, outcome: o.kpi, score: r.score, current: or.actual, target: o.target, text: c.name + ' is used a lot (score ' + Math.round(r.score) + ') but “' + o.kpi + '” is below target: ' + (or.actual == null ? '—' : fmt.num(or.actual, 1)) + ' against a target of ' + (o.target == null ? '—' : fmt.num(o.target, 1)) + '.' });
         if (r.score < P('low_score_threshold') && o.important_objective) out.push({ kind: 'low_usage_important', capability: c.name, capabilityId: c.id, outcome: o.objective, score: r.score, text: c.name + ' has low usage (score ' + Math.round(r.score) + ') but supports an important objective: “' + o.objective + '”.' });
       });
       return out;
