@@ -3700,7 +3700,7 @@ declare global {
                     {
                         table: 'sys_choice'
                         id: '32367984df4f4dd4b4905cc1d9f2f346'
-                        deleted: true
+                        deleted: false
                         key: {
                             name: 'x_enno_pivot_opportunity'
                             element: 'state'
@@ -12099,6 +12099,7 @@ declare global {
                     {
                         table: 'sys_choice'
                         id: 'd81457ce7bb44fb08d69b69a992506c6'
+                        deleted: true
                         key: {
                             name: 'x_enno_pivot_opportunity'
                             element: 'state'

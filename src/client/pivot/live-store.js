@@ -83,7 +83,7 @@ export function createPV(first, api) {
   function P(n) { return S.props[SCOPE + '.' + n]; }
   function phaseOf(p) { return p == null ? 'later' : p >= P('priority_now') ? 'now' : p >= P('priority_next') ? 'next' : 'later'; }
   function cap(id) { return S.caps.find(c => c.id === id); }
-  function completedRuns() { return S.assessments.filter(a => a.status === 'complete'); }
+  function completedRuns() { return S.assessments.filter(a => a.status === 'complete' || a.status === 'complete_with_warnings'); } // PIV-037: same as the API
   function latestRun() { const c = completedRuns(); return c[c.length - 1] || null; }
   function latestRes() { const a = latestRun(); return (a && S.results[a.number]) || {}; }
   function latestOutRes() { const a = latestRun(); return (a && S.outcomeResults[a.number]) || {}; }
