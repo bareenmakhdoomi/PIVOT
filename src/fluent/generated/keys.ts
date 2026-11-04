@@ -637,6 +637,14 @@ declare global {
                         table: 'sys_data_policy_rule'
                         id: 'da8f1ec878a049cc920fe9ac3751f5b8'
                     }
+                    'email-run-complete': {
+                        table: 'sysevent_email_action'
+                        id: 'cbfe7706cf9e4ae996821a40a1202d25'
+                    }
+                    'email-run-failed': {
+                        table: 'sysevent_email_action'
+                        id: '529fcf16aca14c7c884c548a3a04beaf'
+                    }
                     'event-run-assessment': {
                         table: 'sysevent_register'
                         id: '37b4a3a1b31c40a6bea376fa3cf897f1'
@@ -648,6 +656,10 @@ declare global {
                     'event-run-failed': {
                         table: 'sysevent_register'
                         id: '029dc37ba9a844308a5d8fc81b74d45c'
+                    }
+                    'mail-script-run-email': {
+                        table: 'sys_script_email'
+                        id: '8b24a62eaede4dc992eab96d3895b12b'
                     }
                     measure_filter_onload_script: {
                         table: 'sys_script_client'
@@ -676,6 +688,10 @@ declare global {
                     package_json: {
                         table: 'sys_module'
                         id: '96a7857d9dc642e591d1491c9aa06c55'
+                    }
+                    'pivot-admin-guide-read': {
+                        table: 'sys_security_acl'
+                        id: 'c129840b832e40b4a587008c801b466f'
                     }
                     'pivot-job-assessment': {
                         table: 'sysauto_script'
@@ -798,6 +814,10 @@ declare global {
                     'pivot-portal-widget': {
                         table: 'sp_widget'
                         id: 'ac2a1900921f428095c7612d05d17f9e'
+                    }
+                    'pivot-user-guide-read': {
+                        table: 'sys_security_acl'
+                        id: '19f5c8daa9284bd794a16bea61e70c40'
                     }
                     'pivot-workspace-page-read': {
                         table: 'sys_security_acl'
@@ -7718,6 +7738,19 @@ declare global {
                         }
                     },
                     {
+                        table: 'sys_security_acl_role'
+                        id: '7d9ab5ddbd104a9483609797c6815892'
+                        key: {
+                            sys_security_acl: 'c129840b832e40b4a587008c801b466f'
+                            sys_user_role: {
+                                id: 'c469db8764964b89ab1a7cefb38ba83f'
+                                key: {
+                                    name: 'x_enno_pivot.admin'
+                                }
+                            }
+                        }
+                    },
+                    {
                         table: 'sys_dictionary'
                         id: '7e514ce6a01f478f8ab10e0be0e350fa'
                         key: {
@@ -8099,6 +8132,13 @@ declare global {
                                     name: 'x_enno_pivot.viewer'
                                 }
                             }
+                        }
+                    },
+                    {
+                        table: 'sys_ui_page'
+                        id: '87ef2a3a1c964308804b5547b6fca43b'
+                        key: {
+                            endpoint: 'x_enno_pivot_user_guide.do'
                         }
                     },
                     {
@@ -9318,6 +9358,13 @@ declare global {
                             }
                             element: '.end_split'
                             position: '6'
+                        }
+                    },
+                    {
+                        table: 'sys_ui_page'
+                        id: '9f6ebc9b617e4411aec498cf6253473b'
+                        key: {
+                            endpoint: 'x_enno_pivot_admin_guide.do'
                         }
                     },
                     {
@@ -11731,6 +11778,19 @@ declare global {
                             name: 'x_enno_pivot_security_test_log'
                             element: 'number'
                             language: 'en'
+                        }
+                    },
+                    {
+                        table: 'sys_security_acl_role'
+                        id: 'd10d243e6e97424abaa663e0f960165d'
+                        key: {
+                            sys_security_acl: '19f5c8daa9284bd794a16bea61e70c40'
+                            sys_user_role: {
+                                id: '6956f4c54234436d86b317b5d18a6db7'
+                                key: {
+                                    name: 'x_enno_pivot.viewer'
+                                }
+                            }
                         }
                     },
                     {

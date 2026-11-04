@@ -433,15 +433,13 @@ export function run(assessmentId: string, opts?: RunOptions): RunSummary {
 export function adminRecipients(): string {
     const ids: string[] = []
     const r = new GlideRecord('sys_user_has_role')
-    r.addQuery('role.name', SCOPE + '.admin')
-    r.addQuery('user.active', true)
+    r.addEncodedQuery('role.name=' + SCOPE + '.admin^user.active=true')
     r.query()
     while (r.next()) { const u = str(r, 'user'); if (u && ids.indexOf(u) < 0) ids.push(u) }
     const group = String(prop('admin_group') || '').trim()
     if (group) {
         const m = new GlideRecord('sys_user_grmember')
-        m.addQuery('group.name', group)
-        m.addQuery('user.active', true)
+        m.addEncodedQuery('group.name=' + group + '^user.active=true')
         m.query()
         while (m.next()) { const u = str(m, 'user'); if (u && ids.indexOf(u) < 0) ids.push(u) }
     }
