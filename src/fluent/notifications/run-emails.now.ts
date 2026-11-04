@@ -22,7 +22,7 @@ EmailNotification({
     description: 'Sent to every active PIVOT admin when an assessment completes (also Completed with warnings).',
     active: true,
     triggerConditions: { generationType: 'event', eventName: 'x_enno_pivot.run_complete' },
-    recipientDetails: { eventParm2WithRecipient: true, sendToCreator: false },
+    recipientDetails: { eventParm2WithRecipient: true, sendToCreator: true }, // the admin who started the run gets it too
     emailContent: {
         subject: 'PIVOT run complete',
         messageHtml: '${mail_script:pivot_run_email}',
@@ -37,7 +37,7 @@ EmailNotification({
     description: 'Sent to every active PIVOT admin when an assessment fails, with the failed step and error.',
     active: true,
     triggerConditions: { generationType: 'event', eventName: 'x_enno_pivot.run_failed' },
-    recipientDetails: { eventParm2WithRecipient: true, sendToCreator: false },
+    recipientDetails: { eventParm2WithRecipient: true, sendToCreator: true }, // the admin who started the run gets it too
     emailContent: {
         subject: 'PIVOT run failed',
         messageHtml: '${mail_script:pivot_run_email}',
