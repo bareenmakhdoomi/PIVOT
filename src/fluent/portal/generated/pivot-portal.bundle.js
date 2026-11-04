@@ -47,7 +47,7 @@ const PROP_META = [
   ['priority_weight_impact', 'Priority weight: business impact', '\u00d7', 'Business impact is multiplied by this in the priority (0\u201310, default 1).'],
   ['gap_rule_config', 'Gap rule texts and defaults', 'JSON', 'Optional JSON per gap type: title, text, value, effort. Leave empty for the built-in defaults.'],
   ['slow_capability_seconds', 'Slow capability warning', 's', 'Log a warning when one capability takes longer.'],
-  ['admin_group', 'Run email recipients', '', 'Who receives the run complete / failed emails.'],
+  ['admin_group', 'Run email recipients', '', 'Group whose active members also get the run complete / failed emails. Every active PIVOT admin always gets them.'],
   ['ai_enabled', 'AI features (Now Assist)', '', 'Turns all PIVOT AI features on or off. PIVOT works fully without them (NFR-AI-02).']
 ];
 const PROP_TYPES = { admin_group: 'string', ai_enabled: 'boolean', gap_rule_config: 'string' };
@@ -88,6 +88,8 @@ function createPV(first, api) {
     D.instance = snap.instance || {};
     S.me = snap.me.id;
     S.realRoles = snap.me.roles && snap.me.roles.length ? snap.me.roles : ['viewer'];
+    S.readNotes = Array.isArray(snap.me.readNotifications) ? snap.me.readNotifications : [];
+    S.version = snap.version || '';
     if (!previewRoles().includes(S.role) || !S.loaded) S.role = snap.me.role || 'viewer';
     D.personas = { admin: S.me, analyst: S.me, business_owner: S.me, viewer: S.me };
     S.props = {};
@@ -136,7 +138,8 @@ function createPV(first, api) {
   }
   function previewRoles() {
     // Admins can preview every role; others their own roles and Viewer. The server always uses the real roles.
-    const set = S.realRoles.includes('admin') ? ROLE_RANK.slice() : S.realRoles.concat(['viewer']);
+    // PIV-065.05 AC 3 \u2013 only admins get "Preview as"; everyone else has just their own (highest) role.
+    const set = S.realRoles.includes('admin') ? ROLE_RANK.slice() : ROLE_RANK.filter(r => S.realRoles.includes(r)).slice(-1);
     return ROLE_RANK.filter(r => set.includes(r)).reverse();
   }
   function can(action, rec) {
@@ -205,6 +208,9 @@ function createPV(first, api) {
     refresh: () => reload().then(() => ({ ok: true }), err => ({ ok: false, error: (err && err.message) || NETWORK_ERROR })),
     role: () => S.role,
     previewRoles,
+    readNotifications: () => (S.readNotes || []).slice(),
+    appVersion: () => S.version || '',
+    markRead: keys => { S.readNotes = (S.readNotes || []).concat(keys); return act({ action: 'markRead', keys }, { reload: false }); },
     setRole(r) { if (LABELS.role[r] && previewRoles().includes(r)) { S.role = r; emit({ type: 'role' }); } },
     user: () => Object.assign({ title: '' }, D.users[S.me], { title: (D.users[S.me] && D.users[S.me].title) || 'ServiceNow user' }),
     users: role => Object.keys(D.users).map(k => D.users[k]).filter(u => !role || u.role === role),
@@ -497,7 +503,7 @@ const st = {
   road: { owner: 'all', family: 'all', state: 'all' },
   reports: { family: 'all' },
   settings: { tab: 'Scoring & priority', pending: {}, errors: {}, notes: {} },
-  read: new Set(),
+  read: new Set(S.readNotifications ? S.readNotifications() : []),
   exports: [],
   pages: { dashboardAttention: 0, voOpps: 0, voOutcomes: 0, assessments: 0, reportsGenerated: 0, reportsHeat: 0, reportsOutcomes: 0, reportsInsights: 0 },
   more: { roadNow: 5, roadNext: 5, roadLater: 5, roadDone: 5, reportsBands: 5 }
@@ -582,6 +588,7 @@ function csvDownload(title, file, rows) {
   const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = file; document.body.appendChild(a); a.click();
   setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 500);
   st.exports.unshift({ title, file, ts: S.now(), by: S.user().id, rows: rows.length - 1, redo: title });
+  try { window.localStorage.setItem('x_enno_pivot.exports.' + S.user().id, JSON.stringify(st.exports.slice(0, 20))); } catch (e) { /* storage off: this session only */ }
   notify(file + ' downloaded (' + (rows.length - 1) + ' rows).');
 }
 const EXPORTS = {
@@ -1051,7 +1058,7 @@ function reportsView() {
     ['\u21e2', 'Roadmap', 'Now, Next and Later in roadmap order with priority and owner.', 'Analyst', 'Roadmap', ("<div class=\"mini-stack\">" + (['now', 'next', 'later'].map((p,i) => ("<span style=\"--chart-index:" + (i) + "\"><b>" + (d.roadmap[p].length) + "</b>" + (L.phase[p]) + "</span>")).join('')) + "</div>"), 'Items per column']
   ];
   const generated = st.exports.map(x => [x.title, F.dateTime(x.ts), F.user(x.by), 'CSV \u00b7 ' + x.rows + ' rows', ("<button class=\"btn\" data-export=\"" + (esc(x.redo)) + "\">Download again</button>")])
-    .concat(S.assessments().filter(r => r.status === 'complete' || r.status === 'failed').slice(0, 6).map(r => [r.status === 'failed' ? 'PIVOT run failed (email)' : 'PIVOT run complete (email)', F.dateTime(r.run_date + (r.duration || 0)), S.prop('admin_group'), r.number, ("<button class=\"btn\" data-asm=\"" + (esc(r.number)) + "\">Open run</button>")]));
+    .concat(S.assessments().filter(r => r.status === 'complete' || r.status === 'complete_with_warnings' || r.status === 'failed').slice(0, 6).map(r => [r.status === 'failed' ? 'PIVOT run failed (email)' : 'PIVOT run complete (email)', F.dateTime(r.run_date + (r.duration || 0)), 'PIVOT admins', r.number, ("<button class=\"btn\" data-asm=\"" + (esc(r.number)) + "\">Open run</button>")]));
   const generatedPage = pageSlice(generated, 'reportsGenerated', 5);
   return ("<div class=\"signal-hero\"><div class=\"signal-copy\"><div class=\"signal-kicker\"><span class=\"signal-live\"></span> Reports \u00b7 " + (esc(a.number)) + "</div><div class=\"signal-title\">See where the platform pays off, and where it does not yet.</div><div class=\"signal-text\">Value and outcomes first, then scores and utilization, then opportunities and the roadmap. Every chart below is calculated from " + (esc(a.number)) + " (" + (esc(F.dateTime(a.run_date))) + ").</div><div class=\"signal-footer\"><span class=\"signal-tag\">" + (caps.length) + " capabilities</span><span class=\"signal-tag\">" + (outs) + " business outcomes</span><span class=\"signal-tag\">" + (allOpps.length) + " active opportunities</span></div></div><div class=\"signal-stats\"><div class=\"signal-stat\"><span>Priority actions</span><b>" + (String(d.roadmap.now.length).padStart(2, '0')) + "</b><em>In Now</em></div><div class=\"signal-stat\"><span>Outcome status</span><b>" + (ob.improved + ob.on_target) + " / " + (measuredOut) + "</b><em>On track</em></div></div></div>")
     + `<div class="headingrow reports-heading"><div><div class="eyebrow">PIVOT / REPORTS</div><h1 class="h1">Reports</h1><div class="subtitle">The B12 dashboard reports for sponsors, admins, analysts and business owners. Download any report as CSV.</div></div><div class="headactions reports-actions"><button class="btn" data-action="print">Print this page</button><button class="btn primary" data-export="Executive value summary">Export overview \u2193</button></div></div>`
@@ -1072,7 +1079,7 @@ function reportsView() {
     + ("<div class=\"ops-subsection\"><h4>Capability bands <span style=\"font-weight:500;color:var(--muted)\">\u00b7 " + (bandShown) + " of " + (gridCaps.length) + " shown</span></h4><div class=\"heatgrid\">" + (visibleBands.map(c => ("<button style=\"background:" + (BAND_SOLID[bandOf(c)]) + "\" data-cap-open=\"" + (c.id) + "\" title=\"" + (esc(c.name)) + " \u00b7 " + (esc(BAND[bandOf(c)].label)) + " \u00b7 score " + (F.score(c.score)) + "\" aria-label=\"" + (esc(c.name)) + ", " + (esc(BAND[bandOf(c)].label)) + "\"></button>")).join('')) + "</div>" + (loadMoreMarkup('reportsBands', bandShown, gridCaps.length, 'capabilities')) + "<div style=\"display:flex;justify-content:space-between;color:var(--muted);font-size:9px;margin-top:9px\"><span>Dark = strong usage</span><span>Light = low or not measured</span></div></div>")
     + ("<div class=\"ops-subsection\"><h4>Action queue <span style=\"font-weight:500;color:var(--muted)\">\u00b7 " + (queue.length) + " items</span></h4><div class=\"alertlist\">" + (queue.map(q => ("<button class=\"alertrow\" " + (q[3]) + "><span><b>" + (esc(q[0])) + "</b><small>" + (esc(q[1])) + "</small></span><span class=\"severity " + (q[2] === 'Warning' ? 'warn' : '') + "\">" + (q[2]) + "</span></button>")).join('')) + "</div></div></div></section></div>")
     + ("<div class=\"report-grid\">" + (reports.map(r => ("<article class=\"report-card\"><div class=\"report-card-heading\"><div class=\"report-icon\">" + (r[0]) + "</div><div class=\"report-card-copy\"><h3>" + (esc(r[1])) + "</h3><p>" + (esc(r[2])) + "</p></div></div><div class=\"mini-chart\">" + (r[5]) + "<span class=\"mini-caption\">" + (esc(r[6])) + "</span></div><div class=\"report-card-footer\"><span class=\"pill blue\">" + (esc(r[3])) + "</span><button class=\"btn\" data-export=\"" + (esc(r[4])) + "\">Download CSV \u2193</button></div></article>")).join('')) + "</div>")
-    + sectionHead('Recently generated', 'Exports made in this session and the run emails PIVOT sent.', '')
+    + sectionHead('Recently generated', 'Your exports and the run emails PIVOT sent to the PIVOT admins.', '')
     + ("<div class=\"panel\"><div class=\"table-wrap\"><table class=\"table\"><thead><tr><th scope=\"col\">Report</th><th scope=\"col\">Generated</th><th scope=\"col\">By / to</th><th scope=\"col\">Format</th><th scope=\"col\"><span class=\"sr-only\">Action</span></th></tr></thead><tbody>" + (generatedPage.items.map(g => ("<tr><td><b>" + (esc(g[0])) + "</b></td><td>" + (esc(g[1])) + "</td><td>" + (esc(g[2])) + "</td><td>" + (esc(g[3])) + "</td><td>" + (g[4]) + "</td></tr>")).join('')) + "</tbody></table></div>" + (pagerMarkup('reportsGenerated', generatedPage, 'generated reports')) + "</div>");
 }
 
@@ -1109,6 +1116,8 @@ function settingsView() {
 function helpView() {
   return heading('PIVOT / SUPPORT', 'Help &amp; Support', 'How to read PIVOT and what each role does with it.', ("<button class=\"btn\" data-action=\"rules\">How scores work</button>" + (gated('ai.use', '<button class="btn primary" data-action="ask">Ask PIVOT</button>'))))
     + `<div class="help-layout"><article class="help-card"><div class="report-icon">\u2315</div><h3>Getting started</h3><p>Start on the Dashboard: the Platform Value Score, outcomes and the Now column. Then open the records behind them.</p><button class="help-link" data-view="Dashboard">Open Dashboard \u2192</button></article><article class="help-card"><div class="report-icon">\u25a6</div><h3>Reading the Element Map</h3><p>Columns are product families; colour is the usage band. Hatched tiles are licensed but not installed, or not measured. The tag shows the roadmap column of the top opportunity.</p><button class="help-link" data-view="Element Map">Open Element Map \u2192</button></article><article class="help-card"><div class="report-icon">\u21bb</div><h3>Assessments</h3><p>Every Sunday at 02:00, or with Run Now (admin), PIVOT runs 10 steps and logs each one. Open a run to see warnings and errors.</p><button class="help-link" data-view="Assessments">Review assessments \u2192</button></article><article class="help-card"><div class="report-icon">\u21e2</div><h3>Working opportunities</h3><p>Analysts accept, reject with a reason, assign and close opportunities, and can change value, impact and effort. Business owners keep their outcomes up to date.</p><button class="help-link" data-view="Value & Opportunities">Open Value &amp; Opportunities \u2192</button></article></div>`
+    + sectionHead('Guides', 'PIVOT ' + esc(S.appVersion ? S.appVersion() : '') + ' \u2013 the guides match this version.')
+    + ("<div class=\"subnav\"><a class=\"btn\" href=\"x_enno_pivot_user_guide.do\" target=\"_blank\" rel=\"noopener\">User guide \u2197</a>" + (isAdmin() ? '<a class="btn" href="x_enno_pivot_admin_guide.do" target="_blank" rel="noopener">Admin guide \u2197</a>' : '') + "</div>")
     + sectionHead('Frequently asked questions', 'Short answers to common questions.')
     + ("<div class=\"panel\">" + ([
       ['Why is a capability hatched?', 'It is licensed but not installed (score 0), or it has no measure table or target (Not Measured). Open the capability to see which.'],
@@ -1116,9 +1125,9 @@ function helpView() {
       ['How is priority calculated?', 'Priority = (value + business impact) \u00f7 effort. Now at ' + S.prop('priority_now') + ' or more, Next from ' + S.prop('priority_next') + ', Later below ' + S.prop('priority_next') + '. Analysts can change the three numbers.'],
       ['Why can I not change a baseline?', 'The baseline is locked after the first measurement so improvement stays honest. Admins can change it; the change is audited.'],
       ['Will a rejected opportunity come back?', 'No. Rejected and done opportunities are never reopened by later runs. That is why a rejection needs a reason.'],
-      ['What do the AI features do?', 'They explain findings, brief you on a run, suggest scores, owners and action plans, and answer questions. They are labelled, never change numbers themselves, and can be switched off in Settings.'],
+      ['What do the AI features do?', 'They arrive with the AI release. They will explain findings, brief you on a run, suggest scores, owners and action plans, and answer questions. They are labelled, never change numbers themselves, and can be switched off in Settings.'],
       ['Does any data leave the instance?', 'No. PIVOT reads tables in the instance and writes only to its own scope.']
-    ].map((x, i) => ("<details class=\"faq\" " + (i === 0 ? 'open' : '') + "><summary>" + (esc(x[0])) + "</summary><p>" + (esc(x[1])) + "</p></details>")).join('')) + "</div>");
+    ].map((x, i) => ("<details class=\"faq\" name=\"pivot-faq\" " + (i === 0 ? 'open' : '') + "><summary>" + (esc(x[0])) + "</summary><p>" + (esc(x[1])) + "</p></details>")).join('')) + "</div>");
 }
 
 /* =====================================================================
@@ -1141,7 +1150,7 @@ function renderTopbar() {
   $('notificationTrigger').querySelector('.notification-dot').classList.toggle('is-hidden', !unread);
   $('notificationTrigger').setAttribute('aria-label', 'Notifications, ' + unread + ' unread');
   const u = S.user(), av = document.querySelector('.profile-trigger'); av.textContent = u.initials; av.title = u.name + ' \u00b7 ' + L.role[S.role()];
-  $('roleChip').innerHTML = ("Preview as <b>" + (esc(L.role[S.role()])) + "</b> \u25be");
+  $('roleChip').innerHTML = ("Preview as <b>" + (esc(L.role[S.role()])) + "</b> \u25be"); $('roleChip').hidden = S.previewRoles().length < 2;
   document.querySelectorAll('.navbtn[data-view="Settings"]').forEach(b => { b.hidden = !S.can('settings.view'); });
 }
 function toggleProfile(open) {
@@ -1149,7 +1158,7 @@ function toggleProfile(open) {
   if (open === false || (m && open === undefined)) { if (m) { m.remove(); trig.setAttribute('aria-expanded', 'false'); } return; }
   const u = S.user();
   m = document.createElement('section'); m.id = 'profileMenu'; m.className = 'menu-pop'; m.setAttribute('aria-label', 'Profile and preview role');
-  m.innerHTML = ("<div class=\"menu-user\"><span class=\"avatar\">" + (esc(u.initials)) + "</span><span><b>" + (esc(u.name)) + "</b><small>" + (esc(u.title)) + " \u00b7 " + (esc(L.role[S.role()])) + "</small></span></div><div class=\"menu-label\">Preview as</div><div role=\"radiogroup\" aria-label=\"Preview as role\">" + (S.previewRoles().map(r => ("<button role=\"radio\" aria-checked=\"" + (S.role() === r) + "\" class=\"menu-item " + (S.role() === r ? 'active' : '') + "\" data-role=\"" + (r) + "\"><span>" + (L.role[r]) + "</span><small>" + (r === S.previewRoles()[0] ? 'Your role' : 'Preview only') + "</small></button>")).join('')) + "</div><div class=\"menu-sep\"></div>" + (S.can('settings.view') ? '<button class="menu-item" data-view="Settings">Settings</button>' : '') + "<button class=\"menu-item\" data-view=\"Help & Support\">Help &amp; Support</button><p class=\"menu-note\">Preview hides controls only. What you can change is always decided by your PIVOT roles.</p>");
+  m.innerHTML = ("<div class=\"menu-user\"><span class=\"avatar\">" + (esc(u.initials)) + "</span><span><b>" + (esc(u.name)) + "</b><small>" + (esc(u.title)) + " \u00b7 " + (esc(L.role[S.role()])) + "</small></span></div>" + (S.previewRoles().length > 1 ? ("<div class=\"menu-label\">Preview as</div><div role=\"radiogroup\" aria-label=\"Preview as role\">" + (S.previewRoles().map(r => ("<button role=\"radio\" aria-checked=\"" + (S.role() === r) + "\" class=\"menu-item " + (S.role() === r ? 'active' : '') + "\" data-role=\"" + (r) + "\"><span>" + (L.role[r]) + "</span><small>" + (r === S.previewRoles()[0] ? 'Your role' : 'Preview only') + "</small></button>")).join('')) + "</div><div class=\"menu-sep\"></div>") : '') + (S.can('settings.view') ? '<button class="menu-item" data-view="Settings">Settings</button>' : '') + "<button class=\"menu-item\" data-view=\"Help & Support\">Help &amp; Support</button>" + (S.previewRoles().length > 1 ? '<p class="menu-note">Preview hides controls only. What you can change is always decided by your PIVOT roles.</p>' : ''));
   document.querySelector('.topbar-actions').appendChild(m); trig.setAttribute('aria-expanded', 'true');
   const first = m.querySelector('.menu-item.active') || m.querySelector('.menu-item'); if (first) first.focus();
 }
@@ -1251,10 +1260,10 @@ document.addEventListener('click', e => {
   const ds = t.dataset;
   if (ds.page) { const infoKey = ds.page, current = st.pages[infoKey] || 0; if (ds.step === 'first') st.pages[infoKey] = 0; else if (ds.step === 'prev') st.pages[infoKey] = Math.max(0, current - 1); else if (ds.step === 'next') st.pages[infoKey] = current + 1; else if (ds.step === 'last') st.pages[infoKey] = 999999; render(true); return; }
   if (ds.more) { if (ds.more.startsWith('map:')) st.more[ds.more] = (st.more[ds.more] || 5) + 10; else if (ds.more.startsWith('road')) st.more[ds.more] = (st.more[ds.more] || 5) + 5; else if (ds.more === 'reportsBands') st.more.reportsBands = (st.more.reportsBands || 5) + 5; render(true); return; }
-  if (ds.note) st.read.add(ds.note);
+  if (ds.note && !st.read.has(ds.note)) { st.read.add(ds.note); if (S.markRead) S.markRead([ds.note]); }
   if (t.id === 'notificationTrigger') { const d = $('notificationDrawer'), open = d.hidden; d.hidden = !open; t.setAttribute('aria-expanded', String(open)); t.classList.toggle('is-open', open); toggleProfile(false); if (open) { const f = d.querySelector('button'); if (f) f.focus(); } return; }
   if (t.id === 'notificationClose') { closeDrawer(); $('notificationTrigger').focus(); return; }
-  if (t.id === 'markNotificationsRead') { notifications().forEach(x => st.read.add(x.k)); renderTopbar(); return; }
+  if (t.id === 'markNotificationsRead') { const keys = notifications().map(x => x.k).filter(k => !st.read.has(k)); keys.forEach(k => st.read.add(k)); if (S.markRead && keys.length) S.markRead(keys); renderTopbar(); return; }
   if (t.id === 'viewAllNotifications') { go('Assessments'); return; }
   if (t.classList.contains('profile-trigger') || t.id === 'roleChip') { closeDrawer(); toggleProfile(); return; }
   if (ds.role) { S.setRole(ds.role); toggleProfile(false); notify('Previewing as ' + L.role[ds.role] + '.'); return; }
@@ -1326,7 +1335,7 @@ document.addEventListener('input', e => {
 });
 document.addEventListener('change', e => {
   const id = e.target.id, v = e.target.value;
-  const map = { studioRun: () => st.studio.run = +v, studioFamily: () => st.studio.family = v, studioBand: () => st.studio.band = v, libraryView: () => { st.lib.view = v; st.lib.page = 0; }, libraryFamily: () => { st.lib.family = v; st.lib.page = 0; }, voFamily: () => st.vo.family = v, voPhase: () => st.vo.phase = v, voState: () => st.vo.state = v, voType: () => st.vo.type = v, voAssigned: () => st.vo.assigned = v, voOutStatus: () => st.vo.outStatus = v, roadOwner: () => st.road.owner = v, roadFamily: () => st.road.family = v, roadState: () => st.road.state = v, repFamily: () => st.reports.family = v };
+  const map = { studioRun: () => st.studio.run = +v, studioFamily: () => st.studio.family = v, studioBand: () => st.studio.band = v, libraryView: () => { st.lib.view = v; st.lib.page = 0; }, libraryFamily: () => { st.lib.family = v; st.lib.page = 0; }, voFamily: () => st.vo.family = v, voPhase: () => st.vo.phase = v, voState: () => st.vo.state = v, voType: () => st.vo.type = v, voAssigned: () => st.vo.assigned = v, voOutStatus: () => st.vo.outStatus = v, roadOwner: () => st.road.owner = v, roadFamily: () => st.road.family = v, roadState: () => st.road.state = v, repFamily: () => { st.reports.family = v; ['reportsHeat', 'reportsInsights', 'reportsOutcomes'].forEach(k => st.pages[k] = 0); st.more.reportsBands = 5; } };
   if (map[id]) { map[id](); render(true); return; }
   if (id === 'roleSelect') { S.setRole(v); notify('Previewing as ' + L.role[v] + '.'); return; }
   if (e.target.dataset.prop && e.target.type === 'checkbox') { st.settings.pending[e.target.dataset.prop] = e.target.checked; render(true); }
@@ -1354,7 +1363,9 @@ S.subscribe(ev => {
 });
 
 try { const startView = viewFromParam(new URL(window.location.href).searchParams.get('view')); if (startView) st.view = startView; } catch (e) { /* no address */ }
+try { const saved = JSON.parse(window.localStorage.getItem('x_enno_pivot.exports.' + S.user().id) || '[]'); if (Array.isArray(saved)) st.exports = saved; } catch (e) { /* storage off */ }
 render();
+try { const runNum = new URL(window.location.href).searchParams.get('run'); if (runNum && /^[A-Z]{2,5}\d{4,10}$/.test(runNum)) { if (st.view !== 'Assessments') { st.view = 'Assessments'; render(); } openAssessment(runNum); const u = new URL(window.location.href); u.searchParams.delete('run'); window.history.replaceState(window.history.state, '', u.toString()); } } catch (e) { /* no address */ }
 }
 
   return { startWorkspace };
@@ -1391,6 +1402,6 @@ function mount(host) {
       const retry = document.getElementById('pivotRetry'); if (retry) retry.addEventListener('click', () => window.location.reload());
     });
 }
-window.x_enno_pivot_portal = { mount, version: '6fa42c5aece5' };
+window.x_enno_pivot_portal = { mount, version: 'a1d86ee90fe5' };
 
 })();

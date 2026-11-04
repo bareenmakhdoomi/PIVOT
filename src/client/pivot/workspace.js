@@ -18,7 +18,7 @@ const st = {
   road: { owner: 'all', family: 'all', state: 'all' },
   reports: { family: 'all' },
   settings: { tab: 'Scoring & priority', pending: {}, errors: {}, notes: {} },
-  read: new Set(),
+  read: new Set(S.readNotifications ? S.readNotifications() : []),
   exports: [],
   pages: { dashboardAttention: 0, voOpps: 0, voOutcomes: 0, assessments: 0, reportsGenerated: 0, reportsHeat: 0, reportsOutcomes: 0, reportsInsights: 0 },
   more: { roadNow: 5, roadNext: 5, roadLater: 5, roadDone: 5, reportsBands: 5 }
@@ -686,6 +686,8 @@ function settingsView() {
 function helpView() {
   return heading('PIVOT / SUPPORT', 'Help &amp; Support', 'How to read PIVOT and what each role does with it.', `<button class="btn" data-action="rules">How scores work</button>${gated('ai.use', '<button class="btn primary" data-action="ask">Ask PIVOT</button>')}`)
     + `<div class="help-layout"><article class="help-card"><div class="report-icon">⌕</div><h3>Getting started</h3><p>Start on the Dashboard: the Platform Value Score, outcomes and the Now column. Then open the records behind them.</p><button class="help-link" data-view="Dashboard">Open Dashboard →</button></article><article class="help-card"><div class="report-icon">▦</div><h3>Reading the Element Map</h3><p>Columns are product families; colour is the usage band. Hatched tiles are licensed but not installed, or not measured. The tag shows the roadmap column of the top opportunity.</p><button class="help-link" data-view="Element Map">Open Element Map →</button></article><article class="help-card"><div class="report-icon">↻</div><h3>Assessments</h3><p>Every Sunday at 02:00, or with Run Now (admin), PIVOT runs 10 steps and logs each one. Open a run to see warnings and errors.</p><button class="help-link" data-view="Assessments">Review assessments →</button></article><article class="help-card"><div class="report-icon">⇢</div><h3>Working opportunities</h3><p>Analysts accept, reject with a reason, assign and close opportunities, and can change value, impact and effort. Business owners keep their outcomes up to date.</p><button class="help-link" data-view="Value & Opportunities">Open Value &amp; Opportunities →</button></article></div>`
+    + sectionHead('Guides', 'PIVOT ' + esc(S.appVersion ? S.appVersion() : '') + ' – the guides match this version.')
+    + `<div class="subnav"><a class="btn" href="x_enno_pivot_user_guide.do" target="_blank" rel="noopener">User guide ↗</a>${isAdmin() ? '<a class="btn" href="x_enno_pivot_admin_guide.do" target="_blank" rel="noopener">Admin guide ↗</a>' : ''}</div>`
     + sectionHead('Frequently asked questions', 'Short answers to common questions.')
     + `<div class="panel">${[
       ['Why is a capability hatched?', 'It is licensed but not installed (score 0), or it has no measure table or target (Not Measured). Open the capability to see which.'],
@@ -693,9 +695,9 @@ function helpView() {
       ['How is priority calculated?', 'Priority = (value + business impact) ÷ effort. Now at ' + S.prop('priority_now') + ' or more, Next from ' + S.prop('priority_next') + ', Later below ' + S.prop('priority_next') + '. Analysts can change the three numbers.'],
       ['Why can I not change a baseline?', 'The baseline is locked after the first measurement so improvement stays honest. Admins can change it; the change is audited.'],
       ['Will a rejected opportunity come back?', 'No. Rejected and done opportunities are never reopened by later runs. That is why a rejection needs a reason.'],
-      ['What do the AI features do?', 'They explain findings, brief you on a run, suggest scores, owners and action plans, and answer questions. They are labelled, never change numbers themselves, and can be switched off in Settings.'],
+      ['What do the AI features do?', 'They arrive with the AI release. They will explain findings, brief you on a run, suggest scores, owners and action plans, and answer questions. They are labelled, never change numbers themselves, and can be switched off in Settings.'],
       ['Does any data leave the instance?', 'No. PIVOT reads tables in the instance and writes only to its own scope.']
-    ].map((x, i) => `<details class="faq" ${i === 0 ? 'open' : ''}><summary>${esc(x[0])}</summary><p>${esc(x[1])}</p></details>`).join('')}</div>`;
+    ].map((x, i) => `<details class="faq" name="pivot-faq" ${i === 0 ? 'open' : ''}><summary>${esc(x[0])}</summary><p>${esc(x[1])}</p></details>`).join('')}</div>`;
 }
 
 /* =====================================================================
@@ -718,7 +720,7 @@ function renderTopbar() {
   $('notificationTrigger').querySelector('.notification-dot').classList.toggle('is-hidden', !unread);
   $('notificationTrigger').setAttribute('aria-label', 'Notifications, ' + unread + ' unread');
   const u = S.user(), av = document.querySelector('.profile-trigger'); av.textContent = u.initials; av.title = u.name + ' · ' + L.role[S.role()];
-  $('roleChip').innerHTML = `Preview as <b>${esc(L.role[S.role()])}</b> ▾`;
+  $('roleChip').innerHTML = `Preview as <b>${esc(L.role[S.role()])}</b> ▾`; $('roleChip').hidden = S.previewRoles().length < 2;
   document.querySelectorAll('.navbtn[data-view="Settings"]').forEach(b => { b.hidden = !S.can('settings.view'); });
 }
 function toggleProfile(open) {
@@ -726,7 +728,7 @@ function toggleProfile(open) {
   if (open === false || (m && open === undefined)) { if (m) { m.remove(); trig.setAttribute('aria-expanded', 'false'); } return; }
   const u = S.user();
   m = document.createElement('section'); m.id = 'profileMenu'; m.className = 'menu-pop'; m.setAttribute('aria-label', 'Profile and preview role');
-  m.innerHTML = `<div class="menu-user"><span class="avatar">${esc(u.initials)}</span><span><b>${esc(u.name)}</b><small>${esc(u.title)} · ${esc(L.role[S.role()])}</small></span></div><div class="menu-label">Preview as</div><div role="radiogroup" aria-label="Preview as role">${S.previewRoles().map(r => `<button role="radio" aria-checked="${S.role() === r}" class="menu-item ${S.role() === r ? 'active' : ''}" data-role="${r}"><span>${L.role[r]}</span><small>${r === S.previewRoles()[0] ? 'Your role' : 'Preview only'}</small></button>`).join('')}</div><div class="menu-sep"></div>${S.can('settings.view') ? '<button class="menu-item" data-view="Settings">Settings</button>' : ''}<button class="menu-item" data-view="Help & Support">Help &amp; Support</button><p class="menu-note">Preview hides controls only. What you can change is always decided by your PIVOT roles.</p>`;
+  m.innerHTML = `<div class="menu-user"><span class="avatar">${esc(u.initials)}</span><span><b>${esc(u.name)}</b><small>${esc(u.title)} · ${esc(L.role[S.role()])}</small></span></div>${S.previewRoles().length > 1 ? `<div class="menu-label">Preview as</div><div role="radiogroup" aria-label="Preview as role">${S.previewRoles().map(r => `<button role="radio" aria-checked="${S.role() === r}" class="menu-item ${S.role() === r ? 'active' : ''}" data-role="${r}"><span>${L.role[r]}</span><small>${r === S.previewRoles()[0] ? 'Your role' : 'Preview only'}</small></button>`).join('')}</div><div class="menu-sep"></div>` : ''}${S.can('settings.view') ? '<button class="menu-item" data-view="Settings">Settings</button>' : ''}<button class="menu-item" data-view="Help & Support">Help &amp; Support</button>${S.previewRoles().length > 1 ? '<p class="menu-note">Preview hides controls only. What you can change is always decided by your PIVOT roles.</p>' : ''}`;
   document.querySelector('.topbar-actions').appendChild(m); trig.setAttribute('aria-expanded', 'true');
   const first = m.querySelector('.menu-item.active') || m.querySelector('.menu-item'); if (first) first.focus();
 }
@@ -828,10 +830,10 @@ document.addEventListener('click', e => {
   const ds = t.dataset;
   if (ds.page) { const infoKey = ds.page, current = st.pages[infoKey] || 0; if (ds.step === 'first') st.pages[infoKey] = 0; else if (ds.step === 'prev') st.pages[infoKey] = Math.max(0, current - 1); else if (ds.step === 'next') st.pages[infoKey] = current + 1; else if (ds.step === 'last') st.pages[infoKey] = 999999; render(true); return; }
   if (ds.more) { if (ds.more.startsWith('map:')) st.more[ds.more] = (st.more[ds.more] || 5) + 10; else if (ds.more.startsWith('road')) st.more[ds.more] = (st.more[ds.more] || 5) + 5; else if (ds.more === 'reportsBands') st.more.reportsBands = (st.more.reportsBands || 5) + 5; render(true); return; }
-  if (ds.note) st.read.add(ds.note);
+  if (ds.note && !st.read.has(ds.note)) { st.read.add(ds.note); if (S.markRead) S.markRead([ds.note]); }
   if (t.id === 'notificationTrigger') { const d = $('notificationDrawer'), open = d.hidden; d.hidden = !open; t.setAttribute('aria-expanded', String(open)); t.classList.toggle('is-open', open); toggleProfile(false); if (open) { const f = d.querySelector('button'); if (f) f.focus(); } return; }
   if (t.id === 'notificationClose') { closeDrawer(); $('notificationTrigger').focus(); return; }
-  if (t.id === 'markNotificationsRead') { notifications().forEach(x => st.read.add(x.k)); renderTopbar(); return; }
+  if (t.id === 'markNotificationsRead') { const keys = notifications().map(x => x.k).filter(k => !st.read.has(k)); keys.forEach(k => st.read.add(k)); if (S.markRead && keys.length) S.markRead(keys); renderTopbar(); return; }
   if (t.id === 'viewAllNotifications') { go('Assessments'); return; }
   if (t.classList.contains('profile-trigger') || t.id === 'roleChip') { closeDrawer(); toggleProfile(); return; }
   if (ds.role) { S.setRole(ds.role); toggleProfile(false); notify('Previewing as ' + L.role[ds.role] + '.'); return; }

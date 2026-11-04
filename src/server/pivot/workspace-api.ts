@@ -222,9 +222,10 @@ function buildSnapshot() {
     return {
         now: nowMs(),
         instance: { name: gs.getProperty('instance_name', ''), company: gs.getProperty('glide.product.description', '') },
-        me: { id: me, role: myRoles[0] || 'viewer', roles: myRoles.length ? myRoles : ['viewer'] },
+        me: { id: me, role: myRoles[0] || 'viewer', roles: myRoles.length ? myRoles : ['viewer'], readNotifications: readNotifications() },
         users, families: FAMILIES, properties: p,
         capabilities, assessments, logs, results, outcomeResults, opportunities, roadmap, outcomes,
+        version: appVersion(), // PIV-043.06 – the guides show the same version
         engineAvailable: true, aiAvailable: false, // PIV-034 – the assessment engine (weekly job and Run Now)
     }
 }
@@ -550,15 +551,33 @@ function runAction(b: any): Result {
         case 'updateCapability': return updateCapability(b)
         case 'mapFamily': return mapFamily(b)
         case 'setProp': return setProp(b)
+        case 'markRead': return markRead(b)
     }
     return { ok: false, error: 'Unknown action.' }
+}
+
+function appVersion(): string {
+    const a = new GlideRecord('sys_scope')
+    return a.get('scope', SCOPE) ? str(a, 'version') : ''
+}
+
+// PIV-065.03 – notifications marked read are kept as a user preference (keys only, newest 200).
+const READ_PREF = SCOPE + '.read_notifications'
+function readNotifications(): string[] {
+    try { const v = (gs.getUser() as any).getPreference(READ_PREF); const a = v ? JSON.parse(String(v)) : []; return Array.isArray(a) ? a.map(String) : [] } catch (e) { return [] }
+}
+function markRead(b: any): any {
+    const keys = Array.isArray(b && b.keys) ? b.keys.map((k: any) => String(k).slice(0, 120)) : []
+    const all = readNotifications().filter((k) => keys.indexOf(k) < 0).concat(keys).slice(-200)
+    ;(gs.getUser() as any).savePreference(READ_PREF, JSON.stringify(all))
+    return { ok: true, note: 'Marked as read.' }
 }
 
 // PIV-063.04 – every successful action answers { ok: true, note }
 const DEFAULT_NOTE: { [a: string]: string } = {
     accept: 'Accepted. It stays on the roadmap until it is closed as done.', done: 'Closed as done.', start: 'Work started. The opportunity is now In progress.',
     reopen: 'Reopened. The opportunity is New again.', assign: 'Assignment saved.', note: 'Note added.', scores: 'Scores saved.', reorder: 'Order changed.',
-    resetRoadmap: 'Roadmap back in priority order.', saveOutcome: 'Outcome saved.', updateCapability: 'Measurement settings saved.', mapFamily: 'Product family saved.', setProp: 'Saved.',
+    resetRoadmap: 'Roadmap back in priority order.', saveOutcome: 'Outcome saved.', updateCapability: 'Measurement settings saved.', mapFamily: 'Product family saved.', setProp: 'Saved.', markRead: 'Marked as read.',
 }
 export function runActionWithNote(b: any): Result {
     const r = runAction(b || {})

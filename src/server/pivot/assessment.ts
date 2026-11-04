@@ -428,8 +428,8 @@ export function run(assessmentId: string, opts?: RunOptions): RunSummary {
     }
 }
 
-/** PIV-042.01 – run emails go to every active user with x_enno_pivot.admin (direct or through a contained role):
- *  comma-separated sys_ids for event parm2. */
+/** PIV-042.01 / PIV-070.06 – run emails go to every active user with x_enno_pivot.admin (direct or through a contained
+ *  role) and to the active members of the group named in x_enno_pivot.admin_group: comma-separated sys_ids for parm2. */
 export function adminRecipients(): string {
     const ids: string[] = []
     const r = new GlideRecord('sys_user_has_role')
@@ -437,6 +437,14 @@ export function adminRecipients(): string {
     r.addQuery('user.active', true)
     r.query()
     while (r.next()) { const u = str(r, 'user'); if (u && ids.indexOf(u) < 0) ids.push(u) }
+    const group = String(prop('admin_group') || '').trim()
+    if (group) {
+        const m = new GlideRecord('sys_user_grmember')
+        m.addQuery('group.name', group)
+        m.addQuery('user.active', true)
+        m.query()
+        while (m.next()) { const u = str(m, 'user'); if (u && ids.indexOf(u) < 0) ids.push(u) }
+    }
     return ids.join(',')
 }
 

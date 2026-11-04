@@ -17,7 +17,7 @@ const PROP_META = [
   ['priority_weight_impact', 'Priority weight: business impact', '×', 'Business impact is multiplied by this in the priority (0–10, default 1).'],
   ['gap_rule_config', 'Gap rule texts and defaults', 'JSON', 'Optional JSON per gap type: title, text, value, effort. Leave empty for the built-in defaults.'],
   ['slow_capability_seconds', 'Slow capability warning', 's', 'Log a warning when one capability takes longer.'],
-  ['admin_group', 'Run email recipients', '', 'Who receives the run complete / failed emails.'],
+  ['admin_group', 'Run email recipients', '', 'Group whose active members also get the run complete / failed emails. Every active PIVOT admin always gets them.'],
   ['ai_enabled', 'AI features (Now Assist)', '', 'Turns all PIVOT AI features on or off. PIVOT works fully without them (NFR-AI-02).']
 ];
 const PROP_TYPES = { admin_group: 'string', ai_enabled: 'boolean', gap_rule_config: 'string' };
@@ -58,6 +58,8 @@ export function createPV(first, api) {
     D.instance = snap.instance || {};
     S.me = snap.me.id;
     S.realRoles = snap.me.roles && snap.me.roles.length ? snap.me.roles : ['viewer'];
+    S.readNotes = Array.isArray(snap.me.readNotifications) ? snap.me.readNotifications : [];
+    S.version = snap.version || '';
     if (!previewRoles().includes(S.role) || !S.loaded) S.role = snap.me.role || 'viewer';
     D.personas = { admin: S.me, analyst: S.me, business_owner: S.me, viewer: S.me };
     S.props = {};
@@ -106,7 +108,8 @@ export function createPV(first, api) {
   }
   function previewRoles() {
     // Admins can preview every role; others their own roles and Viewer. The server always uses the real roles.
-    const set = S.realRoles.includes('admin') ? ROLE_RANK.slice() : S.realRoles.concat(['viewer']);
+    // PIV-065.05 AC 3 – only admins get "Preview as"; everyone else has just their own (highest) role.
+    const set = S.realRoles.includes('admin') ? ROLE_RANK.slice() : ROLE_RANK.filter(r => S.realRoles.includes(r)).slice(-1);
     return ROLE_RANK.filter(r => set.includes(r)).reverse();
   }
   function can(action, rec) {
@@ -175,6 +178,9 @@ export function createPV(first, api) {
     refresh: () => reload().then(() => ({ ok: true }), err => ({ ok: false, error: (err && err.message) || NETWORK_ERROR })),
     role: () => S.role,
     previewRoles,
+    readNotifications: () => (S.readNotes || []).slice(),
+    appVersion: () => S.version || '',
+    markRead: keys => { S.readNotes = (S.readNotes || []).concat(keys); return act({ action: 'markRead', keys }, { reload: false }); },
     setRole(r) { if (LABELS.role[r] && previewRoles().includes(r)) { S.role = r; emit({ type: 'role' }); } },
     user: () => Object.assign({ title: '' }, D.users[S.me], { title: (D.users[S.me] && D.users[S.me].title) || 'ServiceNow user' }),
     users: role => Object.keys(D.users).map(k => D.users[k]).filter(u => !role || u.role === role),
