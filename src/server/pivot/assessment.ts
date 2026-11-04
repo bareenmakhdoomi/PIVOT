@@ -408,7 +408,7 @@ export function run(assessmentId: string, opts?: RunOptions): RunSummary {
 
         // ---- [9] notify – the run complete event (emails: PIV-042)
         step(9, 'notify', () => {
-            gs.eventQueue(EVENT_COMPLETE, a, sysId, String(prop('admin_group')))
+            gs.eventQueue(EVENT_COMPLETE, a, sysId, adminRecipients())
             return { count: 1, unit: 'event', detail: EVENT_COMPLETE }
         })
 
@@ -423,9 +423,21 @@ export function run(assessmentId: string, opts?: RunOptions): RunSummary {
         add('error', 10, 'Step ' + (current || 'start') + ' failed: ' + msg)
         gs.error('PIVOT assessment ' + number + ' failed in step ' + current + ': ' + msg)
         save({ status: 'failed', duration: duration() })
-        try { gs.eventQueue(EVENT_FAILED, a, sysId, String(prop('admin_group'))) } catch (e2) { /* the failure is already logged */ }
+        try { gs.eventQueue(EVENT_FAILED, a, sysId, adminRecipients()) } catch (e2) { /* the failure is already logged */ }
         return { ok: false, number, sysId, overallScore: null, message: number + ' failed in step ' + current + ': ' + msg }
     }
+}
+
+/** PIV-042.01 – run emails go to every active user with x_enno_pivot.admin (direct or through a contained role):
+ *  comma-separated sys_ids for event parm2. */
+export function adminRecipients(): string {
+    const ids: string[] = []
+    const r = new GlideRecord('sys_user_has_role')
+    r.addQuery('role.name', SCOPE + '.admin')
+    r.addQuery('user.active', true)
+    r.query()
+    while (r.next()) { const u = str(r, 'user'); if (u && ids.indexOf(u) < 0) ids.push(u) }
+    return ids.join(',')
 }
 
 /** Script action on x_enno_pivot.run_assessment (PIV-036.02): parm1 = assessment sys_id. */

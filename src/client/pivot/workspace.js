@@ -103,6 +103,7 @@ function csvDownload(title, file, rows) {
   const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = file; document.body.appendChild(a); a.click();
   setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 500);
   st.exports.unshift({ title, file, ts: S.now(), by: S.user().id, rows: rows.length - 1, redo: title });
+  try { window.localStorage.setItem('x_enno_pivot.exports.' + S.user().id, JSON.stringify(st.exports.slice(0, 20))); } catch (e) { /* storage off: this session only */ }
   notify(file + ' downloaded (' + (rows.length - 1) + ' rows).');
 }
 const EXPORTS = {
@@ -621,7 +622,7 @@ function reportsView() {
     ['⇢', 'Roadmap', 'Now, Next and Later in roadmap order with priority and owner.', 'Analyst', 'Roadmap', `<div class="mini-stack">${['now', 'next', 'later'].map((p,i) => `<span style="--chart-index:${i}"><b>${d.roadmap[p].length}</b>${L.phase[p]}</span>`).join('')}</div>`, 'Items per column']
   ];
   const generated = st.exports.map(x => [x.title, F.dateTime(x.ts), F.user(x.by), 'CSV · ' + x.rows + ' rows', `<button class="btn" data-export="${esc(x.redo)}">Download again</button>`])
-    .concat(S.assessments().filter(r => r.status === 'complete' || r.status === 'failed').slice(0, 6).map(r => [r.status === 'failed' ? 'PIVOT run failed (email)' : 'PIVOT run complete (email)', F.dateTime(r.run_date + (r.duration || 0)), S.prop('admin_group'), r.number, `<button class="btn" data-asm="${esc(r.number)}">Open run</button>`]));
+    .concat(S.assessments().filter(r => r.status === 'complete' || r.status === 'complete_with_warnings' || r.status === 'failed').slice(0, 6).map(r => [r.status === 'failed' ? 'PIVOT run failed (email)' : 'PIVOT run complete (email)', F.dateTime(r.run_date + (r.duration || 0)), 'PIVOT admins', r.number, `<button class="btn" data-asm="${esc(r.number)}">Open run</button>`]));
   const generatedPage = pageSlice(generated, 'reportsGenerated', 5);
   return `<div class="signal-hero"><div class="signal-copy"><div class="signal-kicker"><span class="signal-live"></span> Reports · ${esc(a.number)}</div><div class="signal-title">See where the platform pays off, and where it does not yet.</div><div class="signal-text">Value and outcomes first, then scores and utilization, then opportunities and the roadmap. Every chart below is calculated from ${esc(a.number)} (${esc(F.dateTime(a.run_date))}).</div><div class="signal-footer"><span class="signal-tag">${caps.length} capabilities</span><span class="signal-tag">${outs} business outcomes</span><span class="signal-tag">${allOpps.length} active opportunities</span></div></div><div class="signal-stats"><div class="signal-stat"><span>Priority actions</span><b>${String(d.roadmap.now.length).padStart(2, '0')}</b><em>In Now</em></div><div class="signal-stat"><span>Outcome status</span><b>${ob.improved + ob.on_target} / ${measuredOut}</b><em>On track</em></div></div></div>`
     + `<div class="headingrow reports-heading"><div><div class="eyebrow">PIVOT / REPORTS</div><h1 class="h1">Reports</h1><div class="subtitle">The B12 dashboard reports for sponsors, admins, analysts and business owners. Download any report as CSV.</div></div><div class="headactions reports-actions"><button class="btn" data-action="print">Print this page</button><button class="btn primary" data-export="Executive value summary">Export overview ↓</button></div></div>`
@@ -648,7 +649,7 @@ function reportsView() {
     + `<div class="ops-subsection"><h4>Capability bands <span style="font-weight:500;color:var(--muted)">· ${bandShown} of ${gridCaps.length} shown</span></h4><div class="heatgrid">${visibleBands.map(c => `<button style="background:${BAND_SOLID[bandOf(c)]}" data-cap-open="${c.id}" title="${esc(c.name)} · ${esc(BAND[bandOf(c)].label)} · score ${F.score(c.score)}" aria-label="${esc(c.name)}, ${esc(BAND[bandOf(c)].label)}"></button>`).join('')}</div>${loadMoreMarkup('reportsBands', bandShown, gridCaps.length, 'capabilities')}<div style="display:flex;justify-content:space-between;color:var(--muted);font-size:9px;margin-top:9px"><span>Dark = strong usage</span><span>Light = low or not measured</span></div></div>`
     + `<div class="ops-subsection"><h4>Action queue <span style="font-weight:500;color:var(--muted)">· ${queue.length} items</span></h4><div class="alertlist">${queue.map(q => `<button class="alertrow" ${q[3]}><span><b>${esc(q[0])}</b><small>${esc(q[1])}</small></span><span class="severity ${q[2] === 'Warning' ? 'warn' : ''}">${q[2]}</span></button>`).join('')}</div></div></div></section></div>`
     + `<div class="report-grid">${reports.map(r => `<article class="report-card"><div class="report-card-heading"><div class="report-icon">${r[0]}</div><div class="report-card-copy"><h3>${esc(r[1])}</h3><p>${esc(r[2])}</p></div></div><div class="mini-chart">${r[5]}<span class="mini-caption">${esc(r[6])}</span></div><div class="report-card-footer"><span class="pill blue">${esc(r[3])}</span><button class="btn" data-export="${esc(r[4])}">Download CSV ↓</button></div></article>`).join('')}</div>`
-    + sectionHead('Recently generated', 'Exports made in this session and the run emails PIVOT sent.', '')
+    + sectionHead('Recently generated', 'Your exports and the run emails PIVOT sent to the PIVOT admins.', '')
     + `<div class="panel"><div class="table-wrap"><table class="table"><thead><tr><th scope="col">Report</th><th scope="col">Generated</th><th scope="col">By / to</th><th scope="col">Format</th><th scope="col"><span class="sr-only">Action</span></th></tr></thead><tbody>${generatedPage.items.map(g => `<tr><td><b>${esc(g[0])}</b></td><td>${esc(g[1])}</td><td>${esc(g[2])}</td><td>${esc(g[3])}</td><td>${g[4]}</td></tr>`).join('')}</tbody></table></div>${pagerMarkup('reportsGenerated', generatedPage, 'generated reports')}</div>`;
 }
 
@@ -902,7 +903,7 @@ document.addEventListener('input', e => {
 });
 document.addEventListener('change', e => {
   const id = e.target.id, v = e.target.value;
-  const map = { studioRun: () => st.studio.run = +v, studioFamily: () => st.studio.family = v, studioBand: () => st.studio.band = v, libraryView: () => { st.lib.view = v; st.lib.page = 0; }, libraryFamily: () => { st.lib.family = v; st.lib.page = 0; }, voFamily: () => st.vo.family = v, voPhase: () => st.vo.phase = v, voState: () => st.vo.state = v, voType: () => st.vo.type = v, voAssigned: () => st.vo.assigned = v, voOutStatus: () => st.vo.outStatus = v, roadOwner: () => st.road.owner = v, roadFamily: () => st.road.family = v, roadState: () => st.road.state = v, repFamily: () => st.reports.family = v };
+  const map = { studioRun: () => st.studio.run = +v, studioFamily: () => st.studio.family = v, studioBand: () => st.studio.band = v, libraryView: () => { st.lib.view = v; st.lib.page = 0; }, libraryFamily: () => { st.lib.family = v; st.lib.page = 0; }, voFamily: () => st.vo.family = v, voPhase: () => st.vo.phase = v, voState: () => st.vo.state = v, voType: () => st.vo.type = v, voAssigned: () => st.vo.assigned = v, voOutStatus: () => st.vo.outStatus = v, roadOwner: () => st.road.owner = v, roadFamily: () => st.road.family = v, roadState: () => st.road.state = v, repFamily: () => { st.reports.family = v; ['reportsHeat', 'reportsInsights', 'reportsOutcomes'].forEach(k => st.pages[k] = 0); st.more.reportsBands = 5; } };
   if (map[id]) { map[id](); render(true); return; }
   if (id === 'roleSelect') { S.setRole(v); notify('Previewing as ' + L.role[v] + '.'); return; }
   if (e.target.dataset.prop && e.target.type === 'checkbox') { st.settings.pending[e.target.dataset.prop] = e.target.checked; render(true); }
@@ -930,5 +931,7 @@ S.subscribe(ev => {
 });
 
 try { const startView = viewFromParam(new URL(window.location.href).searchParams.get('view')); if (startView) st.view = startView; } catch (e) { /* no address */ }
+try { const saved = JSON.parse(window.localStorage.getItem('x_enno_pivot.exports.' + S.user().id) || '[]'); if (Array.isArray(saved)) st.exports = saved; } catch (e) { /* storage off */ }
 render();
+try { const runNum = new URL(window.location.href).searchParams.get('run'); if (runNum && /^[A-Z]{2,5}\d{4,10}$/.test(runNum)) { if (st.view !== 'Assessments') { st.view = 'Assessments'; render(); } openAssessment(runNum); const u = new URL(window.location.href); u.searchParams.delete('run'); window.history.replaceState(window.history.state, '', u.toString()); } } catch (e) { /* no address */ }
 }
