@@ -217,7 +217,8 @@ export function overallScore(rows: { score: number | null; weight: number | null
         sum += r.score * weight
         w += weight
     })
-    return w ? Math.round(sum / w) : null
+    // PIV-037 / PIV-038.09: the Platform Value Score keeps one decimal (53 after 52.6); capability scores stay whole numbers.
+    return w ? Math.round((sum / w) * 10) / 10 : null
 }
 
 /** Outcome status from baseline, target and the measured value (design B6). */
