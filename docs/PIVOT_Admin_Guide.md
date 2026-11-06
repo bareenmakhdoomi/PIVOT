@@ -51,7 +51,7 @@ Change them in the workspace under **Settings**. A value outside its range is re
 | slow_capability_seconds | Slow capability warning (s) | 60 | whole number 1–3600 | Next run |
 | gap_rule_config | Gap rule texts and defaults (JSON) | empty (built-in defaults) | valid JSON per gap type: title, text, value, effort | New opportunities from the next run |
 | admin_group | Run email recipients | PIVOT Admins | a group name, up to 100 characters (empty is refused) | Next run email: active members of this group also get it |
-| ai_enabled | AI features (Now Assist) | true | on / off | At once (the AI features arrive with the AI release) |
+| ai_enabled | AI features (Now Assist) | true | on / off | At once: all AI buttons, Ask PIVOT and the run briefing |
 
 Two more properties are set in **System Properties**, not in the workspace: `x_enno_pivot.max_run_minutes` (30; 0 = no limit; capabilities left when it is reached are Not Measured with "Run time limit reached") and `x_enno_pivot.timing_log` (false; true logs the time per capability).
 
@@ -88,6 +88,22 @@ Open a run. The log has one line per step in order – discover, measure, score,
 ## Run emails
 
 When a run completes or fails, PIVOT emails every active user with the PIVOT admin role and the active members of the group in Run email recipients (`x_enno_pivot.admin_group`): subject "PIVOT run complete: PVA…, score N" or "PIVOT run failed: PVA…", with the status, score (or "Not available"), change, opportunities raised and updated, warnings, completion time, the error for a failed run, and an **Open in PIVOT** link to the run.
+
+# AI features
+
+**Before you start.** The AI features need Now Assist with the Generative AI Controller and an approved LLM provider (Now LLM Service by default). Settings › AI features shows whether the Generative AI Controller is installed; **Test AI** sends one short prompt and shows the answer and how long it took. Without it, every AI button says "AI is not set up on this instance." and PIVOT works as before.
+
+**Switch.** `x_enno_pivot.ai_enabled` turns every AI feature off at once. With it off there are no AI buttons, no Ask PIVOT and no briefing; runs and emails work as before.
+
+**What the AI may use.** Each feature reads only the PIVOT records the signed-in user can read (their PIVOT role and the ACLs). Users without a PIVOT role get no PIVOT data. Explain and the briefing are open to every PIVOT role; score, owner and plan suggestions to analysts and admins; Run Now from chat to admins only.
+
+**Numbers are checked.** Every number in an AI answer must be in the record. If not, or if the answer is too long, PIVOT shows its own rule-based text with the label "PIVOT rules · AI answer not used".
+
+**Briefing.** Step 9 of every run writes the briefing before the run email, so the email includes it above "Open in PIVOT". If the AI fails, the run stays Complete and the log shows the warning "Briefing not created".
+
+**AI usage.** PIVOT › AI usage (and Settings › AI features) list every AI answer of the last 30 days with the skill, record, text, user and what the user did with it (shown, accepted, edited, rejected, skipped, cancelled, failed). Accept rate = accepted or edited ÷ (accepted + edited + rejected).
+
+**Virtual Agent and the Now Assist panel.** The script include `x_enno_pivot.PivotAI` is the entry point: `ask(question)`, `confirm(confirmObject)`, `explain(table, sysId, text)` and `answerText(result)`. The "Ask PIVOT" LLM topic and the "Explain this finding" panel skill call it; the setup steps are in the PIVOT AI setup guide. Changes made from chat need the user to click Confirm and are written to the record's work notes as "Changed from Virtual Agent by (user)".
 
 # Roles
 

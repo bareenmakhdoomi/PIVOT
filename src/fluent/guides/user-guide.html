@@ -201,6 +201,57 @@
 <p>On the Roadmap, analysts can move a card up or down with ▲ ▼ (only with no filters). The next run puts everything back in priority order; <strong>Reset to priority order</strong> does it at once.</p>
 <h2>Business outcomes (business owners)</h2>
 <p>Open <strong>Value &amp; Opportunities &gt; Outcome register</strong> and click <strong>+ New outcome</strong>: choose the capability, write the objective and KPI, the direction (higher or lower is better), the target and how it is measured (calculated from a table, or a manual value with its date). You can set the first baseline; after that it is locked and only an admin can change it, with a reason.</p>
+<h2>AI features (Now Assist)</h2>
+<p>PIVOT can use Now Assist to explain findings, brief you on a run and suggest next steps. The AI only reads the PIVOT records you can already see. It never changes a number or a record by itself: you decide, and PIVOT's own rules always calculate priority and the roadmap column.</p>
+<p>Every AI text has a label such as "AI-generated · Now Assist · AI-generated from PVA0001042, 11 Oct 2026" and ends with "Review before use. AI never changes PIVOT numbers itself." PIVOT checks every number in an AI answer against the records. If a number does not match, PIVOT shows its own text instead, labelled "PIVOT rules · AI answer not used".</p>
+<table>
+<thead>
+<tr>
+<th>Feature</th>
+<th>Where</th>
+<th>Who</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Explain this finding</td>
+<td>Opportunity dialog › AI assistance. "Add as a note" keeps it in the activity with its label.</td>
+<td>Every PIVOT role (adding the note: analysts and admins)</td>
+</tr>
+<tr>
+<td>Suggest scores</td>
+<td>Opportunity dialog. "Put these in the form" fills value, impact and effort; change them if you like, then Save scores. "Undo changes" drops them.</td>
+<td>Analysts and admins</td>
+</tr>
+<tr>
+<td>Suggest owner</td>
+<td>Opportunity dialog: up to 3 people with a reason and an Assign button.</td>
+<td>Analysts and admins</td>
+</tr>
+<tr>
+<td>Suggest owners</td>
+<td>Roadmap › Roadmap governance, next to "Show unassigned": one suggestion per unassigned item. Accept or skip each, then Finish.</td>
+<td>Analysts and admins</td>
+</tr>
+<tr>
+<td>Draft action plan</td>
+<td>Opportunity dialog: 3–6 steps with an owner and timing. "Add plan as a note" saves it as "(AI draft, reviewed)".</td>
+<td>Analysts and admins</td>
+</tr>
+<tr>
+<td>Assessment briefing</td>
+<td>Written at the end of every run and shown in the run dialog above the step log and in the run email. "Generate assessment briefing" makes one for an older run.</td>
+<td>Every PIVOT role</td>
+</tr>
+<tr>
+<td>Ask PIVOT</td>
+<td>Help &amp; Support › Ask PIVOT: type a question or pick one of six suggested questions. Records in the answer open their dialog. Assign, accept and Run Now ask you to Confirm first.</td>
+<td>Every PIVOT role (changes: by role)</td>
+</tr>
+</tbody>
+</table>
+<p>Ask PIVOT answers: how are we doing (score and change), which licences are not used, what is assigned to me, when PIVOT last ran, what is not measured and what to do first. For anything else (for example costs or forecasts) it says that PIVOT does not have that information.</p>
+<p>If the AI buttons are missing or greyed out, hover over them: "AI features are switched off in Settings." means an admin has turned them off; "AI is not set up on this instance." means Now Assist is not installed.</p>
 <h2>Help</h2>
 <p><strong>Help &amp; Support</strong> has four start cards, the FAQ and <strong>How scores work</strong>, which lists every rule with the current limits.</p></body></html>
 </j:jelly>

@@ -8,6 +8,7 @@ import {
     validateCapability, validateOutcome, validateProperty,
 } from './rules.ts'
 import { startRunNow } from './assessment.ts'
+import * as AI from './ai.ts'
 
 const T = {
     capability: SCOPE + '_capability',
@@ -138,6 +139,7 @@ function buildSnapshot() {
             id: a.getUniqueValue(), number: n, run_date: ms(str(a, 'run_date')), run_by: runBy || 'system',
             trigger: str(a, 'trigger') === 'run_now' ? 'Run Now' : 'Weekly schedule', status: str(a, 'status') === 'complete_with_warnings' ? 'complete' : str(a, 'status') || 'queued', withWarnings: str(a, 'status') === 'complete_with_warnings',
             duration: str(a, 'duration') ? ms(str(a, 'duration')) : null, overall_score: num(a, 'overall_score'), error: errEntry ? errEntry.message : '',
+            briefing: parseJson(str(a, 'briefing'), null), // PIV-056.05 – the stored briefing with its original AI label
         })
     }
 
@@ -226,7 +228,9 @@ function buildSnapshot() {
         users, families: FAMILIES, properties: p,
         capabilities, assessments, logs, results, outcomeResults, opportunities, roadmap, outcomes,
         version: appVersion(), // PIV-043.06 – the guides show the same version
-        engineAvailable: true, aiAvailable: false, // PIV-034 – the assessment engine (weekly job and Run Now)
+        engineAvailable: true, // PIV-034 – the assessment engine (weekly job and Run Now)
+        aiAvailable: AI.apiPresent(), // PIV-054.02 – Generative AI Controller installed; x_enno_pivot.ai_enabled switches the features
+        aiUsage: myRoles.indexOf('admin') > -1 ? AI.usage(30) : null, // PIV-054.06 AC 2 – Settings > AI features
     }
 }
 
@@ -276,6 +280,7 @@ function opportunityAction(kind: string, b: any): Result {
     const gr = findOpp(b.number)
     if (!gr) return { ok: false, error: 'Opportunity ' + b.number + ' was not found.' }
     if (!gr.canWrite()) return deny('You cannot change this opportunity.')
+    if (b.workNote) gr.setValue('work_notes', String(b.workNote).slice(0, 1000)) // PIV-060.04 – only set by AI.confirmChat (internal)
     const state = str(gr, 'state')
     switch (kind) {
         case 'accept':
@@ -530,7 +535,8 @@ function setProp(b: any): Result {
     return { ok: true, note: /threshold|days_back/.test(short) ? 'Applies from the next assessment run.' : 'Saved.' }
 }
 
-function runAction(b: any): Result {
+function runAction(b: any, internal?: boolean): Result {
+    if (!internal && b && b.workNote) delete b.workNote // work notes "Changed from Virtual Agent …" are written by AI.confirmChat only
     switch (String(b && b.action)) {
         case 'accept': return opportunityAction('accept', b)
         case 'reject': return opportunityAction('reject', b)
@@ -552,8 +558,28 @@ function runAction(b: any): Result {
         case 'mapFamily': return mapFamily(b)
         case 'setProp': return setProp(b)
         case 'markRead': return markRead(b)
+        case 'ai': return aiAction(b)
     }
     return { ok: false, error: 'Unknown action.' }
+}
+
+// PIV-054 … 060 – AI features. Each skill checks the AI switch and the user's PIVOT role itself (ai.ts).
+function aiAction(b: any): Result {
+    const ch = 'workspace', n = String(b.number || '')
+    switch (String(b.skill || '')) {
+        case 'explain': return AI.explain(n, ch)
+        case 'briefing': return AI.briefing(n, ch)
+        case 'scores': return AI.suggestScores(n, ch)
+        case 'owners': return AI.suggestOwners(n, ch)
+        case 'ownersAll': return AI.suggestOwnersAll(ch)
+        case 'plan': return AI.draftPlan(n, ch)
+        case 'ask': return AI.ask(String(b.question || ''), ch)
+        case 'confirm': return AI.confirmChat(b.confirm || {}, ch, (x: any) => runAction(x, true))
+        case 'decide': return AI.decide(String(b.logId || ''), String(b.decision || ''), String(b.detail || ''))
+        case 'test': return AI.test()
+        case 'usage': return AI.usage(Number(b.days) || 30)
+    }
+    return { ok: false, error: 'Unknown AI request.' }
 }
 
 function appVersion(): string {
@@ -581,7 +607,7 @@ const DEFAULT_NOTE: { [a: string]: string } = {
 }
 export function runActionWithNote(b: any): Result {
     const r = runAction(b || {})
-    if (r.ok && !r.note) r.note = DEFAULT_NOTE[String(b && b.action)] || 'Saved.'
+    if (r.ok && !r.note && String(b && b.action) !== 'ai') r.note = DEFAULT_NOTE[String(b && b.action)] || 'Saved.'
     return r
 }
 
@@ -596,3 +622,8 @@ export function action(request: any, response: any) {
         response.setBody({ ok: false, error: 'PIVOT could not save the change. Ask your PIVOT admin to check the system log.' } as any)
     }
 }
+
+// PIV-059 / 060 – Virtual Agent "Ask PIVOT" topic and the Now Assist panel call these through the PivotAI script include.
+export function vaAsk(question: string): Result { return AI.ask(question, 'va') }
+export function vaConfirm(c: any): Result { return AI.confirmChat(c || {}, 'va', (x: any) => runAction(x, true)) }
+export function panelExplain(table: string, sysId: string, text: string): Result { return AI.explainForPanel(table, sysId, text) }

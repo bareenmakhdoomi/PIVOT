@@ -35,6 +35,17 @@
     if (!failed) h += row('Opportunities raised', created) + row('Opportunities updated', upd) + row('Warnings', String(warns));
     h += row(failed ? 'Failed at' : 'Completed', current.getDisplayValue('sys_updated_on')) + '</table>';
     if (failed) h += '<p><b>Error:</b> ' + esc(err || 'See the run log.') + '</p>';
+    // PIV-056.04 – the AI briefing (when one was saved) above the link; without one the email is as before.
+    var b = null;
+    try { b = failed ? null : JSON.parse(current.getValue('briefing') || 'null'); } catch (e2) { b = null; }
+    if (b && b.headline) {
+        var list = function (a) { var o = ''; for (var j = 0; j < (a || []).length; j++) o += '<li>' + esc(a[j]) + '</li>'; return '<ul style="margin:4px 0 8px">' + o + '</ul>'; };
+        h += '<div style="margin:12px 0;padding:10px 12px;border-left:3px solid #7356d9;background:#f6f4fd">';
+        h += '<div style="font-size:12px;color:#5b4bb0">' + esc(b.label || 'AI-generated') + '</div>';
+        h += '<p style="margin:6px 0"><b>' + esc(b.headline) + '</b></p>';
+        h += '<div><b>What changed</b></div>' + list(b.changed) + '<div><b>Top Now items</b></div>' + list(b.now) + '<div><b>Data warnings</b></div>' + list(b.warnings);
+        h += '<div style="font-size:12px;color:#5b6b85">Review before use. AI never changes PIVOT numbers itself.</div></div>';
+    }
     h += '<p><a href="' + link + '">Open in PIVOT</a></p>';
     template.print(h);
 })(current, template, email, email_action, event);

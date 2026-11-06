@@ -157,6 +157,26 @@ Open **Value & Opportunities > Outcome register** and click **+ New outcome**: c
 
 ![Outcome dialog](img/outcome_dialog.jpg){width=100%}
 
+# AI features (Now Assist)
+
+PIVOT can use Now Assist to explain findings, brief you on a run and suggest next steps. The AI only reads the PIVOT records you can already see. It never changes a number or a record by itself: you decide, and PIVOT's own rules always calculate priority and the roadmap column.
+
+Every AI text has a label such as "AI-generated · Now Assist · AI-generated from PVA0001042, 11 Oct 2026" and ends with "Review before use. AI never changes PIVOT numbers itself." PIVOT checks every number in an AI answer against the records. If a number does not match, PIVOT shows its own text instead, labelled "PIVOT rules · AI answer not used".
+
+| Feature | Where | Who |
+|---|---|---|
+| Explain this finding | Opportunity dialog › AI assistance. "Add as a note" keeps it in the activity with its label. | Every PIVOT role (adding the note: analysts and admins) |
+| Suggest scores | Opportunity dialog. "Put these in the form" fills value, impact and effort; change them if you like, then Save scores. "Undo changes" drops them. | Analysts and admins |
+| Suggest owner | Opportunity dialog: up to 3 people with a reason and an Assign button. | Analysts and admins |
+| Suggest owners | Roadmap › Roadmap governance, next to "Show unassigned": one suggestion per unassigned item. Accept or skip each, then Finish. | Analysts and admins |
+| Draft action plan | Opportunity dialog: 3–6 steps with an owner and timing. "Add plan as a note" saves it as "(AI draft, reviewed)". | Analysts and admins |
+| Assessment briefing | Written at the end of every run and shown in the run dialog above the step log and in the run email. "Generate assessment briefing" makes one for an older run. | Every PIVOT role |
+| Ask PIVOT | Help & Support › Ask PIVOT: type a question or pick one of six suggested questions. Records in the answer open their dialog. Assign, accept and Run Now ask you to Confirm first. | Every PIVOT role (changes: by role) |
+
+Ask PIVOT answers: how are we doing (score and change), which licences are not used, what is assigned to me, when PIVOT last ran, what is not measured and what to do first. For anything else (for example costs or forecasts) it says that PIVOT does not have that information.
+
+If the AI buttons are missing or greyed out, hover over them: "AI features are switched off in Settings." means an admin has turned them off; "AI is not set up on this instance." means Now Assist is not installed.
+
 # Help
 
 **Help & Support** has four start cards, the FAQ and **How scores work**, which lists every rule with the current limits.

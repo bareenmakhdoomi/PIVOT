@@ -79,6 +79,7 @@ export function createPV(first, api) {
     S.serverNow = snap.now || Date.now();
     S.engine = !!snap.engineAvailable;
     S.ai = !!snap.aiAvailable;
+    S.aiUsage = snap.aiUsage || null;
     S.loaded = true;
   }
 
@@ -411,14 +412,25 @@ export function createPV(first, api) {
     }
   };
 
-  // AI (FR-AI-01 … 07) arrives with the AI sprint. Until then every AI entry point reports "not available"
-  // and the workspace hides the AI panels (AI.enabled() is false). No sample answers are ever shown.
+  // AI (PIV-054 … 060). Every call goes to the server (POST /action { action: 'ai', skill }), which checks the AI switch,
+  // the user's PIVOT role and reads the records as the user. Suggestions never change a record; decisions are logged.
+  const aiCall = (body, opts) => act(Object.assign({ action: 'ai' }, body), { reload: !!(opts && opts.reload) });
   const ai = {
     label: 'AI-generated',
     enabled: () => S.ai && !!P('ai_enabled'),
     stamp: () => { const a = latestRun(); return a ? 'AI-generated from ' + a.number + ', ' + fmt.date(a.run_date) : 'AI-generated'; },
-    explain: () => null, briefing: () => null, suggestScores: () => null, suggestOwners: () => [], draftPlan: () => null,
-    ask: () => ({ ok: false, answer: 'AI features are not available in this version of PIVOT yet.', items: [] })
+    explain: num => aiCall({ skill: 'explain', number: num }),
+    briefing: num => aiCall({ skill: 'briefing', number: num }, { reload: true }),
+    suggestScores: num => aiCall({ skill: 'scores', number: num }),
+    suggestOwners: num => aiCall({ skill: 'owners', number: num }),
+    suggestOwnersAll: () => aiCall({ skill: 'ownersAll' }),
+    draftPlan: num => aiCall({ skill: 'plan', number: num }),
+    ask: q => aiCall({ skill: 'ask', question: q }),
+    confirm: c => aiCall({ skill: 'confirm', confirm: c }, { reload: true }),
+    decide: (logId, decision, detail) => (logId ? aiCall({ skill: 'decide', logId, decision, detail: detail || '' }) : Promise.resolve({ ok: true })),
+    test: () => aiCall({ skill: 'test' }),
+    usage: () => S.aiUsage || null,
+    suggested: ['How are we doing?', 'Which licences are we not using?', 'What is assigned to me?', 'When did PIVOT last run?', 'What is not measured?', 'What should we do first?']
   };
 
   ingest(first);

@@ -10,6 +10,7 @@ import { SCOPE, PROPERTIES, OPP_ACTIVE, scoreOf, utilizationOf, overallScore, ou
 import { runDiscovery, LogEntry } from './discovery.ts'
 import { runGapRules } from './gaps.ts'
 import { generate as generateRoadmap } from './roadmap.ts'
+import { briefingForRun } from './ai.ts'
 
 const T = {
     capability: SCOPE + '_capability',
@@ -408,6 +409,12 @@ export function run(assessmentId: string, opts?: RunOptions): RunSummary {
 
         // ---- [9] notify – the run complete event (emails: PIV-042)
         step(9, 'notify', () => {
+            // PIV-056.03 – the AI briefing is written before the email so the email can include it. A failure never
+            // fails the run: it is logged as the warning "Briefing not created" and the run stays Complete.
+            const br = briefingForRun(sysId)
+            if (!br.ok) add('warn', 9, br.message.indexOf('Briefing not created') === 0 ? br.message : 'Briefing not created: ' + br.message)
+            else if (/Briefing created/.test(br.message)) add('info', 9, br.message)
+            a.get(sysId) // re-read so the briefing saved by the AI step is not overwritten by the next save
             gs.eventQueue(EVENT_COMPLETE, a, sysId, adminRecipients())
             return { count: 1, unit: 'event', detail: EVENT_COMPLETE }
         })
