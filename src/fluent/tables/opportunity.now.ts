@@ -32,9 +32,10 @@ export const x_enno_pivot_opportunity = Table({
         priority: DecimalColumn({ label: 'Priority', readOnly: true, scale: 2 }),
         priority_reason: StringColumn({ label: 'Priority reason', maxLength: 500, readOnly: true }),
         state: ChoiceColumn({ dropdown: 'dropdown_without_none',
-            label: 'State', default: 'new',
+            label: 'State', default: 'open',
             // PIV-032.01 / STRY0015244 – New → Accepted → In progress → Done; Rejected from any active state.
-            choices: { new: { label: 'New', sequence: 10 }, accepted: { label: 'Accepted', sequence: 20 }, in_progress: { label: 'In progress', sequence: 30 }, rejected: { label: 'Rejected', sequence: 40 }, done: { label: 'Done', sequence: 50 } },
+            // The stored value of New is 'open' (label New), so existing records, reports, filters and the rules keep working.
+            choices: { open: { label: 'New', sequence: 10 }, accepted: { label: 'Accepted', sequence: 20 }, in_progress: { label: 'In progress', sequence: 30 }, rejected: { label: 'Rejected', sequence: 40 }, done: { label: 'Done', sequence: 50 } },
         }),
         // PIV-032.02 – owner of the action; with a group, only its members can be chosen
         assignment_group: ReferenceColumn({ label: 'Assignment group', referenceTable: 'sys_user_group', referenceQual: 'active=true' }),

@@ -10,6 +10,7 @@ import { SCOPE, PROPERTIES, OPP_ACTIVE, scoreOf, utilizationOf, overallScore, ou
 import { runDiscovery, LogEntry } from './discovery.ts'
 import { runGapRules } from './gaps.ts'
 import { generate as generateRoadmap } from './roadmap.ts'
+import { briefingForRun } from './ai.ts'
 
 const T = {
     capability: SCOPE + '_capability',
@@ -408,7 +409,13 @@ export function run(assessmentId: string, opts?: RunOptions): RunSummary {
 
         // ---- [9] notify – the run complete event (emails: PIV-042)
         step(9, 'notify', () => {
-            gs.eventQueue(EVENT_COMPLETE, a, sysId, String(prop('admin_group')))
+            // PIV-056.03 – the AI briefing is written before the email so the email can include it. A failure never
+            // fails the run: it is logged as the warning "Briefing not created" and the run stays Complete.
+            const br = briefingForRun(sysId)
+            if (!br.ok) add('warn', 9, br.message.indexOf('Briefing not created') === 0 ? br.message : 'Briefing not created: ' + br.message)
+            else if (/Briefing created/.test(br.message)) add('info', 9, br.message)
+            a.get(sysId) // re-read so the briefing saved by the AI step is not overwritten by the next save
+            gs.eventQueue(EVENT_COMPLETE, a, sysId, adminRecipients())
             return { count: 1, unit: 'event', detail: EVENT_COMPLETE }
         })
 
@@ -423,9 +430,27 @@ export function run(assessmentId: string, opts?: RunOptions): RunSummary {
         add('error', 10, 'Step ' + (current || 'start') + ' failed: ' + msg)
         gs.error('PIVOT assessment ' + number + ' failed in step ' + current + ': ' + msg)
         save({ status: 'failed', duration: duration() })
-        try { gs.eventQueue(EVENT_FAILED, a, sysId, String(prop('admin_group'))) } catch (e2) { /* the failure is already logged */ }
+        try { gs.eventQueue(EVENT_FAILED, a, sysId, adminRecipients()) } catch (e2) { /* the failure is already logged */ }
         return { ok: false, number, sysId, overallScore: null, message: number + ' failed in step ' + current + ': ' + msg }
     }
+}
+
+/** PIV-042.01 / PIV-070.06 – run emails go to every active user with x_enno_pivot.admin (direct or through a contained
+ *  role) and to the active members of the group named in x_enno_pivot.admin_group: comma-separated sys_ids for parm2. */
+export function adminRecipients(): string {
+    const ids: string[] = []
+    const r = new GlideRecord('sys_user_has_role')
+    r.addEncodedQuery('role.name=' + SCOPE + '.admin^user.active=true')
+    r.query()
+    while (r.next()) { const u = str(r, 'user'); if (u && ids.indexOf(u) < 0) ids.push(u) }
+    const group = String(prop('admin_group') || '').trim()
+    if (group) {
+        const m = new GlideRecord('sys_user_grmember')
+        m.addEncodedQuery('group.name=' + group + '^user.active=true')
+        m.query()
+        while (m.next()) { const u = str(m, 'user'); if (u && ids.indexOf(u) < 0) ids.push(u) }
+    }
+    return ids.join(',')
 }
 
 /** Script action on x_enno_pivot.run_assessment (PIV-036.02): parm1 = assessment sys_id. */

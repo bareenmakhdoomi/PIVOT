@@ -28,6 +28,8 @@ export const x_enno_pivot_assessment = Table({
         not_measured_count: IntegerColumn({ label: 'Not measured' }),
         inactive_count: IntegerColumn({ label: 'Skipped as inactive' }),
         slow_count: IntegerColumn({ label: 'Slow capabilities' }),
+        // PIV-056.03 – AI briefing (JSON: label, headline, changed, now, warnings, text, source) written at the end of the run
+        briefing: MultiLineTextColumn({ label: 'Briefing', maxLength: 8000, attributes: { no_audit: true } }),
         sys_domain: DomainIdColumn({ label: 'Domain' }),
     },
 })

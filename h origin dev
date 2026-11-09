@@ -1,0 +1,10 @@
+*   [33m114629a[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mdev[m[33m)[m Merge branch 'dev' of https://github.com/bareenmakhdoomi/PIVOT into dev
+[31m|[m[32m\[m  
+[31m|[m * [33ma4e7146[m[33m ([m[1;31morigin/dev[m[33m)[m Show a non-blocking message when a licensed Capability has no linked app, and add ATF coverage for saving and linking the installed-app reference.
+[31m|[m * [33m4ef2e29[m STRY0015306: align discovery timestamp with assessment run
+* [32m|[m [33m8db2e95[m Merge branch 'dev' of https://github.com/bareenmakhdoomi/PIVOT into dev # Please enter a commit message to explain why this merge is necessary, # especially if it merges an updated upstream into a topic branch. # # Lines starting with '#' will be ignored, and an empty message aborts # the commit.
+* [32m|[m [33md334c16[m Keep opportunity state value 'open' for New (revert partial 'new' change)
+* [32m|[m [33m1f95832[m Keep opportunity state value 'open' for New (revert partial 'new' change)
+[32m|[m[32m/[m  
+* [33m5005270[m docs(STRY0015227): add PIVOT SDK developer setup guide
+* [33mcf05cc4[m STRY0015228 Fetch ServiceNow platform types

@@ -67,17 +67,16 @@ export function validateRejection(reason: unknown): Errors {
     return String(reason).trim().length < 10 ? { rejection_reason: 'Enter a reason of at least 10 characters.' } : {}
 }
 
-/** PIV-032.01 – opportunity state flow. New → Accepted → In progress → Done; Rejected from any active state.
+/** PIV-032.01 – opportunity state flow. New (value 'open') → Accepted → In progress → Done; Rejected from any active state.
  *  Done and Rejected can only be reopened (back to New). Active states are the ones the gap rules refresh. */
-export const OPP_ACTIVE = ['new', 'open', 'accepted', 'in_progress']
-export const OPP_STATE_LABEL: { [s: string]: string } = { new: 'New', open: 'New', accepted: 'Accepted', in_progress: 'In progress', done: 'Done', rejected: 'Rejected' }
+export const OPP_ACTIVE = ['open', 'accepted', 'in_progress']
+export const OPP_STATE_LABEL: { [s: string]: string } = { open: 'New', accepted: 'Accepted', in_progress: 'In progress', done: 'Done', rejected: 'Rejected' }
 export const OPP_NEXT: { [s: string]: string[] } = {
-    new: ['accepted', 'rejected'],
     open: ['accepted', 'rejected'],
     accepted: ['in_progress', 'done', 'rejected'],
     in_progress: ['done', 'accepted', 'rejected'],
-    done: ['new'],
-    rejected: ['new'],
+    done: ['open'],
+    rejected: ['open'],
 }
 export function validateTransition(from: string, to: string): string {
     if (!from || from === to) return ''
@@ -218,7 +217,8 @@ export function overallScore(rows: { score: number | null; weight: number | null
         sum += r.score * weight
         w += weight
     })
-    return w ? Math.round(sum / w) : null
+    // PIV-037 / PIV-038.09: the Platform Value Score keeps one decimal (53 after 52.6); capability scores stay whole numbers.
+    return w ? Math.round((sum / w) * 10) / 10 : null
 }
 
 /** Outcome status from baseline, target and the measured value (design B6). */

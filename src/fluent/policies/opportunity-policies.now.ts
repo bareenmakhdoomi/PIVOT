@@ -59,8 +59,8 @@ ClientScript({
     isolateScript: true,
     script: `function onLoad() {
     if (g_form.isNewRecord()) return;
-    var NEXT = { new: ['accepted', 'rejected'], open: ['accepted', 'rejected'], accepted: ['in_progress', 'done', 'rejected'], in_progress: ['done', 'accepted', 'rejected'], done: ['new'], rejected: ['new'] };
-    var LABEL = { new: 'New', open: 'New', accepted: 'Accepted', in_progress: 'In progress', done: 'Done', rejected: 'Rejected' };
+    var NEXT = { open: ['accepted', 'rejected'], accepted: ['in_progress', 'done', 'rejected'], in_progress: ['done', 'accepted', 'rejected'], done: ['open'], rejected: ['open'] };
+    var LABEL = { open: 'New', accepted: 'Accepted', in_progress: 'In progress', done: 'Done', rejected: 'Rejected' };
     var now = g_form.getValue('state');
     var next = NEXT[now];
     if (!next) return;
@@ -68,7 +68,7 @@ ClientScript({
     g_form.addOption('state', now, LABEL[now]);
     for (var i = 0; i < next.length; i++) {
         var v = next[i];
-        g_form.addOption('state', v, (now == 'done' || now == 'rejected') && v == 'new' ? 'Reopen' : LABEL[v]);
+        g_form.addOption('state', v, (now == 'done' || now == 'rejected') && v == 'open' ? 'Reopen' : LABEL[v]);
     }
     g_form.setValue('state', now);
 }`,
