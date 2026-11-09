@@ -280,7 +280,7 @@ function opportunityAction(kind: string, b: any): Result {
     const gr = findOpp(b.number)
     if (!gr) return { ok: false, error: 'Opportunity ' + b.number + ' was not found.' }
     if (!gr.canWrite()) return deny('You cannot change this opportunity.')
-    if (b.workNote) gr.setValue('work_notes', String(b.workNote).slice(0, 1000)) // PIV-060.04 – only set by AI.confirmChat (internal)
+    if (b.workNote) (gr as any).work_notes = String(b.workNote).slice(0, 1000) // PIV-060.04 – only set by AI.confirmChat. A journal field needs the property assignment; setValue does not add an entry
     const state = str(gr, 'state')
     switch (kind) {
         case 'accept':
@@ -531,7 +531,16 @@ function setProp(b: any): Result {
     const short = String(b.name || '').replace(SCOPE + '.', '')
     const v = validateProperty(short, b.value, props())
     if (v.error) return { ok: false, error: v.error }
-    gs.setProperty(SCOPE + '.' + short, String(v.value))
+    // Saved on the sys_properties record: gs.setProperty does not persist when called from the REST API (found in Sprint 6 testing)
+    const name = SCOPE + '.' + short
+    const pr = new GlideRecord('sys_properties')
+    pr.addQuery('name', name)
+    pr.setLimit(1)
+    pr.query()
+    if (pr.next()) {
+        pr.setValue('value', String(v.value))
+        if (!pr.update()) return { ok: false, error: 'The setting was not saved. Ask your ServiceNow admin to check the system log.' }
+    } else gs.setProperty(name, String(v.value))
     return { ok: true, note: /threshold|days_back/.test(short) ? 'Applies from the next assessment run.' : 'Saved.' }
 }
 

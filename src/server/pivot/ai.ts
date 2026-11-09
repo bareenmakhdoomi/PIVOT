@@ -660,7 +660,8 @@ export function suggestOwnersAll(channel?: string): AiResult {
         opps.push({ number: str(o, 'number'), capability: o.getDisplayValue('capability'), capabilityId: str(o, 'capability'), family: fam, group: str(o, 'assignment_group'), finding: TYPE_LABEL[str(o, 'type')] || str(o, 'type'), priority: num(o, 'priority') })
     }
     const run = latestCompleted()
-    const label = rulesLabel(run ? str(run, 'number') : '', run ? str(run, 'run_date') : '')
+    // bulk suggestions are ranked by the PIVOT rules (experience on the product, then workload) – said so in the label
+    const label = 'PIVOT suggestion · ranked by experience and workload' + (run ? ' · from ' + str(run, 'number') + ', ' + dateText(str(run, 'run_date')) : '')
     if (!opps.length) return { ok: true, label, footer: MSG.footer, items: [] }
     // candidates per family/group are cached; workload grows as suggestions are handed out so the load is spread
     const cache: { [k: string]: Candidate[] } = {}
@@ -948,6 +949,7 @@ export function test(): AiResult {
 
 /** PIV-055.04 – Now Assist panel: explain the opportunity the user is looking at, or ask which one. */
 export function explainForPanel(table: string, sysId: string, text?: string): AiResult {
+    if (!hasPivotRole()) return { ok: false, error: MSG.noRole, noAccess: true } // PIV-054.04 AC 2
     const m = /PVO\d+/i.exec(String(text || ''))
     let number = m ? m[0].toUpperCase() : ''
     if (!number && table === T.opportunity && /^[0-9a-f]{32}$/i.test(String(sysId || ''))) {
