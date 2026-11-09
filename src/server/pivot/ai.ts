@@ -8,9 +8,12 @@
 //  * Every AI answer and the user's decision is logged in x_enno_pivot_ai_log (PIV-054.06).
 //  * x_enno_pivot.ai_enabled = false switches every AI feature off; PIVOT works fully without them (PIV-054.03).
 import { gs, GlideRecord, GlideRecordSecure, GlideDateTime, GlideAggregate } from '@servicenow/glide'
+import { OneExtendUtil } from '@servicenow/glide/sn_one_extend'
 import { SCOPE, PROPERTIES, FAMILIES, OPP_ACTIVE, OPP_STATE_LABEL, roadmapPhase, impactFromStatus, outcomeStatus, gapConfig } from './rules.ts'
 
-declare const sn_generative_ai: any
+// Generative AI Controller "Generic Prompt" capability – the same call sn_generative_ai.LLMClient makes. Scoped
+// namespaces such as sn_generative_ai are not visible inside a JavaScript module, so PIVOT calls OneExtendUtil directly.
+const GENERIC_PROMPT = '0c90ca79533121106b38ddeeff7b12d7'
 
 const T = {
     capability: SCOPE + '_capability',
@@ -93,15 +96,16 @@ export function rulesLabel(runNumber: string, runDate: string) {
 // ---------------------------------------------------------------- the LLM (PIV-054.02)
 /** True when the Generative AI Controller script API is installed. Whether a provider answers is checked by test(). */
 export function apiPresent(): boolean {
-    try { return typeof sn_generative_ai !== 'undefined' && !!sn_generative_ai && typeof sn_generative_ai.LLMClient === 'function' } catch (e) { return false }
+    try { return !!OneExtendUtil && typeof (OneExtendUtil as any).call === 'function' } catch (e) { return false }
 }
 type Llm = { ok: boolean; text: string; notSetUp?: boolean; error?: string }
 export function llm(prompt: string): Llm {
     if (!apiPresent()) return { ok: false, text: '', notSetUp: true, error: MSG.notSetUp }
     try {
-        const r = new sn_generative_ai.LLMClient().call({ prompt: prompt })
-        if (r && String(r.status) === 'Success' && r.response) return { ok: true, text: String(r.response) }
-        const why = String((r && r.response) || '')
+        const res: any = OneExtendUtil.call({ prompt: prompt, model: null, provider: null })
+        const cap = res && res.capabilities ? res.capabilities[GENERIC_PROMPT] : null
+        if (cap && String(cap.status) === 'success' && cap.response) return { ok: true, text: String(cap.response) }
+        const why = String((cap && (cap.error || cap.response)) || (res ? JSON.stringify(res).slice(0, 300) : 'no response'))
         const notSetUp = /provider|not configured|no model|not enabled|disabled|not approved|entitle/i.test(why)
         gs.warn('PIVOT AI: the LLM did not answer: ' + why)
         return { ok: false, text: '', notSetUp, error: notSetUp ? MSG.notSetUp : MSG.failed }

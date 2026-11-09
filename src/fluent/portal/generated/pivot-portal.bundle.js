@@ -1469,6 +1469,6 @@ function mount(host) {
       const retry = document.getElementById('pivotRetry'); if (retry) retry.addEventListener('click', () => window.location.reload());
     });
 }
-window.x_enno_pivot_portal = { mount, version: 'e05d8a3ec09a' };
+window.x_enno_pivot_portal = { mount, version: '67bb0b472191' };
 
 })();
