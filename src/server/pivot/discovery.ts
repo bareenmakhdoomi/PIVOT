@@ -229,16 +229,25 @@ export function runDiscovery(runStartedAt?: string): DiscoverySummary {
         gone.addEncodedQuery('last_discovered<' + startValue + '^ORlast_discoveredISEMPTY')
         gone.query()
         const names: string[] = []
+        const noLongerInstalled: string[] = []
+        let noLongerInstalledCount = 0
         while (gone.next()) {
             const wasInstalled = str(gone, 'installed') === '1' || str(gone, 'installed') === 'true'
+            const name = str(gone, 'name')
+            const source = str(gone, 'source')
             gone.setValue('not_found', true)
-            if (str(gone, 'source') !== 'subscription') gone.setValue('installed', false)
+            if (source !== 'subscription') gone.setValue('installed', false)
             if (gone.update()) {
                 s.notFound++
-                if (names.length < 10) names.push(str(gone, 'name') + (wasInstalled && str(gone, 'source') !== 'subscription' ? ' (no longer installed)' : ''))
+                if (names.length < 10) names.push(name + (wasInstalled && source !== 'subscription' ? ' (no longer installed)' : ''))
+                if (wasInstalled && source !== 'subscription') {
+                    noLongerInstalledCount++
+                    if (noLongerInstalled.length < 10) noLongerInstalled.push(name)
+                }
             }
         }
         if (s.notFound) add('warn', 'Not found in this run: ' + s.notFound + ' (' + names.join(', ') + (s.notFound > names.length ? ', …' : '') + '). They are kept and flagged.')
+        if (noLongerInstalledCount) add('warn', 'Previously installed capabilities no longer discovered; marked not installed: ' + noLongerInstalledCount + ' (' + noLongerInstalled.join(', ') + (noLongerInstalledCount > noLongerInstalled.length ? ', …' : '') + ').')
     } catch (ex) {
         add('error', 'Could not flag capabilities that were not found: ' + ex)
     }
