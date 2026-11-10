@@ -831,7 +831,7 @@ function aiWait(text) { return ("<div class=\"ai-block\" role=\"status\" aria-li
 function aiNote(label, body, suffix) { return '[' + label + ']' + (suffix ? ' ' + suffix : '') + '\n' + body + '\nReview before use. AI never changes PIVOT numbers itself.'; }
 const AI_WAIT_MS = 15000; // 055.03 AC 1 \u2013 an answer within 15 seconds, otherwise "not available right now"
 function aiRun(num, key, fn) {
-  const A = ai[num] = ai[num] || {}; A.busy = key; A.err = ''; A[key] = null; drawModal(); // a new request replaces the old answer, so an old suggestion cannot be used while waiting
+  const A = ai[num] = ai[num] || {}; A.busy = key; A.err = ''; drawModal();
   const late = new Promise(res => setTimeout(() => res({ ok: false, error: key === 'explain' ? 'Explanation not available right now' : 'Not available right now. Try again in a moment.' }), AI_WAIT_MS));
   Promise.race([fn(num), late]).then(r => {
     if (A.busy !== key) return; A.busy = '';
@@ -1469,6 +1469,6 @@ function mount(host) {
       const retry = document.getElementById('pivotRetry'); if (retry) retry.addEventListener('click', () => window.location.reload());
     });
 }
-window.x_enno_pivot_portal = { mount, version: '882963f5f0f6' };
+window.x_enno_pivot_portal = { mount, version: '67bb0b472191' };
 
 })();
