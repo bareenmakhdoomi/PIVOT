@@ -164,6 +164,7 @@ export function decide(logId: string, decision: string, detail?: string): AiResu
     const l = new GlideRecord(T.log)
     if (!/^[0-9a-f]{32}$/i.test(String(logId || '')) || !l.get(String(logId))) return { ok: false, error: 'The AI suggestion was not found.' }
     if (str(l, 'user') !== gs.getUserID()) return { ok: false, error: 'Only the person who asked for this suggestion can decide on it.' }
+    if (str(l, 'decision') !== 'shown') return { ok: false, error: 'This suggestion was already ' + str(l, 'decision') + '. Ask for a new one.' } // one decision per suggestion
     l.setValue('decision', decision)
     if (detail) l.setValue('decision_detail', String(detail).slice(0, 1000))
     l.update()
