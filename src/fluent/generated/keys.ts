@@ -625,6 +625,14 @@ declare global {
                         table: 'sys_atf_step'
                         id: '21ff9018dd4a4720b0d697ae1e4b77e9'
                     }
+                    'atf-stry0015329-no-cross-scope-table-writes': {
+                        table: 'sys_atf_test'
+                        id: '5e59a2aa69dc461092acc7feab8603d9'
+                    }
+                    'atf-stry0015329-no-cross-scope-table-writes-check': {
+                        table: 'sys_atf_step'
+                        id: 'c3caed3712b64ea29427d6f1c7e89127'
+                    }
                     bom_json: {
                         table: 'sys_module'
                         id: 'f0918765f8b240bf92054b27586857dd'
@@ -4774,6 +4782,14 @@ declare global {
                         }
                     },
                     {
+                        table: 'sys_variable_value'
+                        id: '3efd7b74d149489b95f239cf1dad5885'
+                        key: {
+                            document_key: 'c3caed3712b64ea29427d6f1c7e89127'
+                            variable: '42f2564b73031300440211d8faf6a777'
+                        }
+                    },
+                    {
                         table: 'sys_choice'
                         id: '3f2aa370403a44fbaaa9abccb2ace84b'
                         key: {
@@ -5486,6 +5502,14 @@ declare global {
                             }
                             element: 'assessment'
                             position: '1'
+                        }
+                    },
+                    {
+                        table: 'sys_variable_value'
+                        id: '4c308aa0bfee47a78ee3859a1591135f'
+                        key: {
+                            document_key: 'c3caed3712b64ea29427d6f1c7e89127'
+                            variable: '989d9e235324220002c6435723dc3484'
                         }
                     },
                     {
@@ -7449,6 +7473,15 @@ declare global {
                             }
                             element: 'name'
                             position: '2'
+                        }
+                    },
+                    {
+                        table: 'sys_element_mapping'
+                        id: '6f482e9a6dee4a5bb26c648dc486fec2'
+                        key: {
+                            id: 'c3caed3712b64ea29427d6f1c7e89127'
+                            table: 'var__m_atf_input_variable_41de4a935332120028bc29cac2dc349a'
+                            field: 'script'
                         }
                     },
                     {

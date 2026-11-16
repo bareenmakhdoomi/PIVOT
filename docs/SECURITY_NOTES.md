@@ -34,6 +34,23 @@ Review these entries against the `CrossScopePrivilege` declarations in:
 
 For table grants whose target scope is shown as a `sys_id`, the value is the `targetScope` reference configured in the project source. Confirm the referenced application name on the instance when reviewing a changed target.
 
+## Write-boundary review (STRY0015329)
+
+The PIVOT server-script write paths were reviewed: every GlideRecord insert, update, and delete targets one of the application tables below. The target aliases in server code are formed from the `x_enno_pivot` scope constant; discovery uses `x_enno_pivot_capability` directly.
+
+| PIVOT-owned write target | Examples of server-side writes |
+|---|---|
+| `x_enno_pivot_capability` | Discovery refreshes discovered fields; workspace actions save admin-managed capability settings. |
+| `x_enno_pivot_assessment` | Assessment runs and AI briefing updates. |
+| `x_enno_pivot_result` | Assessment measurements. |
+| `x_enno_pivot_business_outcome` | Assessment updates outcome status and baseline data. |
+| `x_enno_pivot_outcome_result` | Assessment outcome snapshots. |
+| `x_enno_pivot_opportunity` | Gap rules, workspace actions, and business rules create or update opportunities. |
+| `x_enno_pivot_roadmap_item` | Roadmap generation creates, updates, or removes PIVOT roadmap rows. |
+| `x_enno_pivot_ai_log` | PIVOT AI usage and decision logging. |
+
+Other tables referenced by server scripts (for example `sys_user`, role-membership tables, discovery sources, and measure tables) are read-only. Workspace property changes use `gs.setProperty` with the `x_enno_pivot.` prefix; they do not update a customer application's table. The separately reported `sn_generative_ai.LLMClient` `execute` privilege is a non-table API invocation, not a table write grant. ATF test `PIVOT - No cross-scope table write privileges` checks the deployed application's `sys_scope_privilege` records for non-Read table operations. The source-code destination review remains required for every change that adds or changes a server-side write path.
+
 ### Measurement scope boundary
 
 The read grants above cover the tables explicitly configured for discovery and the shipped starter measures. PIVOT admins may configure a different Measure table, but that does not automatically add a cross-scope grant. Before measuring a table outside the approved register, confirm the table is appropriate, obtain the required security approval, add only the necessary least-privilege access, and update this register before release. Do not add broad or write privileges as a shortcut.
