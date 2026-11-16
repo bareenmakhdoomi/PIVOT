@@ -185,7 +185,7 @@ export function runDiscovery(runStartedAt?: string): DiscoverySummary {
                 if (!scope || !isFee(feeByScope, scope)) continue
                 s.apps.read++
                 try {
-                    upsert('store_app', scope, name, { installed: true, app_scope: scope, version: str(a, 'version').slice(0, 40) }, familyFromLob(feeByScope[scope] || ''), s.apps)
+                    upsert('store_app', scope, name, { licensed: false, installed: true, app_scope: scope, version: str(a, 'version').slice(0, 40) }, familyFromLob(feeByScope[scope] || ''), s.apps)
                 } catch (ex) {
                     s.apps.skipped++
                     add('error', 'App ' + scope + ' could not be saved: ' + ex)
@@ -208,7 +208,7 @@ export function runDiscovery(runStartedAt?: string): DiscoverySummary {
                 if (!id || !isFee(feeById, id)) continue
                 s.plugins.read++
                 try {
-                    upsert('plugin', id, name, { installed: true, app_scope: str(p, 'scope') === 'global' ? '' : str(p, 'scope'), version: str(p, 'version').slice(0, 40) }, familyFromLob(feeById[id] || ''), s.plugins)
+                    upsert('plugin', id, name, { licensed: false, installed: true, app_scope: str(p, 'scope') === 'global' ? '' : str(p, 'scope'), version: str(p, 'version').slice(0, 40) }, familyFromLob(feeById[id] || ''), s.plugins)
                 } catch (ex) {
                     s.plugins.skipped++
                     add('error', 'Plugin ' + id + ' could not be saved: ' + ex)
@@ -236,6 +236,7 @@ export function runDiscovery(runStartedAt?: string): DiscoverySummary {
             const name = str(gone, 'name')
             const source = str(gone, 'source')
             gone.setValue('not_found', true)
+            gone.setValue('licensed', false)
             if (source !== 'subscription') gone.setValue('installed', false)
             if (gone.update()) {
                 s.notFound++
@@ -251,6 +252,24 @@ export function runDiscovery(runStartedAt?: string): DiscoverySummary {
     } catch (ex) {
         add('error', 'Could not flag capabilities that were not found: ' + ex)
     }
+
+    // licensed=true represents a subscription found in this run, not stale or non-subscription records.
+    const invalidLicensed = new GlideRecord(CAP)
+    invalidLicensed.addQuery('licensed', true)
+    invalidLicensed.query()
+    let clearedLicensed = 0
+    let failedLicensedClears = 0
+    while (invalidLicensed.next()) {
+        if (str(invalidLicensed, 'source') === 'subscription' &&
+            str(invalidLicensed, 'not_found') !== '1' &&
+            str(invalidLicensed, 'not_found') !== 'true' &&
+            str(invalidLicensed, 'source_id')) continue
+        invalidLicensed.setValue('licensed', false)
+        if (invalidLicensed.update()) clearedLicensed++
+        else failedLicensedClears++
+    }
+    if (clearedLicensed) add('info', 'Cleared licensed on ' + clearedLicensed + ' stale or non-subscription capabilities.')
+    if (failedLicensedClears) add('error', 'Could not clear licensed on ' + failedLicensedClears + ' stale or non-subscription capabilities.')
 
     // ---- licence → installed app (PIV-014): licences count as installed only through their linked app ----
     try {
@@ -303,8 +322,18 @@ export function discoveryJob() {
             while (gr.next()) n++
             return n
         }
+        const licensedCount = () => {
+            const gr = new GlideRecord(CAP)
+            gr.addQuery('licensed', true)
+            gr.query()
+            let n = 0
+            while (gr.next()) n++
+            return n
+        }
         const lines = s.log.map((l) => l.level.toUpperCase() + ': ' + l.message)
-        lines.push(check('licence capabilities = licences read (' + count('subscription') + ' / ' + (s.licences.read - s.licences.skipped) + ')', count('subscription') === s.licences.read - s.licences.skipped))
+        const expectedLicences = s.licences.read - s.licences.skipped
+        lines.push(check('licence capabilities = licences read (' + count('subscription') + ' / ' + expectedLicences + ')', count('subscription') === expectedLicences))
+        lines.push(check('licensed capabilities = licences read (' + licensedCount() + ' / ' + expectedLicences + ')', licensedCount() === expectedLicences))
         lines.push(check('app capabilities = apps found (' + count('store_app') + ' / ' + (s.apps.read - s.apps.skipped) + ')', count('store_app') === s.apps.read - s.apps.skipped))
         lines.push(check('plugin capabilities = plugins found (' + count('plugin') + ' / ' + (s.plugins.read - s.plugins.skipped) + ')', count('plugin') === s.plugins.read - s.plugins.skipped))
         gs.info('PIVOT discovery\n' + lines.join('\n'))
