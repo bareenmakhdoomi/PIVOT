@@ -713,10 +713,6 @@ declare global {
                         table: 'sys_script_client'
                         id: '21204f0172cf4472b03f5a73b34d57a5'
                     }
-                    clear_filter_on_table_change: {
-                        table: 'sys_script'
-                        id: 'db3dd5a64fb64eb3aa0ea6a1c9e899b9'
-                    }
                     'cs-opportunity-rejection-submit': {
                         table: 'sys_script_client'
                         id: 'adb352eefffc4509879e84046b961c0a'
@@ -756,14 +752,6 @@ declare global {
                     'mail-script-run-email': {
                         table: 'sys_script_email'
                         id: '8b24a62eaede4dc992eab96d3895b12b'
-                    }
-                    measure_filter_onload_script: {
-                        table: 'sys_script_client'
-                        id: '7d3a5458a260404a9e8d1ce11269f784'
-                    }
-                    measure_table_onchange_script: {
-                        table: 'sys_script_client'
-                        id: '2f8d40022b944db3bee48139cb500806'
                     }
                     measure_filter_onload_script: {
                         table: 'sys_script_client'
