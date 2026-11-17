@@ -63,7 +63,11 @@ const toInt = (v: string): number => {
 }
 const tableExists = (t: string) => new GlideRecord(t).isValid()
 
-export function runDiscovery(runStartedAt?: string): DiscoverySummary {
+export function _fromLicenses(runStartedAt?: string): DiscoverySummary {
+    return runDiscovery(runStartedAt, true)
+}
+
+export function runDiscovery(runStartedAt?: string, licensesOnly = false): DiscoverySummary {
     const startValue = runStartedAt || new GlideDateTime().getValue()
     const log: LogEntry[] = []
     const add = (level: LogEntry['level'], message: string) => log.push({ ts: new GlideDateTime().getNumericValue(), level, step: STEP, message })
@@ -128,21 +132,23 @@ export function runDiscovery(runStartedAt?: string): DiscoverySummary {
     const feeByScope: { [k: string]: string } = {}
     const feeById: { [k: string]: string } = {}
     let familyAvailable = false
-    try {
-        if (tableExists(SOURCES.family)) {
-            familyAvailable = true
-            const f = new GlideRecord(SOURCES.family)
-            f.addQuery('for_fee', true)
-            f.addQuery('cust_visible', true)
-            f.query()
-            while (f.next()) {
-                const lob = str(f, 'lob_name'), scope = str(f, 'scope'), id = str(f, 'app_id')
-                if (scope && scope !== 'global' && !feeByScope[scope]) feeByScope[scope] = lob
-                if (id && !feeById[id]) feeById[id] = lob
-            }
-        } else add('warn', 'Product family table ua_app_family does not exist: every active app and plugin is discovered and families must be mapped by hand.')
-    } catch (ex) {
-        add('error', 'Could not read ua_app_family: ' + ex)
+    if (!licensesOnly) {
+        try {
+            if (tableExists(SOURCES.family)) {
+                familyAvailable = true
+                const f = new GlideRecord(SOURCES.family)
+                f.addQuery('for_fee', true)
+                f.addQuery('cust_visible', true)
+                f.query()
+                while (f.next()) {
+                    const lob = str(f, 'lob_name'), scope = str(f, 'scope'), id = str(f, 'app_id')
+                    if (scope && scope !== 'global' && !feeByScope[scope]) feeByScope[scope] = lob
+                    if (id && !feeById[id]) feeById[id] = lob
+                }
+            } else add('warn', 'Product family table ua_app_family does not exist: every active app and plugin is discovered and families must be mapped by hand.')
+        } catch (ex) {
+            add('error', 'Could not read ua_app_family: ' + ex)
+        }
     }
     const isFee = (map: { [k: string]: string }, key: string) => !familyAvailable || Object.prototype.hasOwnProperty.call(map, key)
 
@@ -177,6 +183,12 @@ export function runDiscovery(runStartedAt?: string): DiscoverySummary {
         add('info', 'Licenses: read ' + s.licences.read + ', created ' + s.licences.created + ', updated ' + s.licences.updated + (s.licences.skipped ? ', skipped ' + s.licences.skipped : '') + '.')
     } catch (ex) {
         add('error', 'Licence discovery failed, apps and plugins still run: ' + ex)
+    }
+
+    if (licensesOnly) {
+        s.ok = !log.some((l) => l.level === 'error')
+        add(s.ok ? 'info' : 'warn', 'License discovery ' + (s.ok ? 'complete' : 'finished with errors') + ': ' + s.licences.read + ' subscriptions checked.')
+        return s
     }
 
     // ---- installed for-fee apps (PIV-012) -----------------------------------------------------------
