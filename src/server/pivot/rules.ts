@@ -241,10 +241,10 @@ export function periodDays(period: string): number {
  *  Discovery applies them once, only when the capability has no measure table and no target yet; admins can change them.
  *  Targets are proposals per look-back window and must be confirmed with the product SMEs (PIV-015.02 / .08). */
 export const SEED_MEASURES: { [sourceId: string]: { table: string; filter: string; dateField: string; days: number; target: number } } = {
-    'com.snc.incident': { table: 'incident', filter: '', dateField: 'sys_created_on', days: 30, target: 500 },
-    'com.snc.problem': { table: 'problem', filter: '', dateField: 'sys_created_on', days: 30, target: 20 },
-    'com.snc.change_management': { table: 'change_request', filter: '', dateField: 'sys_created_on', days: 30, target: 50 },
-    'com.glideapp.servicecatalog': { table: 'sc_req_item', filter: '', dateField: 'sys_created_on', days: 30, target: 300 },
+    'com.snc.incident': { table: 'incident', filter: 'active=true', dateField: 'sys_created_on', days: 30, target: 100 },
+    'com.snc.problem': { table: 'problem', filter: 'active=true', dateField: 'sys_created_on', days: 30, target: 20 },
+    'com.snc.change_management': { table: 'change_request', filter: 'active=true', dateField: 'sys_created_on', days: 30, target: 50 },
+    'com.glideapp.servicecatalog': { table: 'sc_req_item', filter: 'active=true', dateField: 'sys_created_on', days: 30, target: 300 },
     'com.snc.incident.mim': { table: 'incident', filter: 'major_incident_state=accepted', dateField: 'sys_created_on', days: 90, target: 3 },
     'com.snc.change_management.cab': { table: 'cab_meeting', filter: '', dateField: 'sys_created_on', days: 90, target: 12 },
     'com.snc.asset_management': { table: 'alm_asset', filter: '', dateField: 'sys_created_on', days: 30, target: 50 },
