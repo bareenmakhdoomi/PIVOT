@@ -83,7 +83,7 @@ export function validateTransition(from: string, to: string): string {
     const next = OPP_NEXT[from]
     if (!next || next.indexOf(to) > -1) return ''
     if (from === 'done' || from === 'rejected') return 'A ' + OPP_STATE_LABEL[from] + ' opportunity can only be reopened.'
-    return 'From ' + OPP_STATE_LABEL[from] + ' you can move to ' + next.map((n) => (n === 'open' ? 'New' : OPP_STATE_LABEL[n])).join(', ') + '.'
+    return 'From ' + OPP_STATE_LABEL[from] + ' you can move to ' + next.map((n) => OPP_STATE_LABEL[n] || n).join(', ') + '.'
 }
 
 export const TABLE_NAME = /^[a-z0-9_]+$/
@@ -217,7 +217,8 @@ export function overallScore(rows: { score: number | null; weight: number | null
         sum += r.score * weight
         w += weight
     })
-    return w ? Math.round(sum / w) : null
+    // PIV-037 / PIV-038.09: the Platform Value Score keeps one decimal (53 after 52.6); capability scores stay whole numbers.
+    return w ? Math.round((sum / w) * 10) / 10 : null
 }
 
 /** Outcome status from baseline, target and the measured value (design B6). */

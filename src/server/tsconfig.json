@@ -14,7 +14,8 @@
     },
     "include": [
         "./**/*.ts",
-        "../../@types/**/*.modules.d.ts"
+        "../../@types/servicenow/glide.server.d.ts",
+        "../../@types/servicenow/tables.modules.d.ts"
     ],
     "exclude": [
         "**/*.now.ts"

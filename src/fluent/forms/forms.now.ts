@@ -70,3 +70,21 @@ Form({
         { caption: 'Outcome result', content: [{ layout: 'two-column', leftElements: [{ field: 'assessment', type: 'table_field' }, { field: 'outcome', type: 'table_field' }, { field: 'outcome_status', type: 'table_field' }], rightElements: [{ field: 'baseline', type: 'table_field' }, { field: 'actual', type: 'table_field' }, { field: 'target', type: 'table_field' }, { field: 'improvement_pct', type: 'table_field' }, { field: 'sys_domain', type: 'table_field' }] }] },
     ],
 })
+
+Form({
+    table: 'x_enno_pivot_security_test_log',
+    view: default_view,
+    sections: [
+        { caption: 'Test result', content: [{ layout: 'two-column', leftElements: [{ field: 'number', type: 'table_field' }, { field: 'check_name', type: 'table_field' }, { field: 'result', type: 'table_field' }, { field: 'tester', type: 'table_field' }, { field: 'tested_at', type: 'table_field' }], rightElements: [{ field: 'role', type: 'table_field' }, { field: 'table_name', type: 'table_field' }, { field: 'sys_domain', type: 'table_field' }] }] },
+        { caption: 'Results', content: [{ layout: 'one-column', elements: [{ field: 'expected_result', type: 'table_field' }, { field: 'actual_result', type: 'table_field' }] }] },
+    ],
+})
+
+Form({
+    table: 'x_enno_pivot_security_defect',
+    view: default_view,
+    sections: [
+        { caption: 'Defect', content: [{ layout: 'two-column', leftElements: [{ field: 'number', type: 'table_field' }, { field: 'test_log', type: 'table_field' }, { field: 'status', type: 'table_field' }, { field: 'role', type: 'table_field' }], rightElements: [{ field: 'table_name', type: 'table_field' }, { field: 'sys_domain', type: 'table_field' }] }] },
+        { caption: 'Results', content: [{ layout: 'one-column', elements: [{ field: 'expected_result', type: 'table_field' }, { field: 'actual_result', type: 'table_field' }] }] },
+    ],
+})

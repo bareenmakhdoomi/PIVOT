@@ -7,6 +7,12 @@
             "ES2022",
             "DOM"
         ],
+        "skipLibCheck": true,
         "jsx": "preserve"
-    }
+    },
+    "include": [
+        "./**/*.ts",
+        "./**/*.tsx",
+        "../../@types/servicenow/glide.client.d.ts"
+    ]
 }

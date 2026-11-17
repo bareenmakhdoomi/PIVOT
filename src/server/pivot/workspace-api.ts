@@ -8,6 +8,7 @@ import {
     validateCapability, validateOutcome, validateProperty,
 } from './rules.ts'
 import { startRunNow } from './assessment.ts'
+import * as AI from './ai.ts'
 
 const T = {
     capability: SCOPE + '_capability',
@@ -75,8 +76,7 @@ function loadUsers(extraIds: string[]) {
     const users: { [id: string]: any } = {}
     const roleOf: { [id: string]: string } = {}
     const hr = new GlideRecord('sys_user_has_role')
-    hr.addQuery('role.name', 'STARTSWITH', SCOPE + '.')
-    hr.addQuery('user.active', true)
+    hr.addEncodedQuery('role.nameSTARTSWITH' + SCOPE + '.^user.active=true')
     hr.setLimit(2000)
     hr.query()
     while (hr.next()) {
@@ -139,6 +139,7 @@ function buildSnapshot() {
             id: a.getUniqueValue(), number: n, run_date: ms(str(a, 'run_date')), run_by: runBy || 'system',
             trigger: str(a, 'trigger') === 'run_now' ? 'Run Now' : 'Weekly schedule', status: str(a, 'status') === 'complete_with_warnings' ? 'complete' : str(a, 'status') || 'queued', withWarnings: str(a, 'status') === 'complete_with_warnings',
             duration: str(a, 'duration') ? ms(str(a, 'duration')) : null, overall_score: num(a, 'overall_score'), error: errEntry ? errEntry.message : '',
+            briefing: parseJson(str(a, 'briefing'), null), // PIV-056.05 – the stored briefing with its original AI label
         })
     }
 
@@ -210,7 +211,7 @@ function buildSnapshot() {
             kpi_aggregate: str(bo, 'kpi_aggregate') || 'count', kpi_field: str(bo, 'kpi_field'), baseline: num(bo, 'baseline'),
             baseline_date: str(bo, 'baseline_date') ? ms(str(bo, 'baseline_date') + ' 12:00:00') : null, baseline_change_reason: str(bo, 'baseline_change_reason'),
             target: num(bo, 'target'), period: str(bo, 'period') || 'monthly', owner: str(bo, 'owner'), expected_benefit: str(bo, 'expected_benefit'),
-            important_objective: bool(bo, 'important_objective'), low_volume_expected: bool(bo, 'low_volume_expected'),
+            important_objective: bool(bo, 'important_objective'), low_volume_expected: bool(bo, 'low_volume_expected'), active: bool(bo, 'active'),
             manual_value: num(bo, 'manual_value'), manual_value_date: str(bo, 'manual_value_date'), manual_value_by: str(bo, 'manual_value_by'),
         })
     }
@@ -223,10 +224,13 @@ function buildSnapshot() {
     return {
         now: nowMs(),
         instance: { name: gs.getProperty('instance_name', ''), company: gs.getProperty('glide.product.description', '') },
-        me: { id: me, role: myRoles[0] || 'viewer', roles: myRoles.length ? myRoles : ['viewer'] },
+        me: { id: me, role: myRoles[0] || 'viewer', roles: myRoles.length ? myRoles : ['viewer'], readNotifications: readNotifications() },
         users, families: FAMILIES, properties: p,
         capabilities, assessments, logs, results, outcomeResults, opportunities, roadmap, outcomes,
-        engineAvailable: true, aiAvailable: false, // PIV-034 – the assessment engine (weekly job and Run Now)
+        version: appVersion(), // PIV-043.06 – the guides show the same version
+        engineAvailable: true, // PIV-034 – the assessment engine (weekly job and Run Now)
+        aiAvailable: AI.apiPresent(), // PIV-054.02 – Generative AI Controller installed; x_enno_pivot.ai_enabled switches the features
+        aiUsage: myRoles.indexOf('admin') > -1 ? AI.usage(30) : null, // PIV-054.06 AC 2 – Settings > AI features
     }
 }
 
@@ -260,13 +264,12 @@ function save(gr: any): Result {
 }
 function userName(id: string) {
     const u = new GlideRecord('sys_user')
-    return u.get(id) ? str(u, 'name') : ''
+    return u.get('sys_id', id) ? str(u, 'name') : ''
 }
 function isWorker(userId: string) {
+    if (!/^[0-9a-f]{32}$/i.test(userId)) return false
     const hr = new GlideRecord('sys_user_has_role')
-    hr.addQuery('user', userId)
-    hr.addQuery('user.active', true)
-    hr.addQuery('role.name', 'IN', SCOPE + '.analyst,' + SCOPE + '.admin')
+    hr.addEncodedQuery('user=' + userId + '^user.active=true^role.nameIN' + SCOPE + '.analyst,' + SCOPE + '.admin')
     hr.setLimit(1)
     hr.query()
     return hr.hasNext()
@@ -277,6 +280,7 @@ function opportunityAction(kind: string, b: any): Result {
     const gr = findOpp(b.number)
     if (!gr) return { ok: false, error: 'Opportunity ' + b.number + ' was not found.' }
     if (!gr.canWrite()) return deny('You cannot change this opportunity.')
+    if (b.workNote) gr.setValue('work_notes', String(b.workNote).slice(0, 1000)) // PIV-060.04 – only set by AI.confirmChat (internal)
     const state = str(gr, 'state')
     switch (kind) {
         case 'accept':
@@ -317,8 +321,8 @@ function opportunityAction(kind: string, b: any): Result {
             const group = str(gr, 'assignment_group')
             if (to && group) { // PIV-032.02
                 const m = new GlideRecord('sys_user_grmember')
-                m.addQuery('group', group)
-                m.addQuery('user', to)
+                if (!/^[0-9a-f]{32}$/i.test(group) || !/^[0-9a-f]{32}$/i.test(to)) return { ok: false, error: 'Choose a valid user and assignment group.' }
+                m.addEncodedQuery('group=' + group + '^user=' + to)
                 m.setLimit(1)
                 m.query()
                 if (!m.hasNext()) return { ok: false, error: userName(to) + ' is not a member of the assignment group ' + gr.getDisplayValue('assignment_group') + '.' }
@@ -463,13 +467,13 @@ function saveOutcome(f: any): Result {
     let ownerNote = ''
     if (ownerId) {
         const u = new GlideRecord('sys_user')
-        if (u.get(ownerId) && !bool(u, 'active')) ownerNote = ' Owner is inactive – choose an active owner.'
+        if (u.get('sys_id', ownerId) && !bool(u, 'active')) ownerNote = ' Owner is inactive – choose an active owner.'
     }
     if (isNew) {
         let owner = me
         if (admin && f.owner && f.owner !== me) {
             const u = new GlideRecord('sys_user')
-            if (u.get(String(f.owner)) && bool(u, 'active')) owner = String(f.owner)
+            if (u.get('sys_id', String(f.owner)) && bool(u, 'active')) owner = String(f.owner)
         }
         gr.setValue('owner', owner)
         const id = gr.insert()
@@ -531,7 +535,8 @@ function setProp(b: any): Result {
     return { ok: true, note: /threshold|days_back/.test(short) ? 'Applies from the next assessment run.' : 'Saved.' }
 }
 
-function runAction(b: any): Result {
+function runAction(b: any, internal?: boolean): Result {
+    if (!internal && b && b.workNote) delete b.workNote // work notes "Changed from Virtual Agent …" are written by AI.confirmChat only
     switch (String(b && b.action)) {
         case 'accept': return opportunityAction('accept', b)
         case 'reject': return opportunityAction('reject', b)
@@ -552,19 +557,57 @@ function runAction(b: any): Result {
         case 'updateCapability': return updateCapability(b)
         case 'mapFamily': return mapFamily(b)
         case 'setProp': return setProp(b)
+        case 'markRead': return markRead(b)
+        case 'ai': return aiAction(b)
     }
     return { ok: false, error: 'Unknown action.' }
+}
+
+// PIV-054 … 060 – AI features. Each skill checks the AI switch and the user's PIVOT role itself (ai.ts).
+function aiAction(b: any): Result {
+    const ch = 'workspace', n = String(b.number || '')
+    switch (String(b.skill || '')) {
+        case 'explain': return AI.explain(n, ch)
+        case 'briefing': return AI.briefing(n, ch)
+        case 'scores': return AI.suggestScores(n, ch)
+        case 'owners': return AI.suggestOwners(n, ch)
+        case 'ownersAll': return AI.suggestOwnersAll(ch)
+        case 'plan': return AI.draftPlan(n, ch)
+        case 'ask': return AI.ask(String(b.question || ''), ch)
+        case 'confirm': return AI.confirmChat(b.confirm || {}, ch, (x: any) => runAction(x, true))
+        case 'decide': return AI.decide(String(b.logId || ''), String(b.decision || ''), String(b.detail || ''))
+        case 'test': return AI.test()
+        case 'usage': return AI.usage(Number(b.days) || 30)
+    }
+    return { ok: false, error: 'Unknown AI request.' }
+}
+
+function appVersion(): string {
+    const a = new GlideRecord('sys_scope')
+    return a.get('scope', SCOPE) ? str(a, 'version') : ''
+}
+
+// PIV-065.03 – notifications marked read are kept as a user preference (keys only, newest 200).
+const READ_PREF = SCOPE + '.read_notifications'
+function readNotifications(): string[] {
+    try { const v = (gs.getUser() as any).getPreference(READ_PREF); const a = v ? JSON.parse(String(v)) : []; return Array.isArray(a) ? a.map(String) : [] } catch (e) { return [] }
+}
+function markRead(b: any): any {
+    const keys = Array.isArray(b && b.keys) ? b.keys.map((k: any) => String(k).slice(0, 120)) : []
+    const all = readNotifications().filter((k) => keys.indexOf(k) < 0).concat(keys).slice(-200)
+    ;(gs.getUser() as any).savePreference(READ_PREF, JSON.stringify(all))
+    return { ok: true, note: 'Marked as read.' }
 }
 
 // PIV-063.04 – every successful action answers { ok: true, note }
 const DEFAULT_NOTE: { [a: string]: string } = {
     accept: 'Accepted. It stays on the roadmap until it is closed as done.', done: 'Closed as done.', start: 'Work started. The opportunity is now In progress.',
     reopen: 'Reopened. The opportunity is New again.', assign: 'Assignment saved.', note: 'Note added.', scores: 'Scores saved.', reorder: 'Order changed.',
-    resetRoadmap: 'Roadmap back in priority order.', saveOutcome: 'Outcome saved.', updateCapability: 'Measurement settings saved.', mapFamily: 'Product family saved.', setProp: 'Saved.',
+    resetRoadmap: 'Roadmap back in priority order.', saveOutcome: 'Outcome saved.', updateCapability: 'Measurement settings saved.', mapFamily: 'Product family saved.', setProp: 'Saved.', markRead: 'Marked as read.',
 }
 export function runActionWithNote(b: any): Result {
     const r = runAction(b || {})
-    if (r.ok && !r.note) r.note = DEFAULT_NOTE[String(b && b.action)] || 'Saved.'
+    if (r.ok && !r.note && String(b && b.action) !== 'ai') r.note = DEFAULT_NOTE[String(b && b.action)] || 'Saved.'
     return r
 }
 
@@ -579,3 +622,8 @@ export function action(request: any, response: any) {
         response.setBody({ ok: false, error: 'PIVOT could not save the change. Ask your PIVOT admin to check the system log.' } as any)
     }
 }
+
+// PIV-059 / 060 – Virtual Agent "Ask PIVOT" topic and the Now Assist panel call these through the PivotAI script include.
+export function vaAsk(question: string): Result { return AI.ask(question, 'va') }
+export function vaConfirm(c: any): Result { return AI.confirmChat(c || {}, 'va', (x: any) => runAction(x, true)) }
+export function panelExplain(table: string, sysId: string, text: string): Result { return AI.explainForPanel(table, sysId, text) }

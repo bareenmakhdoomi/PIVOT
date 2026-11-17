@@ -18,7 +18,7 @@ Test({
         var a = new GlideRecord('x_enno_pivot_assessment'); a.get(id);
         var log = JSON.parse(a.getValue('log') || '[]'), out = [];
         for (var i = 0; i < log.length; i++) { var m = /^([a-z]+): \\d+ .* in [\\d.]+ s$/.exec(log[i].message); if (m) out.push(m[1]); }
-        return { status: a.getValue('status'), steps: out.join(','), log: a.getValue('log') || '', duration: a.getValue('duration') };
+        return { status: a.getValue('status'), steps: out.join(','), log: a.getValue('log') || '', duration: a.getValue('duration'), runDate: a.getValue('run_date') };
     };
     var ok = A.runAssessment('run_now', gs.getUserID());
     assertEqual({ name: 'run started', shouldbe: true, value: !!ok.sysId });
@@ -26,6 +26,20 @@ Test({
     assertEqual({ name: 'status Complete', shouldbe: true, value: r1.status == 'complete' || r1.status == 'complete_with_warnings' });
     assertEqual({ name: '8 steps in order', shouldbe: 'discover,measure,score,outcomes,gaps,priority,roadmap,notify', value: r1.steps });
     assertEqual({ name: 'duration filled', shouldbe: true, value: !!r1.duration });
+    var discovery = /discover: (\\d+) capabilities created or updated/.exec(r1.log);
+    if (discovery && Number(discovery[1]) > 0) {
+        var found = new GlideRecord('x_enno_pivot_capability');
+        found.addNotNullQuery('source_id');
+        found.addQuery('last_discovered', r1.runDate);
+        found.query();
+        var foundCount = 0, allMarkedFound = true;
+        while (found.next()) {
+            foundCount++;
+            if (found.getValue('not_found') == '1' || found.getValue('not_found') == 'true') allMarkedFound = false;
+        }
+        assertEqual({ name: 'discovered capability uses assessment run start', shouldbe: true, value: foundCount > 0 });
+        assertEqual({ name: 'discovered capabilities are marked found', shouldbe: true, value: allMarkedFound });
+    }
     var bad = A.runAssessment('run_now', gs.getUserID(), { failAt: 'priority' });
     var r2 = names(bad.sysId);
     assertEqual({ name: 'forced failure → Failed', shouldbe: 'failed', value: r2.status });
@@ -41,7 +55,7 @@ Test({
 Test({
     $id: Now.ID['atf-run-now-admin'],
     name: 'PIVOT – Run assessment now as admin',
-    description: 'Impersonated PIVOT admin: Run Now creates a Queued assessment (trigger Run Now) and fires x_enno_pivot.run_assessment with its sys_id; a second click is refused.',
+    description: 'Impersonated PIVOT admin: Run Now creates a Queued assessment (trigger Run Now) for the x_enno_pivot.run_assessment event; a second click is refused. (The event log cannot be read from the PIVOT scope.)',
     active: true,
     failOnServerError: false,
 }, (atf) => {
@@ -62,8 +76,6 @@ Test({
     var a = new GlideRecord('x_enno_pivot_assessment'); a.get(r.sysId);
     assertEqual({ name: 'queued', shouldbe: 'queued', value: a.getValue('status') });
     assertEqual({ name: 'trigger Run Now', shouldbe: 'run_now', value: a.getValue('trigger') });
-    var ev = new GlideRecord('sysevent'); ev.addQuery('name', 'x_enno_pivot.run_assessment'); ev.addQuery('parm1', r.sysId); ev.query();
-    assertEqual({ name: 'event fired', shouldbe: true, value: ev.hasNext() });
     var again = new x_enno_pivot.PivotAssessment().runNow();
     assertEqual({ name: 'second click refused', shouldbe: 'An assessment is already running. Try again when it completes.', value: again.message });
     stepResult.setOutputMessage('Admin can start a run; a second run is refused.');
@@ -95,7 +107,10 @@ Test({
     var ua = new GlideRecord('sys_ui_action'); ua.addQuery('action_name', 'pivot_run_assessment_now'); ua.query();
     assertEqual({ name: 'UI action exists', shouldbe: true, value: ua.next() });
     assertEqual({ name: 'condition false for analyst', shouldbe: false, value: gs.hasRole('x_enno_pivot.admin') });
-    assertEqual({ name: 'condition is the admin role', shouldbe: "gs.hasRole('x_enno_pivot.admin')", value: ua.getValue('condition') });
+    var role = new GlideRecord('sys_ui_action_role'); role.addQuery('sys_ui_action', ua.getUniqueValue()); role.addQuery('sys_user_role.name', 'x_enno_pivot.admin'); role.query();
+    assertEqual({ name: 'button requires x_enno_pivot.admin', shouldbe: true, value: role.hasNext() });
+    var on = function (f) { return ua.getValue(f) == 'true' || ua.getValue(f) == '1' ? '1' : '0'; };
+    assertEqual({ name: 'shown on the list (banner button, show insert, show update)', shouldbe: '1,1,1', value: on('list_banner_button') + ',' + on('show_insert') + ',' + on('show_update') });
     stepResult.setOutputMessage('The button is not shown to analysts.');
     return true;
 })(outputs, steps, params, stepResult, assertEqual);`,
