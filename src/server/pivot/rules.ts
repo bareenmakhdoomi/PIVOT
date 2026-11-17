@@ -96,7 +96,7 @@ export function validateCapability(f: { [k: string]: unknown }): Errors {
         const d = Number(f.days_back)
         if (isBlank(f.days_back) || !(d >= 1 && d <= 365 && isWhole(d))) e.days_back = 'Enter 1 to 365 days.'
     }
-    if (!isBlank(f.target) && !(Number(f.target) > 0)) e.target = 'Enter a number above 0, or leave empty for Not Measured.'
+    if (!isBlank(f.target) && (!isFinite(Number(f.target)) || !(Number(f.target) > 0))) e.target = 'Enter a number above 0, or leave empty for Not Measured.'
     if (f.weight !== undefined) {
         const w = Number(f.weight)
         if (isBlank(f.weight) || !(w >= 1 && w <= 5 && isWhole(w))) e.weight = 'Enter a weight from 1 to 5.'
