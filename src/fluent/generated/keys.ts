@@ -609,6 +609,14 @@ declare global {
                         table: 'sys_atf_step'
                         id: 'ab9d12dab57b4b40b3d0f1a74aac6a95'
                     }
+                    'atf-stry0015301-exclude-pivot-app': {
+                        table: 'sys_atf_test'
+                        id: '7380c401b520468e87fe8db6c49a4f69'
+                    }
+                    'atf-stry0015301-exclude-pivot-app-check': {
+                        table: 'sys_atf_step'
+                        id: '73fdbbb8de284169a24b3a034bbde468'
+                    }
                     'atf-stry0015305-discovery-owned-fields': {
                         table: 'sys_atf_test'
                         id: '696244bdd1544b67a41d5d4a6759b8c9'
@@ -10889,6 +10897,15 @@ declare global {
                         }
                     },
                     {
+                        table: 'sys_element_mapping'
+                        id: 'b36945dcb6ab410bbf30c9229d254487'
+                        key: {
+                            id: '73fdbbb8de284169a24b3a034bbde468'
+                            table: 'var__m_atf_input_variable_41de4a935332120028bc29cac2dc349a'
+                            field: 'script'
+                        }
+                    },
+                    {
                         table: 'sys_dictionary'
                         id: 'b36e3ac114c543fcbfd8e021890ded99'
                         key: {
@@ -12158,6 +12175,14 @@ declare global {
                         key: {
                             category: 'x_enno_pivot_security_test_log'
                             prefix: 'PST'
+                        }
+                    },
+                    {
+                        table: 'sys_variable_value'
+                        id: 'c871c7f6431443f790c8ab36f1682839'
+                        key: {
+                            document_key: '73fdbbb8de284169a24b3a034bbde468'
+                            variable: '989d9e235324220002c6435723dc3484'
                         }
                     },
                     {
@@ -14050,6 +14075,14 @@ declare global {
                             }
                             element: 'role'
                             position: '7'
+                        }
+                    },
+                    {
+                        table: 'sys_variable_value'
+                        id: 'ee053fc3cdd740758c546002f4abeb67'
+                        key: {
+                            document_key: '73fdbbb8de284169a24b3a034bbde468'
+                            variable: '42f2564b73031300440211d8faf6a777'
                         }
                     },
                     {
