@@ -87,6 +87,8 @@ The STRY0015318 workshop decision register is in [`SME_Measure_Workshop.md`](./S
 
 PIVOT already seeds starting measurements for a subset of well-known discovered products. Those mappings are implementation references, not SME approval. In particular, existing starter mappings include Incident Management (`incident`), Problem Management (`problem`), Change Management (`change_request`), Service Catalog Fulfilment (`sc_req_item`), Asset Management (`alm_asset`), Customer Service (`sn_customerservice_case`), Project Management (`pm_project`), Resource Management (`resource_plan`), Time Tracking (`time_card`), Agile Development (`rm_story`), and Event Management (`em_alert`).
 
+The ITSM starter settings use `sys_created_on` with a 30-day look-back for the core measures. Incident Management uses `active=true` with a proposed target of 100; Problem Management uses `active=true` with a target of 20; Change Management uses `active=true` with a target of 50; Service Catalog Fulfilment uses `active=true` with a target of 300. Major Incident Management and CAB retain their specialized 90-day starter settings. These are starting targets for SME review, not approved benchmarks.
+
 ## SME review checklist
 
 For each candidate, record the SME-approved capability name and measure table in the workshop decision register, then confirm:

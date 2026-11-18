@@ -96,7 +96,7 @@ export function validateCapability(f: { [k: string]: unknown }): Errors {
         const d = Number(f.days_back)
         if (isBlank(f.days_back) || !(d >= 1 && d <= 365 && isWhole(d))) e.days_back = 'Enter 1 to 365 days.'
     }
-    if (!isBlank(f.target) && !(Number(f.target) > 0)) e.target = 'Enter a number above 0, or leave empty for Not Measured.'
+    if (!isBlank(f.target) && (!isFinite(Number(f.target)) || !(Number(f.target) > 0))) e.target = 'Enter a number above 0, or leave empty for Not Measured.'
     if (f.weight !== undefined) {
         const w = Number(f.weight)
         if (isBlank(f.weight) || !(w >= 1 && w <= 5 && isWhole(w))) e.weight = 'Enter a weight from 1 to 5.'
@@ -241,10 +241,10 @@ export function periodDays(period: string): number {
  *  Discovery applies them once, only when the capability has no measure table and no target yet; admins can change them.
  *  Targets are proposals per look-back window and must be confirmed with the product SMEs (PIV-015.02 / .08). */
 export const SEED_MEASURES: { [sourceId: string]: { table: string; filter: string; dateField: string; days: number; target: number } } = {
-    'com.snc.incident': { table: 'incident', filter: '', dateField: 'sys_created_on', days: 30, target: 500 },
-    'com.snc.problem': { table: 'problem', filter: '', dateField: 'sys_created_on', days: 30, target: 20 },
-    'com.snc.change_management': { table: 'change_request', filter: '', dateField: 'sys_created_on', days: 30, target: 50 },
-    'com.glideapp.servicecatalog': { table: 'sc_req_item', filter: '', dateField: 'sys_created_on', days: 30, target: 300 },
+    'com.snc.incident': { table: 'incident', filter: 'active=true', dateField: 'sys_created_on', days: 30, target: 100 },
+    'com.snc.problem': { table: 'problem', filter: 'active=true', dateField: 'sys_created_on', days: 30, target: 20 },
+    'com.snc.change_management': { table: 'change_request', filter: 'active=true', dateField: 'sys_created_on', days: 30, target: 50 },
+    'com.glideapp.servicecatalog': { table: 'sc_req_item', filter: 'active=true', dateField: 'sys_created_on', days: 30, target: 300 },
     'com.snc.incident.mim': { table: 'incident', filter: 'major_incident_state=accepted', dateField: 'sys_created_on', days: 90, target: 3 },
     'com.snc.change_management.cab': { table: 'cab_meeting', filter: '', dateField: 'sys_created_on', days: 90, target: 12 },
     'com.snc.asset_management': { table: 'alm_asset', filter: '', dateField: 'sys_created_on', days: 30, target: 50 },

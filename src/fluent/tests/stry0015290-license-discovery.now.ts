@@ -4,7 +4,7 @@ import { Test } from '@servicenow/sdk/core'
 Test({
     $id: Now.ID['atf-stry0015290-license-discovery'],
     name: 'PIVOT - Discovered subscriptions are licensed',
-    description: 'Runs discovery and verifies every current subscription is licensed, the License source records are current, and the licensed=true count matches the number discovered.',
+    description: 'Runs discovery and verifies subscription licensing, discovery counts, and per-subscription error isolation.',
     active: true,
     failOnServerError: true,
 }, (atf) => {
@@ -13,8 +13,29 @@ Test({
         script: `(function(outputs, steps, params, stepResult, assertEqual) {
     var CAP = 'x_enno_pivot_capability';
     var D = require('x_enno_pivot/pivot/0.0.1/src/server/pivot/discovery.ts');
+
+    var isolatedCounts = { read: 0, created: 0, updated: 0, skipped: 0 };
+    var isolatedLog = [];
+    D.processLicenseRecord('failed-subscription-id', function() { return 'Failed subscription'; }, isolatedCounts, function(level, message) {
+        isolatedLog.push(level + ': ' + message);
+    }, function() {
+        throw new Error('simulated save failure');
+    });
+    D.processLicenseRecord('successful-subscription-id', function() { return 'Successful subscription'; }, isolatedCounts, function(level, message) {
+        isolatedLog.push(level + ': ' + message);
+    }, function() {
+        isolatedCounts.created++;
+    });
+    assertEqual({ name: 'failed subscription sys_id and error are logged', shouldbe: true, value: isolatedLog.length === 1 && isolatedLog[0].indexOf('failed-subscription-id') >= 0 && isolatedLog[0].indexOf('simulated save failure') >= 0 });
+    assertEqual({ name: 'later subscriptions continue after a save error', shouldbe: '2:1:1', value: isolatedCounts.read + ':' + isolatedCounts.skipped + ':' + isolatedCounts.created });
+
     var result = D.runDiscovery();
     assertEqual({ name: 'discovery completed without errors', shouldbe: true, value: result.ok });
+    var expectedLicenseLog = 'Licenses: read ' + result.licences.read + ', created ' + result.licences.created + ', updated ' + result.licences.updated;
+    var hasLicenseSummary = result.log.some(function(entry) {
+        return entry.message.indexOf(expectedLicenseLog) === 0;
+    });
+    assertEqual({ name: 'discovery logs license read, created, and updated counts', shouldbe: true, value: hasLicenseSummary });
 
     var expected = result.licences.read - result.licences.skipped;
     var currentCount = 0;

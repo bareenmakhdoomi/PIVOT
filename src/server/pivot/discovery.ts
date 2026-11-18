@@ -21,6 +21,28 @@ export type DiscoverySummary = {
     log: LogEntry[]
 }
 
+export function processLicenseRecord(
+    sysId: string,
+    getName: () => string,
+    counts: Counts,
+    add: (level: LogEntry['level'], message: string) => void,
+    save: (name: string) => void,
+) {
+    counts.read++
+    try {
+        const name = getName()
+        if (!name) {
+            counts.skipped++
+            add('warn', 'Skipped a subscription without a product name (' + sysId + ').')
+            return
+        }
+        save(name)
+    } catch (ex) {
+        counts.skipped++
+        add('error', 'Subscription ' + sysId + ' could not be saved: ' + ex)
+    }
+}
+
 const CAP = SCOPE + '_capability'
 const SOURCES = {
     overview: 'sn_sub_man_st_subscription_overview', // licensed subscriptions (purchased / allocated)
@@ -41,7 +63,11 @@ const toInt = (v: string): number => {
 }
 const tableExists = (t: string) => new GlideRecord(t).isValid()
 
-export function runDiscovery(runStartedAt?: string): DiscoverySummary {
+export function _fromLicenses(runStartedAt?: string): DiscoverySummary {
+    return runDiscovery(runStartedAt, true)
+}
+
+export function runDiscovery(runStartedAt?: string, licensesOnly = false): DiscoverySummary {
     const startValue = runStartedAt || new GlideDateTime().getValue()
     const log: LogEntry[] = []
     const add = (level: LogEntry['level'], message: string) => log.push({ ts: new GlideDateTime().getNumericValue(), level, step: STEP, message })
@@ -106,21 +132,23 @@ export function runDiscovery(runStartedAt?: string): DiscoverySummary {
     const feeByScope: { [k: string]: string } = {}
     const feeById: { [k: string]: string } = {}
     let familyAvailable = false
-    try {
-        if (tableExists(SOURCES.family)) {
-            familyAvailable = true
-            const f = new GlideRecord(SOURCES.family)
-            f.addQuery('for_fee', true)
-            f.addQuery('cust_visible', true)
-            f.query()
-            while (f.next()) {
-                const lob = str(f, 'lob_name'), scope = str(f, 'scope'), id = str(f, 'app_id')
-                if (scope && scope !== 'global' && !feeByScope[scope]) feeByScope[scope] = lob
-                if (id && !feeById[id]) feeById[id] = lob
-            }
-        } else add('warn', 'Product family table ua_app_family does not exist: every active app and plugin is discovered and families must be mapped by hand.')
-    } catch (ex) {
-        add('error', 'Could not read ua_app_family: ' + ex)
+    if (!licensesOnly) {
+        try {
+            if (tableExists(SOURCES.family)) {
+                familyAvailable = true
+                const f = new GlideRecord(SOURCES.family)
+                f.addQuery('for_fee', true)
+                f.addQuery('cust_visible', true)
+                f.query()
+                while (f.next()) {
+                    const lob = str(f, 'lob_name'), scope = str(f, 'scope'), id = str(f, 'app_id')
+                    if (scope && scope !== 'global' && !feeByScope[scope]) feeByScope[scope] = lob
+                    if (id && !feeById[id]) feeById[id] = lob
+                }
+            } else add('warn', 'Product family table ua_app_family does not exist: every active app and plugin is discovered and families must be mapped by hand.')
+        } catch (ex) {
+            add('error', 'Could not read ua_app_family: ' + ex)
+        }
     }
     const isFee = (map: { [k: string]: string }, key: string) => !familyAvailable || Object.prototype.hasOwnProperty.call(map, key)
 
@@ -132,21 +160,12 @@ export function runDiscovery(runStartedAt?: string): DiscoverySummary {
             o.query()
             while (o.next()) {
                 rows++
-                s.licences.read++
-                const name = o.getDisplayValue('subscription') || ''
-                const key = str(o, 'subscription') || o.getUniqueValue()
-                if (!name) {
-                    s.licences.skipped++
-                    add('warn', 'Skipped a subscription without a product name (' + o.getUniqueValue() + ').')
-                    continue
-                }
-                try {
+                const sysId = o.getUniqueValue()
+                processLicenseRecord(sysId, () => o.getDisplayValue('subscription') || '', s.licences, add, (name) => {
+                    const key = str(o, 'subscription') || sysId
                     if (str(o, 'allocated_count') === '') add('info', 'Subscription "' + name + '" has no allocated count: stored as 0.')
                     upsert('subscription', key, name, { licensed: true, entitled_count: toInt(str(o, 'purchased_count')), allocated_count: toInt(str(o, 'allocated_count')) }, '', s.licences)
-                } catch (ex) {
-                    s.licences.skipped++
-                    add('error', 'Subscription ' + o.getUniqueValue() + ' could not be saved: ' + ex)
-                }
+                })
             }
         }
         if (!rows && tableExists(SOURCES.licenseDetails)) {
@@ -154,20 +173,22 @@ export function runDiscovery(runStartedAt?: string): DiscoverySummary {
             l.query()
             while (l.next()) {
                 rows++
-                s.licences.read++
-                const name = str(l, 'name')
-                if (!name) {
-                    s.licences.skipped++
-                    add('warn', 'Skipped a licence without a name (' + l.getUniqueValue() + ').')
-                    continue
-                }
-                upsert('subscription', l.getUniqueValue(), name, { licensed: true, entitled_count: toInt(str(l, 'count')), allocated_count: toInt(str(l, 'allocated')) }, '', s.licences)
+                const sysId = l.getUniqueValue()
+                processLicenseRecord(sysId, () => str(l, 'name'), s.licences, add, (name) => {
+                    upsert('subscription', sysId, name, { licensed: true, entitled_count: toInt(str(l, 'count')), allocated_count: toInt(str(l, 'allocated')) }, '', s.licences)
+                })
             }
         }
         if (!rows) add('warn', 'No licensed subscriptions found: table is empty.')
-        add('info', 'Licences: read ' + s.licences.read + ', created ' + s.licences.created + ', updated ' + s.licences.updated + (s.licences.skipped ? ', skipped ' + s.licences.skipped : '') + '.')
+        add('info', 'Licenses: read ' + s.licences.read + ', created ' + s.licences.created + ', updated ' + s.licences.updated + (s.licences.skipped ? ', skipped ' + s.licences.skipped : '') + '.')
     } catch (ex) {
         add('error', 'Licence discovery failed, apps and plugins still run: ' + ex)
+    }
+
+    if (licensesOnly) {
+        s.ok = !log.some((l) => l.level === 'error')
+        add(s.ok ? 'info' : 'warn', 'License discovery ' + (s.ok ? 'complete' : 'finished with errors') + ': ' + s.licences.read + ' subscriptions checked.')
+        return s
     }
 
     // ---- installed for-fee apps (PIV-012) -----------------------------------------------------------
