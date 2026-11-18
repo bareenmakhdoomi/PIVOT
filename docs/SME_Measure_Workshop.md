@@ -7,6 +7,8 @@
 
 This register is a decision-capture artifact, not evidence that a workshop has occurred. Every row is open until the relevant SME confirms the measure and the decision is recorded here. Existing PIVOT seed values are shown only as starting proposals; they are not represented as SME-approved measures.
 
+**Acceptance status:** The candidate inventory and decision-capture process are prepared, but neither acceptance criterion is complete. There are 0 recorded SME-approved measures. Several candidates still need a filter, date window, or target to be proposed and agreed. All 31 measures remain open; role-based owners and the due date below are placeholders, not confirmed assignments.
+
 ## Workshop outcomes to record
 
 For each capability, SMEs must agree and record:
@@ -25,10 +27,10 @@ All rows below are currently **Open**. Role-based owners and the due date are pr
 
 | Family | Key capability | Proposed table | Proposed filter / date / period / target (unapproved) | Status | Proposed owner | Due date |
 |---|---|---|---|---|---|---|
-| ITSM | Incident Management | `incident` | Filter: none; date: `sys_created_on`; 30 days; target: 500 | Open | ITSM product SME (name to confirm) | 2026-12-02 (proposed) |
-| ITSM | Problem Management | `problem` | Filter: none; date: `sys_created_on`; 30 days; target: 20 | Open | ITSM product SME (name to confirm) | 2026-12-02 (proposed) |
-| ITSM | Change Management | `change_request` | Filter: none; date: `sys_created_on`; 30 days; target: 50 | Open | ITSM product SME (name to confirm) | 2026-12-02 (proposed) |
-| ITSM | Service Catalog Fulfilment | `sc_req_item` | Filter: none; date: `sys_created_on`; 30 days; target: 300 | Open | ITSM product SME (name to confirm) | 2026-12-02 (proposed) |
+| ITSM | Incident Management | `incident` | Existing seed proposal: filter `active=true`; date: `sys_created_on`; 30 days; target: 100 | Open | ITSM product SME (name to confirm) | 2026-12-02 (proposed) |
+| ITSM | Problem Management | `problem` | Existing seed proposal: filter `active=true`; date: `sys_created_on`; 30 days; target: 20 | Open | ITSM product SME (name to confirm) | 2026-12-02 (proposed) |
+| ITSM | Change Management | `change_request` | Existing seed proposal: filter `active=true`; date: `sys_created_on`; 30 days; target: 50 | Open | ITSM product SME (name to confirm) | 2026-12-02 (proposed) |
+| ITSM | Service Catalog Fulfilment | `sc_req_item` | Existing seed proposal: filter `active=true`; date: `sys_created_on`; 30 days; target: 300 | Open | ITSM product SME (name to confirm) | 2026-12-02 (proposed) |
 | ITSM | Major Incident Management | `incident` | Filter: `major_incident_state=accepted`; date: `sys_created_on`; 90 days; target: 3 | Open | ITSM product SME (name to confirm) | 2026-12-02 (proposed) |
 | ITSM | Change Advisory Board (CAB) | `cab_meeting` | Filter: none; date: `sys_created_on`; 90 days; target: 12 | Open | ITSM product SME (name to confirm) | 2026-12-02 (proposed) |
 | ITOM | Event Management | `em_alert` | Filter: none; date: `sys_created_on`; 30 days; target: 500 | Open | ITOM product SME (name to confirm) | 2026-12-02 (proposed) |
@@ -56,6 +58,14 @@ All rows below are currently **Open**. Role-based owners and the due date are pr
 | Other | Custom Workflow Automation | `sys_flow_context` | Filter, date field, period, and target: TBD in workshop | Open | PIVOT product owner / relevant SME (name to confirm) | 2026-12-02 (proposed) |
 | Other | Custom Application Development | `sys_update_set` | Filter, date field, period, and target: TBD in workshop | Open | PIVOT product owner / relevant SME (name to confirm) | 2026-12-02 (proposed) |
 | Other | Custom Data Change Activity | `sys_audit` | Filter, date field, period, and target: TBD in workshop | Open | PIVOT product owner / relevant SME (name to confirm) | 2026-12-02 (proposed) |
+
+## Alignment with current PIVOT behavior
+
+Discovery applies a one-time starter measurement only for source IDs defined in `SEED_MEASURES` and only when a Capability has no measure table or target. These values are implementation defaults, not workshop approvals. Admin-edited values are preserved on later discovery runs.
+
+The existing starter proposals for Incident Management, Problem Management, Change Management, and Service Catalog Fulfilment are `active=true`, `sys_created_on`, 30 days, with targets 100, 20, 50, and 300 respectively. The values in this register have been aligned to those defaults. The other existing starter mappings are also copied as unapproved proposals above; candidates without an existing starter have their unknown parameters left TBD rather than assigned invented targets.
+
+There is no code or workflow in this repository that convenes SMEs, records their approval, or verifies a meeting occurred. Completing the actual agreement requires the workshop, recording decisions in this register, and separately implementing only the measures that SMEs approve.
 
 ## Decision log
 
