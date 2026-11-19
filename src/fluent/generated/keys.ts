@@ -617,6 +617,14 @@ declare global {
                         table: 'sys_atf_step'
                         id: 'ab9d12dab57b4b40b3d0f1a74aac6a95'
                     }
+                    'atf-stry0015296-discover-all-apps': {
+                        table: 'sys_atf_test'
+                        id: 'c0dc6866eaa740799852c447ea511255'
+                    }
+                    'atf-stry0015296-discover-all-apps-check': {
+                        table: 'sys_atf_step'
+                        id: '1e9e7d8b93f1487289a066aa9ab42aa3'
+                    }
                     'atf-stry0015301-exclude-pivot-app': {
                         table: 'sys_atf_test'
                         id: '7380c401b520468e87fe8db6c49a4f69'
@@ -2053,6 +2061,14 @@ declare global {
                             }
                             element: 'kpi_aggregate'
                             position: '3'
+                        }
+                    },
+                    {
+                        table: 'sys_variable_value'
+                        id: '0f9fa897b41b49d6a71d7bea459f9178'
+                        key: {
+                            document_key: '1e9e7d8b93f1487289a066aa9ab42aa3'
+                            variable: '989d9e235324220002c6435723dc3484'
                         }
                     },
                     {
@@ -8807,6 +8823,14 @@ declare global {
                         }
                     },
                     {
+                        table: 'sys_variable_value'
+                        id: '833853c8ba8b4ad6ad59f2901fa04936'
+                        key: {
+                            document_key: '1e9e7d8b93f1487289a066aa9ab42aa3'
+                            variable: '42f2564b73031300440211d8faf6a777'
+                        }
+                    },
+                    {
                         table: 'sys_dictionary'
                         id: '83919fde5df94b3a97d84dd79cc08aae'
                         key: {
@@ -13341,6 +13365,15 @@ declare global {
                             value: 'test'
                             language: 'en'
                             dependent_value: 'NULL'
+                        }
+                    },
+                    {
+                        table: 'sys_element_mapping'
+                        id: 'd4dc70a819d54421b9f983630daaaa51'
+                        key: {
+                            id: '1e9e7d8b93f1487289a066aa9ab42aa3'
+                            table: 'var__m_atf_input_variable_41de4a935332120028bc29cac2dc349a'
+                            field: 'script'
                         }
                     },
                     {

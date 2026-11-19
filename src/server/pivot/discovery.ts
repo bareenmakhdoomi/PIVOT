@@ -1,5 +1,5 @@
 // PIV-011 … PIV-014 – PIVOT discovery (design B5/B6).
-// Finds every licensed subscription, installed for-fee app and active for-fee plugin and keeps exactly one
+// Finds every licensed subscription, active Store/custom app and active for-fee plugin and keeps exactly one
 // Capability per item (matched on source + source ID, so re-runs never create duplicates).
 // Discovery only writes discovery-owned fields; admin fields (product family once set, measurement settings,
 // target, weight, linked app) are never overwritten. Items no longer found get not_found = true – never deleted.
@@ -67,7 +67,11 @@ export function _fromLicenses(runStartedAt?: string): DiscoverySummary {
     return runDiscovery(runStartedAt, true)
 }
 
-export function runDiscovery(runStartedAt?: string, licensesOnly = false): DiscoverySummary {
+export function _fromApps(runStartedAt?: string): DiscoverySummary {
+    return runDiscovery(runStartedAt, false, true)
+}
+
+export function runDiscovery(runStartedAt?: string, licensesOnly = false, appsOnly = false): DiscoverySummary {
     const startValue = runStartedAt || new GlideDateTime().getValue()
     const log: LogEntry[] = []
     const add = (level: LogEntry['level'], message: string) => log.push({ ts: new GlideDateTime().getNumericValue(), level, step: STEP, message })
@@ -77,7 +81,7 @@ export function runDiscovery(runStartedAt?: string, licensesOnly = false): Disco
     const defaultDaysBack = toInt(gs.getProperty(SCOPE + '.default_days_back', PROPERTIES.default_days_back.def)) || 30
 
     /** Find the capability for source + key (falls back to source + name for records made before source IDs existed). */
-    function upsert(source: string, key: string, name: string, data: { [f: string]: any }, family: string, counts: Counts) {
+    function _getOrCreate(source: string, key: string, name: string, data: { [f: string]: any }, family: string, counts: Counts) {
         const gr = new GlideRecord(CAP)
         gr.addQuery('source', source)
         gr.addQuery('source_id', key)
@@ -170,36 +174,38 @@ export function runDiscovery(runStartedAt?: string, licensesOnly = false): Disco
     const isFee = (map: { [k: string]: string }, key: string) => !familyAvailable || Object.prototype.hasOwnProperty.call(map, key)
 
     // ---- licensed subscriptions (PIV-011) ----------------------------------------------------------
-    try {
-        let rows = 0
-        if (tableExists(SOURCES.overview)) {
-            const o = new GlideRecord(SOURCES.overview)
-            o.query()
-            while (o.next()) {
-                rows++
-                const sysId = o.getUniqueValue()
-                processLicenseRecord(sysId, () => o.getDisplayValue('subscription') || '', s.licences, add, (name) => {
-                    const key = str(o, 'subscription') || sysId
-                    if (str(o, 'allocated_count') === '') add('info', 'Subscription "' + name + '" has no allocated count: stored as 0.')
-                    upsert('subscription', key, name, { licensed: true, entitled_count: toInt(str(o, 'purchased_count')), allocated_count: toInt(str(o, 'allocated_count')) }, '', s.licences)
-                })
+    if (!appsOnly) {
+        try {
+            let rows = 0
+            if (tableExists(SOURCES.overview)) {
+                const o = new GlideRecord(SOURCES.overview)
+                o.query()
+                while (o.next()) {
+                    rows++
+                    const sysId = o.getUniqueValue()
+                    processLicenseRecord(sysId, () => o.getDisplayValue('subscription') || '', s.licences, add, (name) => {
+                        const key = str(o, 'subscription') || sysId
+                        if (str(o, 'allocated_count') === '') add('info', 'Subscription "' + name + '" has no allocated count: stored as 0.')
+                        _getOrCreate('subscription', key, name, { licensed: true, entitled_count: toInt(str(o, 'purchased_count')), allocated_count: toInt(str(o, 'allocated_count')) }, '', s.licences)
+                    })
+                }
             }
-        }
-        if (!rows && tableExists(SOURCES.licenseDetails)) {
-            const l = new GlideRecord(SOURCES.licenseDetails)
-            l.query()
-            while (l.next()) {
-                rows++
-                const sysId = l.getUniqueValue()
-                processLicenseRecord(sysId, () => str(l, 'name'), s.licences, add, (name) => {
-                    upsert('subscription', sysId, name, { licensed: true, entitled_count: toInt(str(l, 'count')), allocated_count: toInt(str(l, 'allocated')) }, '', s.licences)
-                })
+            if (!rows && tableExists(SOURCES.licenseDetails)) {
+                const l = new GlideRecord(SOURCES.licenseDetails)
+                l.query()
+                while (l.next()) {
+                    rows++
+                    const sysId = l.getUniqueValue()
+                    processLicenseRecord(sysId, () => str(l, 'name'), s.licences, add, (name) => {
+                        _getOrCreate('subscription', sysId, name, { licensed: true, entitled_count: toInt(str(l, 'count')), allocated_count: toInt(str(l, 'allocated')) }, '', s.licences)
+                    })
+                }
             }
+            if (!rows) add('warn', 'No licensed subscriptions found: table is empty.')
+            add('info', 'Licenses: read ' + s.licences.read + ', created ' + s.licences.created + ', updated ' + s.licences.updated + (s.licences.skipped ? ', skipped ' + s.licences.skipped : '') + '.')
+        } catch (ex) {
+            add('error', 'Licence discovery failed, apps and plugins still run: ' + ex)
         }
-        if (!rows) add('warn', 'No licensed subscriptions found: table is empty.')
-        add('info', 'Licenses: read ' + s.licences.read + ', created ' + s.licences.created + ', updated ' + s.licences.updated + (s.licences.skipped ? ', skipped ' + s.licences.skipped : '') + '.')
-    } catch (ex) {
-        add('error', 'Licence discovery failed, apps and plugins still run: ' + ex)
     }
 
     if (licensesOnly) {
@@ -208,31 +214,36 @@ export function runDiscovery(runStartedAt?: string, licensesOnly = false): Disco
         return s
     }
 
-    // ---- installed for-fee apps (PIV-012) -----------------------------------------------------------
+    // ---- active Store and custom apps (PIV-012) ----------------------------------------------------
     try {
         if (tableExists(SOURCES.apps)) {
             const a = new GlideRecord(SOURCES.apps)
             a.addQuery('active', true)
             a.query()
             while (a.next()) {
-                const scope = str(a, 'scope'), name = str(a, 'name') || scope
+                const scope = str(a, 'scope'), key = scope || a.getUniqueValue(), name = str(a, 'name') || key
                 if (scope === SCOPE) {
                     s.excluded.push(scope)
                     continue
                 }
-                if (!scope || !isFee(feeByScope, scope)) continue
                 s.apps.read++
                 try {
-                    upsert('store_app', scope, name, { licensed: false, installed: true, app_scope: scope, version: str(a, 'version').slice(0, 40) }, familyFromLob(feeByScope[scope] || ''), s.apps)
+                    _getOrCreate('store_app', key, name, { licensed: false, installed: true, app_scope: scope, version: str(a, 'version').slice(0, 40) }, familyFromLob(feeByScope[scope] || ''), s.apps)
                 } catch (ex) {
                     s.apps.skipped++
-                    add('error', 'App ' + scope + ' could not be saved: ' + ex)
+                    add('error', 'App ' + key + ' could not be saved: ' + ex)
                 }
             }
         }
         add('info', 'Apps: found ' + s.apps.read + ', created ' + s.apps.created + ', updated ' + s.apps.updated + (s.excluded.length ? '. ' + s.excluded.length + ' app excluded: ' + s.excluded.join(', ') : '') + '.')
     } catch (ex) {
         add('error', 'App discovery failed: ' + ex)
+    }
+
+    if (appsOnly) {
+        s.ok = !log.some((l) => l.level === 'error')
+        add(s.ok ? 'info' : 'warn', 'App discovery ' + (s.ok ? 'complete' : 'finished with errors') + ': ' + s.apps.read + ' active apps checked.')
+        return s
     }
 
     // ---- active for-fee plugins (PIV-012) -----------------------------------------------------------
@@ -246,7 +257,7 @@ export function runDiscovery(runStartedAt?: string, licensesOnly = false): Disco
                 if (!id || !isFee(feeById, id)) continue
                 s.plugins.read++
                 try {
-                    upsert('plugin', id, name, { licensed: false, installed: true, app_scope: str(p, 'scope') === 'global' ? '' : str(p, 'scope'), version: str(p, 'version').slice(0, 40) }, familyFromLob(feeById[id] || ''), s.plugins)
+                    _getOrCreate('plugin', id, name, { licensed: false, installed: true, app_scope: str(p, 'scope') === 'global' ? '' : str(p, 'scope'), version: str(p, 'version').slice(0, 40) }, familyFromLob(feeById[id] || ''), s.plugins)
                 } catch (ex) {
                     s.plugins.skipped++
                     add('error', 'Plugin ' + id + ' could not be saved: ' + ex)

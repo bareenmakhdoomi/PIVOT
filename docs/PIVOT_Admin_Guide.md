@@ -11,7 +11,7 @@ PIVOT only reads other applications' tables and writes to its own scope (x_enno_
 
 ## Where they come from
 
-Each run starts with **discovery**: licences from the subscription overview (`sn_sub_man_st_subscription_overview`, fallback `license_details`), installed Store apps (`sys_store_app`) and plugins (`v_plugin`). For-fee items are filtered with `ua_app_family`, which also gives the product family. Each capability is keyed by source and source id, so a new run updates it instead of making a copy. Admin settings (family, weight, measure table, filter, target, days back, linked app) are never overwritten. Items no longer found are flagged "Not found in last run", never deleted. A licence counts as installed only when it is linked to an installed app capability (Linked app).
+Each run starts with **discovery**: licences from the subscription overview (`sn_sub_man_st_subscription_overview`, fallback `license_details`), every active Store or custom app (`sys_store_app`, except PIVOT itself), and active for-fee plugins (`v_plugin`). `ua_app_family` supplies product-family mappings and continues to filter plugins; apps are included even when they have no for-fee family mapping. Each capability is keyed by source and source id, so a new run updates it instead of making a copy. Admin settings (family, weight, measure table, filter, target, days back, linked app) are never overwritten. Items no longer found are flagged "Not found in last run", never deleted. A licence counts as installed only when it is linked to an installed app capability (Linked app).
 
 ## Set the measurement (measure table, target, weight)
 
