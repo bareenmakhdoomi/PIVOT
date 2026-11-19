@@ -721,6 +721,14 @@ declare global {
                         table: 'sys_atf_step'
                         id: 'c3caed3712b64ea29427d6f1c7e89127'
                     }
+                    'atf-stry0015334-fake-measure-table': {
+                        table: 'sys_atf_test'
+                        id: 'e57ca6616efa469d8cd0b14ba5e32bbf'
+                    }
+                    'atf-stry0015334-fake-measure-table-check': {
+                        table: 'sys_atf_step'
+                        id: '9408d380c54c4ec0b36fc9d04cdb14a6'
+                    }
                     bom_json: {
                         table: 'sys_module'
                         id: 'f0918765f8b240bf92054b27586857dd'
@@ -8988,6 +8996,14 @@ declare global {
                         }
                     },
                     {
+                        table: 'sys_variable_value'
+                        id: '8616bfed9956401ab6e460233707a1c2'
+                        key: {
+                            document_key: '9408d380c54c4ec0b36fc9d04cdb14a6'
+                            variable: '989d9e235324220002c6435723dc3484'
+                        }
+                    },
+                    {
                         table: 'sys_choice'
                         id: '8620ed80ac1e4d3fa176167718d5e30b'
                         key: {
@@ -10624,6 +10640,15 @@ declare global {
                             name: 'x_enno_pivot_business_outcome'
                             element: 'manual_value_by'
                             language: 'en'
+                        }
+                    },
+                    {
+                        table: 'sys_element_mapping'
+                        id: 'a5597227c6744294bf71575e73f64c7f'
+                        key: {
+                            id: '9408d380c54c4ec0b36fc9d04cdb14a6'
+                            table: 'var__m_atf_input_variable_41de4a935332120028bc29cac2dc349a'
+                            field: 'script'
                         }
                     },
                     {
@@ -12682,6 +12707,14 @@ declare global {
                         id: 'c943f7db4e7b4ec19071ae67758c17fd'
                         key: {
                             document_key: '6dc45eaf30564634b7d8efbcad8eb9ab'
+                            variable: '42f2564b73031300440211d8faf6a777'
+                        }
+                    },
+                    {
+                        table: 'sys_variable_value'
+                        id: 'c94c81b0e8d3499e8b9647764a0375e0'
+                        key: {
+                            document_key: '9408d380c54c4ec0b36fc9d04cdb14a6'
                             variable: '42f2564b73031300440211d8faf6a777'
                         }
                     },
