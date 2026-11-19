@@ -61,7 +61,7 @@ Record({
         event_name: 'x_enno_pivot.run_complete',
         suffix: 'run_complete',
         table: 'x_enno_pivot_assessment',
-        description: 'A PIVOT assessment finished. parm1: assessment sys_id. parm2: run email recipients (property admin_group).',
+        description: 'A PIVOT assessment finished. parm1: assessment sys_id. parm2: sys_ids of the active users with x_enno_pivot.admin (run email recipients).',
         fired_by: 'PIVOT assessment, step notify',
     },
 })
@@ -72,7 +72,7 @@ Record({
         event_name: 'x_enno_pivot.run_failed',
         suffix: 'run_failed',
         table: 'x_enno_pivot_assessment',
-        description: 'A PIVOT assessment failed. parm1: assessment sys_id. parm2: run email recipients (property admin_group).',
+        description: 'A PIVOT assessment failed. parm1: assessment sys_id. parm2: sys_ids of the active users with x_enno_pivot.admin (run email recipients).',
         fired_by: 'PIVOT assessment, when a step fails',
     },
 })

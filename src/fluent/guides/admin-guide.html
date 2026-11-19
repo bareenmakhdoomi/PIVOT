@@ -1,0 +1,189 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<j:jelly trim="false" xmlns:j="jelly:core" xmlns:g="glide" xmlns:j2="null" xmlns:g2="null">
+<html lang="en"><head><meta charset="utf-8"/><title>PIVOT – Admin guide</title><style>body{font-family:Inter,Segoe UI,Arial,sans-serif;color:#142255;max-width:920px;margin:0 auto;padding:32px 24px 64px;line-height:1.55;font-size:15px}h1{font-size:30px;margin:0 0 4px}h2{font-size:22px;margin:36px 0 8px;border-bottom:1px solid #e3e8f4;padding-bottom:6px}h3{font-size:17px;margin:24px 0 6px}.sub{color:#5b6b85;margin:0 0 24px}table{border-collapse:collapse;width:100%;margin:10px 0 16px;font-size:14px}th,td{border-bottom:1px solid #e3e8f4;padding:7px 10px;text-align:left;vertical-align:top}th{background:#f3f6fc}code{background:#f3f6fc;padding:1px 5px;border-radius:4px;font-size:13px}.note{background:#eef3ff;border-radius:8px;padding:10px 14px;color:#304db5}</style></head><body><h1>PIVOT – Admin guide</h1><p class="sub">Version 0.0.1 · for PIVOT admins (x_enno_pivot.admin)</p><p class="note">The Word version of this guide has a screenshot for every screen.</p><h2>Before you start</h2>
+<p>PIVOT only reads other applications' tables and writes to its own scope (x_enno_pivot). Admin work is done in the workspace (<strong>PIVOT &gt; Workspace</strong>) and in the <strong>PIVOT &gt; Administration</strong> modules: Capabilities, Needs mapping, Properties, Assessment list, Licences, Store apps, Plugins, Not found in last run, Opportunities, Gap no longer detected and Business Outcomes.</p>
+<h2>Capabilities</h2>
+<h3>Where they come from</h3>
+<p>Each run starts with <strong>discovery</strong>: licences from the subscription overview (<code>sn_sub_man_st_subscription_overview</code>, fallback <code>license_details</code>), installed Store apps (<code>sys_store_app</code>) and plugins (<code>v_plugin</code>). For-fee items are filtered with <code>ua_app_family</code>, which also gives the product family. Each capability is keyed by source and source id, so a new run updates it instead of making a copy. Admin settings (family, weight, measure table, filter, target, days back, linked app) are never overwritten. Items no longer found are flagged "Not found in last run", never deleted. A licence counts as installed only when it is linked to an installed app capability (Linked app).</p>
+<h3>Set the measurement (measure table, target, weight)</h3>
+<ol>
+<li>Open <strong>Capability Library</strong> and page to the capability (or search for it).</li>
+<li>In <strong>Measurement settings</strong> set:<ul>
+<li><strong>Measure table</strong> – the table that shows real use, for example <code>incident</code>.</li>
+<li><strong>Measure filter</strong> – optional conditions, for example only active records.</li>
+<li><strong>Date field</strong> and <strong>Days back</strong> – the period counted (default <code>sys_created_on</code>, 30 days).</li>
+<li><strong>Target</strong> – the count that means full use (score 100).</li>
+<li><strong>Weight</strong> – how much the capability counts in the Platform Value Score (0 leaves it out).</li>
+</ul>
+</li>
+<li>Save. The next run measures it: score = actual ÷ target × 100, capped at 100. Without a measure table or target it stays <strong>Not Measured</strong>.</li>
+</ol>
+<p>On first discovery 14 well-known products get a starting measure and target (for example Incident: <code>incident</code>, 30 days, target 500). They are starting points; change them to match your organisation. A cleared starter setting stays cleared.</p>
+<h3>Map product families</h3>
+<p>Capabilities without a product family appear in <strong>Needs mapping</strong> (workspace notification and Dashboard row for admins). Open the capability and choose the family, or use the Needs mapping dialog. Families drive the Element Map columns, the family charts and the Reports family filter.</p>
+<h2>Settings (system properties)</h2>
+<p>Change them in the workspace under <strong>Settings</strong>. A value outside its range is refused with the reason. Every change is saved as the <code>x_enno_pivot.&lt;name&gt;</code> system property.</p>
+<table>
+<thead>
+<tr>
+<th>Property</th>
+<th>Shown as</th>
+<th>Default</th>
+<th>Valid values</th>
+<th>Takes effect</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>utilization_threshold</td>
+<td>Idle licence threshold (%)</td>
+<td>60</td>
+<td>whole number 0–100</td>
+<td>Gap rule at the next run; heatmap colours at once</td>
+</tr>
+<tr>
+<td>low_score_threshold</td>
+<td>Low adoption threshold (score)</td>
+<td>40</td>
+<td>whole number 0–100</td>
+<td>Bands and colours at once; gap rules at the next run</td>
+</tr>
+<tr>
+<td>high_usage_threshold</td>
+<td>High usage threshold (score)</td>
+<td>70</td>
+<td>whole number 0–100</td>
+<td>Bands and insights at once; weak outcome rule at the next run</td>
+</tr>
+<tr>
+<td>priority_now</td>
+<td>Priority for Now</td>
+<td>2</td>
+<td>number above "Priority for Next"</td>
+<td>Workspace columns at once; the stored roadmap at the next run</td>
+</tr>
+<tr>
+<td>priority_next</td>
+<td>Priority for Next</td>
+<td>1</td>
+<td>number above 0 and below "Priority for Now"</td>
+<td>As above</td>
+</tr>
+<tr>
+<td>priority_weight_value</td>
+<td>Priority weight: value</td>
+<td>1</td>
+<td>0–10</td>
+<td>Priorities at the next run</td>
+</tr>
+<tr>
+<td>priority_weight_impact</td>
+<td>Priority weight: business impact</td>
+<td>1</td>
+<td>0–10</td>
+<td>Priorities at the next run</td>
+</tr>
+<tr>
+<td>default_days_back</td>
+<td>Default look-back (days)</td>
+<td>30</td>
+<td>whole number 1–365</td>
+<td>New capabilities</td>
+</tr>
+<tr>
+<td>slow_capability_seconds</td>
+<td>Slow capability warning (s)</td>
+<td>60</td>
+<td>whole number 1–3600</td>
+<td>Next run</td>
+</tr>
+<tr>
+<td>gap_rule_config</td>
+<td>Gap rule texts and defaults (JSON)</td>
+<td>empty (built-in defaults)</td>
+<td>valid JSON per gap type: title, text, value, effort</td>
+<td>New opportunities from the next run</td>
+</tr>
+<tr>
+<td>admin_group</td>
+<td>Run email recipients</td>
+<td>PIVOT Admins</td>
+<td>a group name, up to 100 characters (empty is refused)</td>
+<td>Next run email: active members of this group also get it</td>
+</tr>
+<tr>
+<td>ai_enabled</td>
+<td>AI features (Now Assist)</td>
+<td>true</td>
+<td>on / off</td>
+<td>At once: all AI buttons, Ask PIVOT and the run briefing</td>
+</tr>
+</tbody>
+</table>
+<p>Two more properties are set in <strong>System Properties</strong>, not in the workspace: <code>x_enno_pivot.max_run_minutes</code> (30; 0 = no limit; capabilities left when it is reached are Not Measured with "Run time limit reached") and <code>x_enno_pivot.timing_log</code> (false; true logs the time per capability).</p>
+<h2>Business outcomes</h2>
+<ol>
+<li>Open <strong>Value &amp; Opportunities &gt; Outcome register &gt; + New outcome</strong> (or Administration &gt; Business Outcomes).</li>
+<li>Choose the <strong>capability</strong>, write the <strong>objective</strong> (what the business wants) and the <strong>KPI</strong>.</li>
+<li>Choose <strong>higher is better</strong> or <strong>lower is better</strong>, the <strong>target</strong> and the <strong>period</strong>.</li>
+<li>For a <strong>calculated</strong> KPI set the <strong>KPI table</strong> (for example <code>incident</code>), an optional <strong>filter</strong> and the aggregate: count, or sum / average of a field. For a <strong>manual</strong> KPI the owner enters the value and its date (not in the future); PIVOT warns when it is stale.</li>
+<li>Tick <strong>Important objective</strong> if low use of this capability should raise an adoption potential opportunity, or <strong>Low volume expected</strong> if low use is normal.</li>
+</ol>
+<p><strong>Baseline lock:</strong> the first measured value becomes the baseline and is then locked, so the improvement stays honest. Only a PIVOT admin can change a locked baseline, and only with a reason; the old value, new value and reason are stored. Improvement = (actual − baseline) ÷ (target − baseline), direction-aware.</p>
+<h2>Assessment runs</h2>
+<h3>Schedule</h3>
+<p>The scheduled job <strong>PIVOT weekly assessment</strong> runs every <strong>Sunday at 02:00</strong> (instance time). To change the day or time, open System Definition &gt; Scheduled Jobs, open the job and change Run / Day / Time. Only one assessment runs at a time; a run queued or running blocks the next one, and the weekly job skips with "PIVOT weekly run skipped: assessment already running".</p>
+<h3>Run Now</h3>
+<p>Click <strong>Run assessment now</strong> on the Assessment list (PIVOT admins only), or <strong>+ Run assessment now</strong> in the workspace Assessments view. The run is queued and runs in the background; the list and the workspace show "step n of 10". A second click while one runs is refused with "An assessment is already running. Try again when it completes."</p>
+<h3>Read the run log</h3>
+<p>Open a run. The log has one line per step in order – discover, measure, score, outcomes, gaps, priority, roadmap, notify – each with its count and seconds, for example "gaps: 2 opportunities (18 updated, 0 gap(s) no longer detected) in 0.3 s". Warnings (slow capabilities, an outcome that could not be measured) mark the run <strong>Completed with warnings</strong>. When a step fails the run is <strong>Failed</strong>, the log names the step and the error, and the later steps do not run. A run left Queued or Running for more than twice the run time limit (at least 60 minutes) is set to Failed automatically.</p>
+<h3>Run emails</h3>
+<p>When a run completes or fails, PIVOT emails every active user with the PIVOT admin role and the active members of the group in Run email recipients (<code>x_enno_pivot.admin_group</code>): subject "PIVOT run complete: PVA…, score N" or "PIVOT run failed: PVA…", with the status, score (or "Not available"), change, opportunities raised and updated, warnings, completion time, the error for a failed run, and an <strong>Open in PIVOT</strong> link to the run.</p>
+<h2>AI features</h2>
+<p><strong>Before you start.</strong> The AI features need Now Assist with the Generative AI Controller and an approved LLM provider (Now LLM Service by default). Settings › AI features shows whether the Generative AI Controller is installed; <strong>Test AI</strong> sends one short prompt and shows the answer and how long it took. Without it, every AI button says "AI is not set up on this instance." and PIVOT works as before.</p>
+<p><strong>Switch.</strong> <code>x_enno_pivot.ai_enabled</code> turns every AI feature off at once. With it off there are no AI buttons, no Ask PIVOT and no briefing; runs and emails work as before.</p>
+<p><strong>What the AI may use.</strong> Each feature reads only the PIVOT records the signed-in user can read (their PIVOT role and the ACLs). Users without a PIVOT role get no PIVOT data. Explain and the briefing are open to every PIVOT role; score, owner and plan suggestions to analysts and admins; Run Now from chat to admins only.</p>
+<p><strong>Numbers are checked.</strong> Every number in an AI answer must be in the record. If not, or if the answer is too long, PIVOT shows its own rule-based text with the label "PIVOT rules · AI answer not used".</p>
+<p><strong>Briefing.</strong> Step 9 of every run writes the briefing before the run email, so the email includes it above "Open in PIVOT". If the AI fails, the run stays Complete and the log shows the warning "Briefing not created".</p>
+<p><strong>AI usage.</strong> PIVOT › AI usage (and Settings › AI features) list every AI answer of the last 30 days with the skill, record, text, user and what the user did with it (shown, accepted, edited, rejected, skipped, cancelled, failed). Accept rate = accepted or edited ÷ (accepted + edited + rejected).</p>
+<p><strong>Virtual Agent and the Now Assist panel.</strong> The script include <code>x_enno_pivot.PivotAI</code> is the entry point: <code>ask(question)</code>, <code>confirm(confirmObject)</code>, <code>explain(table, sysId, text)</code> and <code>answerText(result)</code>. The "Ask PIVOT" LLM topic and the "Explain this finding" panel skill call it; the setup steps are in the PIVOT AI setup guide. Changes made from chat need the user to click Confirm and are written to the record's work notes as "Changed from Virtual Agent by (user)".</p>
+<h2>Roles</h2>
+<p>Give roles in User Administration &gt; Users (or to groups). Each PIVOT role contains the ones below it.</p>
+<table>
+<thead>
+<tr>
+<th>Role</th>
+<th>Contains</th>
+<th>Give it to</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>x_enno_pivot.viewer</td>
+<td>–</td>
+<td>Anyone who reads PIVOT</td>
+</tr>
+<tr>
+<td>x_enno_pivot.business_owner</td>
+<td>viewer</td>
+<td>Owners of business outcomes</td>
+</tr>
+<tr>
+<td>x_enno_pivot.analyst</td>
+<td>viewer</td>
+<td>People who work opportunities and the roadmap</td>
+</tr>
+<tr>
+<td>x_enno_pivot.admin</td>
+<td>analyst, viewer</td>
+<td>PIVOT admins (settings, capabilities, baselines, Run Now)</td>
+</tr>
+<tr>
+<td>x_enno_pivot.security_tester</td>
+<td>–</td>
+<td>Security testers (security test logs and defects)</td>
+</tr>
+</tbody>
+</table>
+<p><code>admin</code> does not contain <code>business_owner</code>; give both if an admin also owns outcomes. A PIVOT admin does not need the global admin role. Use the profile menu's <strong>Preview as</strong> to check what a role sees; it changes the screen only, never access.</p></body></html>
+</j:jelly>

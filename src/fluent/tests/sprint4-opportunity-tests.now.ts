@@ -17,7 +17,7 @@ Test({
     var capId = cap.insert();
     var opp = new GlideRecord('x_enno_pivot_opportunity');
     opp.newRecord();
-    opp.setValue('capability', capId); opp.setValue('type', 'low_adoption'); opp.setValue('state', 'new');
+    opp.setValue('capability', capId); opp.setValue('type', 'low_adoption'); opp.setValue('state', 'open');
     opp.setValue('short_description', '[ATF] Opportunity'); opp.setValue('description', '[ATF] Opportunity for role tests');
     opp.setValue('value', 3); opp.setValue('effort', 3);
     outputs.record_id = opp.insert();
@@ -61,9 +61,9 @@ Test({
     opp = find(); opp.setValue('state', 'accepted'); opp.update();
     chk.get(id);
     assertEqual({ name: 'Done can only be reopened', shouldbe: 'done', value: chk.getValue('state') });
-    opp = find(); opp.setValue('state', 'new'); opp.update();
+    opp = find(); opp.setValue('state', 'open'); opp.update();
     chk.get(id);
-    assertEqual({ name: 'Reopen → New', shouldbe: 'new', value: chk.getValue('state') });
+    assertEqual({ name: 'Reopen → New', shouldbe: 'open', value: chk.getValue('state') });
     stepResult.setOutputMessage('Analyst can work the opportunity; state flow and rejection rule hold.');
     return true;
 })(outputs, steps, params, stepResult, assertEqual);`,
@@ -84,7 +84,7 @@ Test({
     var capId = cap.insert();
     var opp = new GlideRecord('x_enno_pivot_opportunity');
     opp.newRecord();
-    opp.setValue('capability', capId); opp.setValue('type', 'low_adoption'); opp.setValue('state', 'new');
+    opp.setValue('capability', capId); opp.setValue('type', 'low_adoption'); opp.setValue('state', 'open');
     opp.setValue('short_description', '[ATF] Opportunity'); opp.setValue('description', '[ATF] Opportunity for role tests');
     opp.setValue('value', 3); opp.setValue('effort', 3);
     outputs.record_id = opp.insert();
@@ -114,7 +114,7 @@ Test({
     opp.setValue('state', 'accepted');
     opp.update();
     var chk = new GlideRecord('x_enno_pivot_opportunity'); chk.get(id);
-    assertEqual({ name: 'attempted update changed nothing', shouldbe: 'new', value: chk.getValue('state') });
+    assertEqual({ name: 'attempted update changed nothing', shouldbe: 'open', value: chk.getValue('state') });
     stepResult.setOutputMessage('Viewer can only read the opportunity.');
     return true;
 })(outputs, steps, params, stepResult, assertEqual);`,

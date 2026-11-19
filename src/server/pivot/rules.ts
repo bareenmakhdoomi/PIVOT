@@ -67,17 +67,16 @@ export function validateRejection(reason: unknown): Errors {
     return String(reason).trim().length < 10 ? { rejection_reason: 'Enter a reason of at least 10 characters.' } : {}
 }
 
-/** PIV-032.01 – opportunity state flow. New → Accepted → In progress → Done; Rejected from any active state.
+/** PIV-032.01 – opportunity state flow. New (value 'open') → Accepted → In progress → Done; Rejected from any active state.
  *  Done and Rejected can only be reopened (back to New). Active states are the ones the gap rules refresh. */
-export const OPP_ACTIVE = ['new', 'open', 'accepted', 'in_progress']
-export const OPP_STATE_LABEL: { [s: string]: string } = { new: 'New', open: 'New', accepted: 'Accepted', in_progress: 'In progress', done: 'Done', rejected: 'Rejected' }
+export const OPP_ACTIVE = ['open', 'accepted', 'in_progress']
+export const OPP_STATE_LABEL: { [s: string]: string } = { open: 'New', accepted: 'Accepted', in_progress: 'In progress', done: 'Done', rejected: 'Rejected' }
 export const OPP_NEXT: { [s: string]: string[] } = {
-    new: ['accepted', 'rejected'],
     open: ['accepted', 'rejected'],
     accepted: ['in_progress', 'done', 'rejected'],
     in_progress: ['done', 'accepted', 'rejected'],
-    done: ['new'],
-    rejected: ['new'],
+    done: ['open'],
+    rejected: ['open'],
 }
 export function validateTransition(from: string, to: string): string {
     if (!from || from === to) return ''
@@ -97,7 +96,7 @@ export function validateCapability(f: { [k: string]: unknown }): Errors {
         const d = Number(f.days_back)
         if (isBlank(f.days_back) || !(d >= 1 && d <= 365 && isWhole(d))) e.days_back = 'Enter 1 to 365 days.'
     }
-    if (!isBlank(f.target) && !(Number(f.target) > 0)) e.target = 'Enter a number above 0, or leave empty for Not Measured.'
+    if (!isBlank(f.target) && (!isFinite(Number(f.target)) || !(Number(f.target) > 0))) e.target = 'Enter a number above 0, or leave empty for Not Measured.'
     if (f.weight !== undefined) {
         const w = Number(f.weight)
         if (isBlank(f.weight) || !(w >= 1 && w <= 5 && isWhole(w))) e.weight = 'Enter a weight from 1 to 5.'
@@ -172,6 +171,7 @@ const LOB_FAMILY: { [lob: string]: string } = {
     'IT Operations Management': 'itom',
     'IT Asset Management': 'itam',
     'Software Asset Management': 'itam',
+    'Hardware Asset Management': 'itam',
     'Human Resources': 'hrsd',
     'Customer Service Management': 'csm',
     'Field Service Management': 'csm',
@@ -218,7 +218,8 @@ export function overallScore(rows: { score: number | null; weight: number | null
         sum += r.score * weight
         w += weight
     })
-    return w ? Math.round(sum / w) : null
+    // PIV-037 / PIV-038.09: the Platform Value Score keeps one decimal (53 after 52.6); capability scores stay whole numbers.
+    return w ? Math.round((sum / w) * 10) / 10 : null
 }
 
 /** Outcome status from baseline, target and the measured value (design B6). */
@@ -240,21 +241,29 @@ export function periodDays(period: string): number {
 /** PIV-015 – proposed starter measurement settings for well-known capabilities, keyed by source ID (plugin ID or app scope).
  *  Discovery applies them once, only when the capability has no measure table and no target yet; admins can change them.
  *  Targets are proposals per look-back window and must be confirmed with the product SMEs (PIV-015.02 / .08). */
-export const SEED_MEASURES: { [sourceId: string]: { table: string; filter: string; dateField: string; days: number; target: number } } = {
-    'com.snc.incident': { table: 'incident', filter: '', dateField: 'sys_created_on', days: 30, target: 500 },
-    'com.snc.problem': { table: 'problem', filter: '', dateField: 'sys_created_on', days: 30, target: 20 },
-    'com.snc.change_management': { table: 'change_request', filter: '', dateField: 'sys_created_on', days: 30, target: 50 },
-    'com.glideapp.servicecatalog': { table: 'sc_req_item', filter: '', dateField: 'sys_created_on', days: 30, target: 300 },
-    'com.snc.incident.mim': { table: 'incident', filter: 'major_incident_state=accepted', dateField: 'sys_created_on', days: 90, target: 3 },
-    'com.snc.change_management.cab': { table: 'cab_meeting', filter: '', dateField: 'sys_created_on', days: 90, target: 12 },
-    'com.snc.asset_management': { table: 'alm_asset', filter: '', dateField: 'sys_created_on', days: 30, target: 50 },
-    'sn_customerservice': { table: 'sn_customerservice_case', filter: '', dateField: 'sys_created_on', days: 30, target: 200 },
-    'com.snc.conversation_builder': { table: 'sys_cs_conversation', filter: '', dateField: 'sys_created_on', days: 30, target: 300 },
-    'com.snc.project_management_v3': { table: 'pm_project', filter: '', dateField: 'sys_created_on', days: 90, target: 10 },
-    'com.snc.resource_management': { table: 'resource_plan', filter: '', dateField: 'sys_created_on', days: 90, target: 20 },
-    'com.snc.time_card': { table: 'time_card', filter: '', dateField: 'sys_created_on', days: 30, target: 100 },
-    'com.snc.sdlc.agile.2.0': { table: 'rm_story', filter: '', dateField: 'sys_created_on', days: 30, target: 50 },
-    'com.snc.service-watch': { table: 'em_alert', filter: '', dateField: 'sys_created_on', days: 30, target: 500 },
+export const SEED_MEASURES: { [sourceId: string]: { family: string; table: string; filter: string; dateField: string; days: number; target: number } } = {
+    'com.snc.incident': { family: 'itsm', table: 'incident', filter: 'active=true', dateField: 'sys_created_on', days: 30, target: 100 },
+    'com.snc.problem': { family: 'itsm', table: 'problem', filter: 'active=true', dateField: 'sys_created_on', days: 30, target: 20 },
+    'com.snc.change_management': { family: 'itsm', table: 'change_request', filter: 'active=true', dateField: 'sys_created_on', days: 30, target: 50 },
+    'com.glideapp.servicecatalog': { family: 'itsm', table: 'sc_req_item', filter: 'active=true', dateField: 'sys_created_on', days: 30, target: 300 },
+    'com.snc.incident.mim': { family: 'itsm', table: 'incident', filter: 'major_incident_state=accepted', dateField: 'sys_created_on', days: 90, target: 3 },
+    'com.snc.change_management.cab': { family: 'itsm', table: 'cab_meeting', filter: 'sys_created_onISNOTEMPTY', dateField: 'sys_created_on', days: 90, target: 12 },
+    'com.snc.asset_management': { family: 'itam', table: 'alm_asset', filter: 'sys_created_onISNOTEMPTY', dateField: 'sys_created_on', days: 30, target: 50 },
+    'com.snc.samp': { family: 'itam', table: 'alm_asset', filter: 'sys_created_onISNOTEMPTY', dateField: 'sys_created_on', days: 30, target: 100 },
+    'com.snc.ham': { family: 'itam', table: 'alm_asset', filter: 'sys_created_onISNOTEMPTY', dateField: 'sys_created_on', days: 30, target: 100 },
+    'sn_customerservice': { family: 'csm', table: 'sn_customerservice_case', filter: 'sys_created_onISNOTEMPTY', dateField: 'sys_created_on', days: 30, target: 200 },
+    'com.snc.conversation_builder': { family: 'csm', table: 'sys_cs_conversation', filter: 'sys_created_onISNOTEMPTY', dateField: 'sys_created_on', days: 30, target: 300 },
+    'com.snc.csm': { family: 'csm', table: 'sn_customerservice_case', filter: 'sys_created_onISNOTEMPTY', dateField: 'sys_created_on', days: 30, target: 200 },
+    'sn_hr_core': { family: 'hrsd', table: 'task', filter: 'sys_class_nameSTARTSWITHsn_hr^sys_created_onISNOTEMPTY', dateField: 'sys_created_on', days: 30, target: 200 },
+    'sn_hr_le': { family: 'hrsd', table: 'task', filter: 'sys_class_nameSTARTSWITHsn_hr^sys_created_onISNOTEMPTY', dateField: 'sys_created_on', days: 30, target: 100 },
+    'sn_hr_sp': { family: 'hrsd', table: 'task', filter: 'sys_class_nameSTARTSWITHsn_hr^sys_created_onISNOTEMPTY', dateField: 'sys_created_on', days: 30, target: 100 },
+    'com.snc.project_management_v3': { family: 'spm', table: 'pm_project', filter: 'sys_created_onISNOTEMPTY', dateField: 'sys_created_on', days: 90, target: 10 },
+    'com.snc.resource_management': { family: 'spm', table: 'resource_plan', filter: 'sys_created_onISNOTEMPTY', dateField: 'sys_created_on', days: 90, target: 20 },
+    'com.snc.time_card': { family: 'spm', table: 'time_card', filter: 'sys_created_onISNOTEMPTY', dateField: 'sys_created_on', days: 30, target: 100 },
+    'com.snc.sdlc.agile.2.0': { family: 'spm', table: 'rm_story', filter: 'sys_created_onISNOTEMPTY', dateField: 'sys_created_on', days: 30, target: 50 },
+    'com.snc.service-watch': { family: 'itom', table: 'em_alert', filter: 'sys_created_onISNOTEMPTY', dateField: 'sys_created_on', days: 30, target: 500 },
+    'com.snc.discovery': { family: 'itom', table: 'cmdb_ci', filter: 'sys_created_onISNOTEMPTY', dateField: 'sys_created_on', days: 30, target: 1000 },
+    'com.snc.service-mapping': { family: 'itom', table: 'cmdb_ci', filter: 'sys_created_onISNOTEMPTY', dateField: 'sys_created_on', days: 30, target: 100 },
 }
 
 // ---------------------------------------------------------------- PIV-028 / 029 gap rules (pure; gaps.ts does the database work)
