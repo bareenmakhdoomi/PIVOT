@@ -56,6 +56,18 @@ Test({
         var D = require('x_enno_pivot/pivot/0.0.1/src/server/pivot/discovery.ts');
         var result = D.runDiscovery();
         assertEqual({ name: 'discovery completed without errors', shouldbe: true, value: result.ok });
+        assertEqual({ name: 'inactive Store app counted as set inactive', shouldbe: true, value: result.apps.setInactive >= 1 });
+        assertEqual({ name: 'inactive plugin counted as set inactive', shouldbe: true, value: result.plugins.setInactive >= 1 });
+        var appCountsLogged = false, pluginCountsLogged = false;
+        for (var logIndex = 0; logIndex < result.log.length; logIndex++) {
+            var message = result.log[logIndex].message;
+            if (message.indexOf('Apps: found ' + result.apps.read + ', created ' + result.apps.created +
+                ', updated ' + result.apps.updated + ', set inactive ' + result.apps.setInactive) === 0) appCountsLogged = true;
+            if (message.indexOf('Plugins: found ' + result.plugins.read + ', created ' + result.plugins.created +
+                ', updated ' + result.plugins.updated + ', set inactive ' + result.plugins.setInactive) === 0) pluginCountsLogged = true;
+        }
+        assertEqual({ name: 'app counts are in the discovery log', shouldbe: true, value: appCountsLogged });
+        assertEqual({ name: 'plugin counts are in the discovery log', shouldbe: true, value: pluginCountsLogged });
         var verify = function (fixture, label) {
             var cap = new GlideRecord(CAP);
             var found = cap.get(fixture.id);

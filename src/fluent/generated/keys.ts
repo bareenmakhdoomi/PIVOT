@@ -633,6 +633,14 @@ declare global {
                         table: 'sys_atf_step'
                         id: '73fdbbb8de284169a24b3a034bbde468'
                     }
+                    'atf-stry0015302-discovery-count-logs': {
+                        table: 'sys_atf_test'
+                        id: 'f8526efdc42149cdbba250a465f8121a'
+                    }
+                    'atf-stry0015302-discovery-count-logs-check': {
+                        table: 'sys_atf_step'
+                        id: '686ee3f1c0b644638f56ffa0a0d80e76'
+                    }
                     'atf-stry0015305-discovery-owned-fields': {
                         table: 'sys_atf_test'
                         id: '696244bdd1544b67a41d5d4a6759b8c9'
@@ -2355,6 +2363,15 @@ declare global {
                         }
                     },
                     {
+                        table: 'sys_element_mapping'
+                        id: '129d653c4fac45308f631eea657f5a8d'
+                        key: {
+                            id: '686ee3f1c0b644638f56ffa0a0d80e76'
+                            table: 'var__m_atf_input_variable_41de4a935332120028bc29cac2dc349a'
+                            field: 'script'
+                        }
+                    },
+                    {
                         table: 'sys_choice'
                         id: '1332e9aced2440ed88095b8409ab9465'
                         key: {
@@ -3908,6 +3925,14 @@ declare global {
                                     name: 'x_enno_pivot.security_tester'
                                 }
                             }
+                        }
+                    },
+                    {
+                        table: 'sys_variable_value'
+                        id: '2c26c94d923b47979acb9f19c3332a40'
+                        key: {
+                            document_key: '686ee3f1c0b644638f56ffa0a0d80e76'
+                            variable: '42f2564b73031300440211d8faf6a777'
                         }
                     },
                     {
@@ -10904,6 +10929,14 @@ declare global {
                             name: 'x_enno_pivot_roadmap_item'
                             element: 'NULL'
                             language: 'en'
+                        }
+                    },
+                    {
+                        table: 'sys_variable_value'
+                        id: 'a999fbb1a7a442cabb71cadc5c3c0ce3'
+                        key: {
+                            document_key: '686ee3f1c0b644638f56ffa0a0d80e76'
+                            variable: '989d9e235324220002c6435723dc3484'
                         }
                     },
                     {
