@@ -601,6 +601,14 @@ declare global {
                         table: 'sys_atf_step'
                         id: '6a12d36bde834973ae27c79d4766226b'
                     }
+                    'atf-stry0015288-read-all-licenses': {
+                        table: 'sys_atf_test'
+                        id: 'fcd9daec8d5e475aabc7970e61396cff'
+                    }
+                    'atf-stry0015288-read-all-licenses-check': {
+                        table: 'sys_atf_step'
+                        id: '24a37a37011a44168ffe4cdeea7aaf16'
+                    }
                     'atf-stry0015290-license-discovery': {
                         table: 'sys_atf_test'
                         id: '9c1be34b2f074d2ba94f238799a9934f'
@@ -3910,6 +3918,14 @@ declare global {
                             name: 'x_enno_pivot_opportunity'
                             element: 'effort'
                             language: 'en'
+                        }
+                    },
+                    {
+                        table: 'sys_variable_value'
+                        id: '2d46e2aa78ef4939a8ebdde119e2aae4'
+                        key: {
+                            document_key: '24a37a37011a44168ffe4cdeea7aaf16'
+                            variable: '42f2564b73031300440211d8faf6a777'
                         }
                     },
                     {
@@ -12864,6 +12880,15 @@ declare global {
                         }
                     },
                     {
+                        table: 'sys_element_mapping'
+                        id: 'cd189af5041b468897b45f9b28bad043'
+                        key: {
+                            id: '24a37a37011a44168ffe4cdeea7aaf16'
+                            table: 'var__m_atf_input_variable_41de4a935332120028bc29cac2dc349a'
+                            field: 'script'
+                        }
+                    },
+                    {
                         table: 'sys_documentation'
                         id: 'cd29705e7c7d455fa3ea3e880d8f346f'
                         key: {
@@ -13226,6 +13251,14 @@ declare global {
                             }
                             element: 'check_name'
                             position: '2'
+                        }
+                    },
+                    {
+                        table: 'sys_variable_value'
+                        id: 'd2728554388c483c832cd306fd5ebc20'
+                        key: {
+                            document_key: '24a37a37011a44168ffe4cdeea7aaf16'
+                            variable: '989d9e235324220002c6435723dc3484'
                         }
                     },
                     {
