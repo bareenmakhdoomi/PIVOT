@@ -633,6 +633,14 @@ declare global {
                         table: 'sys_atf_step'
                         id: '291660c956b546f29a03d3a99dea203f'
                     }
+                    'atf-stry0015309-repeat-discovery': {
+                        table: 'sys_atf_test'
+                        id: 'd5faa2e2a96a464aa242c37fe69c72fb'
+                    }
+                    'atf-stry0015309-repeat-discovery-check': {
+                        table: 'sys_atf_step'
+                        id: '00fea9c324fa4a3a971941a9cfe80fb0'
+                    }
                     'atf-stry0015312-capability-linked-app': {
                         table: 'sys_atf_test'
                         id: '28b65913a13447e0ad87ff2e1fe9eaa5'
@@ -648,6 +656,14 @@ declare global {
                     'atf-stry0015319-itsm-measure-seeds-check': {
                         table: 'sys_atf_step'
                         id: '1dfab9ffd0d5417985130e9604ea124d'
+                    }
+                    'atf-stry0015320-measurement-seeds': {
+                        table: 'sys_atf_test'
+                        id: 'd3889f82df6341ba99f23b12813ed601'
+                    }
+                    'atf-stry0015320-measurement-seeds-step': {
+                        table: 'sys_atf_step'
+                        id: '29dd04f515344c35a79f0281b5b96dc8'
                     }
                     'atf-stry0015321-capability-measurement-validation': {
                         table: 'sys_atf_test'
@@ -991,6 +1007,10 @@ declare global {
                         table: 'sys_scope_privilege'
                         id: '9e3b152a2fcc1310d2a0d68fcea4e3bd'
                     }
+                    'pivot-xscope-read-cmdb_ci': {
+                        table: 'sys_scope_privilege'
+                        id: 'd3c84fb72b87467e8184f4c474062a74'
+                    }
                     'pivot-xscope-read-em_alert': {
                         table: 'sys_scope_privilege'
                         id: '223b552a2fcc1310d2a0d68fcea4e309'
@@ -1042,6 +1062,10 @@ declare global {
                     'pivot-xscope-read-sys_store_app': {
                         table: 'sys_scope_privilege'
                         id: '61aa6f0e2f885750d2a0d68fcea4e3f3'
+                    }
+                    'pivot-xscope-read-task': {
+                        table: 'sys_scope_privilege'
+                        id: 'a00b8f4a61994a3393a3351e4ace4a58'
                     }
                     'pivot-xscope-read-time_card': {
                         table: 'sys_scope_privilege'
@@ -4064,6 +4088,14 @@ declare global {
                     },
                     {
                         table: 'sys_variable_value'
+                        id: '2f1ce2620ae0414088523a18fd4f1525'
+                        key: {
+                            document_key: '00fea9c324fa4a3a971941a9cfe80fb0'
+                            variable: '989d9e235324220002c6435723dc3484'
+                        }
+                    },
+                    {
+                        table: 'sys_variable_value'
                         id: '2f545147783e48bc8ce7d120328df021'
                         key: {
                             document_key: 'c1f90ceee5d14d3eaf552e5e04d63e62'
@@ -5302,6 +5334,14 @@ declare global {
                         }
                     },
                     {
+                        table: 'sys_variable_value'
+                        id: '45073417c4e54a169ebe749bb641498a'
+                        key: {
+                            document_key: '00fea9c324fa4a3a971941a9cfe80fb0'
+                            variable: '42f2564b73031300440211d8faf6a777'
+                        }
+                    },
+                    {
                         table: 'sys_ui_element'
                         id: '454f5c995b734e8bbc1e2e267f0a73b7'
                         key: {
@@ -6485,6 +6525,15 @@ declare global {
                             name: 'x_enno_pivot_outcome_result'
                             element: 'sys_domain'
                             language: 'en'
+                        }
+                    },
+                    {
+                        table: 'sys_element_mapping'
+                        id: '584dcd7e514b40ac8c657f15a0455e2b'
+                        key: {
+                            id: '29dd04f515344c35a79f0281b5b96dc8'
+                            table: 'var__m_atf_input_variable_41de4a935332120028bc29cac2dc349a'
+                            field: 'script'
                         }
                     },
                     {
@@ -8008,6 +8057,14 @@ declare global {
                             name: 'x_enno_pivot_opportunity'
                             element: 'measured_value'
                             language: 'en'
+                        }
+                    },
+                    {
+                        table: 'sys_variable_value'
+                        id: '727e69ac81a249e09b82a675ebe23d52'
+                        key: {
+                            document_key: '29dd04f515344c35a79f0281b5b96dc8'
+                            variable: '989d9e235324220002c6435723dc3484'
                         }
                     },
                     {
@@ -12774,6 +12831,14 @@ declare global {
                         }
                     },
                     {
+                        table: 'sys_variable_value'
+                        id: 'ccafa73c2e504621b15a5c8c28326701'
+                        key: {
+                            document_key: '29dd04f515344c35a79f0281b5b96dc8'
+                            variable: '42f2564b73031300440211d8faf6a777'
+                        }
+                    },
+                    {
                         table: 'sys_ui_list'
                         id: 'ccafeb6c34d4466ab3d3165272fcf75c'
                         key: {
@@ -14035,6 +14100,15 @@ declare global {
                             element: 'NULL'
                             relationship: 'NULL'
                             parent: 'NULL'
+                        }
+                    },
+                    {
+                        table: 'sys_element_mapping'
+                        id: 'e4c418a6bc004d93afbfe11b1b68e4a4'
+                        key: {
+                            id: '00fea9c324fa4a3a971941a9cfe80fb0'
+                            table: 'var__m_atf_input_variable_41de4a935332120028bc29cac2dc349a'
+                            field: 'script'
                         }
                     },
                     {

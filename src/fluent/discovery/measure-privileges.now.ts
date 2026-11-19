@@ -2,10 +2,25 @@ import '@servicenow/sdk/global'
 import { CrossScopePrivilege } from '@servicenow/sdk/core'
 
 // PIV-016 – read access to the product tables used by the seeded usage measures (PIV-015).
-// These records were first created on the instance by the platform when the assessment read the tables;
-// keys.ts maps each $id to that existing sys_id so the deploy takes them over instead of making duplicates.
+// Existing privilege records are mapped in keys.ts; new global-table privileges use stable IDs there.
 // Read only: PIVOT counts rows, it never writes to these tables.
 
+CrossScopePrivilege({
+    $id: Now.ID['pivot-xscope-read-cmdb_ci'],
+    operation: 'read',
+    status: 'allowed',
+    targetName: 'cmdb_ci',
+    targetScope: 'global',
+    targetType: 'sys_db_object',
+})
+CrossScopePrivilege({
+    $id: Now.ID['pivot-xscope-read-task'],
+    operation: 'read',
+    status: 'allowed',
+    targetName: 'task',
+    targetScope: 'global',
+    targetType: 'sys_db_object',
+})
 CrossScopePrivilege({
     $id: Now.ID['pivot-xscope-read-incident'],
     operation: 'read',

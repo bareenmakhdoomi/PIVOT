@@ -114,14 +114,31 @@ export function runDiscovery(runStartedAt?: string, licensesOnly = false, appsOn
         if (family && !str(gr, 'product_family')) gr.setValue('product_family', family) // only fills an empty family
         // PIV-015 – starter measurement settings, applied once and only when nothing is set yet
         const seed = SEED_MEASURES[key]
-        if (seed && str(gr, 'seed_applied') !== '1' && str(gr, 'seed_applied') !== 'true' && !str(gr, 'measure_table') && !str(gr, 'target_value') && tableExists(seed.table)) {
-            gr.setValue('measure_table', seed.table)
-            gr.setValue('measure_filter', seed.filter)
-            gr.setValue('date_field', seed.dateField)
-            gr.setValue('days_back', seed.days)
-            gr.setValue('target_value', seed.target)
-            gr.setValue('seed_applied', true)
-            seeded.push(name)
+        if (seed && str(gr, 'seed_applied') !== '1' && str(gr, 'seed_applied') !== 'true' && !str(gr, 'measure_table') && !str(gr, 'target_value')) {
+            const measureTable = new GlideRecord(seed.table)
+            const productFamily = str(gr, 'product_family') || family
+            const dateElement = measureTable.isValid() && measureTable.isValidField(seed.dateField) ? measureTable.getElement(seed.dateField) : null
+            const dateType = dateElement ? String(dateElement.getED().getInternalType()) : ''
+            if (productFamily && productFamily !== seed.family) {
+                add('warn', 'Starter measurement settings for "' + name + '" were not applied: expected product family ' + seed.family + ', found ' + productFamily + '.')
+            } else if (!measureTable.isValid()) {
+                add('warn', 'Starter measurement settings for "' + name + '" were not applied: measure table ' + seed.table + ' does not exist.')
+            } else if (!measureTable.isValidField(seed.dateField)) {
+                add('warn', 'Starter measurement settings for "' + name + '" were not applied: date field ' + seed.dateField + ' does not exist on ' + seed.table + '.')
+            } else if (dateType !== 'glide_date' && dateType !== 'glide_date_time') {
+                add('warn', 'Starter measurement settings for "' + name + '" were not applied: field ' + seed.dateField + ' on ' + seed.table + ' is not a date or date/time field.')
+            } else if (seed.filter && !measureTable.isEncodedQueryValid(seed.filter)) {
+                add('warn', 'Starter measurement settings for "' + name + '" were not applied: filter is not valid for ' + seed.table + '.')
+            } else {
+                if (!productFamily) gr.setValue('product_family', seed.family)
+                gr.setValue('measure_table', seed.table)
+                gr.setValue('measure_filter', seed.filter)
+                gr.setValue('date_field', seed.dateField)
+                gr.setValue('days_back', seed.days)
+                gr.setValue('target_value', seed.target)
+                gr.setValue('seed_applied', true)
+                seeded.push(name)
+            }
         }
         gr.setValue('last_discovered', startValue)
         gr.setValue('not_found', false)
