@@ -22,11 +22,11 @@ Each run starts with **discovery**: licences from the subscription overview (`sn
     - **Measure table** – the table that shows real use, for example `incident`.
     - **Measure filter** – optional conditions, for example only active records.
     - **Date field** and **Days back** – the period counted (default `sys_created_on`, 30 days).
-    - **Target** – the count that means full use (score 100).
+    - **Target** – the editable count that means full use (score 100). The field help reads **“Empty = Not Measured”**; clear the value to leave a capability unscored.
     - **Weight** – how much the capability counts in the Platform Value Score (0 leaves it out).
-3. Save. The next run measures it: score = actual ÷ target × 100, capped at 100. Without a measure table or target it stays **Not Measured**.
+3. Save. Target is editable Capability data, not a fixed product benchmark. The next run measures it: score = actual ÷ target × 100, capped at 100. Without a measure table or target it stays **Not Measured**.
 
-On first discovery 14 well-known products get a starting measure and target (for example Incident: `incident`, 30 days, target 500). They are starting points; change them to match your organisation. A cleared starter setting stays cleared.
+For the complete list of configured starter measures, filters, targets, and per-target rationale, see [Seed measures and target rationale](./Seed_Measures.md). These are provisional starting proposals; validate and adjust them for your organisation. Discovery applies a starter only when the measure table and target are both empty, and preserves admin-edited settings on later runs.
 
 ## Map product families
 
