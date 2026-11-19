@@ -8,7 +8,7 @@ import { gs, GlideRecord, GlideDateTime } from '@servicenow/glide'
 import { SCOPE, familyFromLob, PROPERTIES, SEED_MEASURES } from './rules.ts'
 
 export type LogEntry = { ts: number; level: 'info' | 'warn' | 'error'; step: number; message: string }
-export type Counts = { read: number; created: number; updated: number; skipped: number }
+export type Counts = { read: number; created: number; updated: number; skipped: number; setInactive: number }
 export type DiscoverySummary = {
     ok: boolean
     licences: Counts
@@ -75,7 +75,7 @@ export function runDiscovery(runStartedAt?: string, licensesOnly = false, appsOn
     const startValue = runStartedAt || new GlideDateTime().getValue()
     const log: LogEntry[] = []
     const add = (level: LogEntry['level'], message: string) => log.push({ ts: new GlideDateTime().getNumericValue(), level, step: STEP, message })
-    const zero = (): Counts => ({ read: 0, created: 0, updated: 0, skipped: 0 })
+    const zero = (): Counts => ({ read: 0, created: 0, updated: 0, skipped: 0, setInactive: 0 })
     const s: DiscoverySummary = { ok: true, licences: zero(), apps: zero(), plugins: zero(), excluded: [], notFound: 0, unlinkedLicences: 0, needsMapping: 0, log }
     const seeded: string[] = []
     const defaultDaysBack = toInt(gs.getProperty(SCOPE + '.default_days_back', PROPERTIES.default_days_back.def)) || 30
@@ -235,12 +235,12 @@ export function runDiscovery(runStartedAt?: string, licensesOnly = false, appsOn
                 }
             }
         }
-        add('info', 'Apps: found ' + s.apps.read + ', created ' + s.apps.created + ', updated ' + s.apps.updated + (s.excluded.length ? '. ' + s.excluded.length + ' app excluded: ' + s.excluded.join(', ') : '') + '.')
     } catch (ex) {
         add('error', 'App discovery failed: ' + ex)
     }
 
     if (appsOnly) {
+        add('info', 'Apps: found ' + s.apps.read + ', created ' + s.apps.created + ', updated ' + s.apps.updated + ', set inactive ' + s.apps.setInactive + (s.excluded.length ? '. ' + s.excluded.length + ' app excluded: ' + s.excluded.join(', ') : '') + '.')
         s.ok = !log.some((l) => l.level === 'error')
         add(s.ok ? 'info' : 'warn', 'App discovery ' + (s.ok ? 'complete' : 'finished with errors') + ': ' + s.apps.read + ' active apps checked.')
         return s
@@ -265,7 +265,6 @@ export function runDiscovery(runStartedAt?: string, licensesOnly = false, appsOn
             }
         }
         if (!s.plugins.read) add('warn', 'No active plugins found.')
-        add('info', 'Plugins: found ' + s.plugins.read + ', created ' + s.plugins.created + ', updated ' + s.plugins.updated + '.')
     } catch (ex) {
         add('error', 'Plugin discovery failed: ' + ex)
     }
@@ -293,6 +292,8 @@ export function runDiscovery(runStartedAt?: string, licensesOnly = false, appsOn
                 if (wasInstalled && source !== 'subscription') {
                     noLongerInstalledCount++
                     if (noLongerInstalled.length < 10) noLongerInstalled.push(name)
+                    if (source === 'store_app') s.apps.setInactive++
+                    else if (source === 'plugin') s.plugins.setInactive++
                 }
             }
         }
@@ -301,6 +302,9 @@ export function runDiscovery(runStartedAt?: string, licensesOnly = false, appsOn
     } catch (ex) {
         add('error', 'Could not flag capabilities that were not found: ' + ex)
     }
+
+    add('info', 'Apps: found ' + s.apps.read + ', created ' + s.apps.created + ', updated ' + s.apps.updated + ', set inactive ' + s.apps.setInactive + (s.excluded.length ? '. ' + s.excluded.length + ' app excluded: ' + s.excluded.join(', ') : '') + '.')
+    add('info', 'Plugins: found ' + s.plugins.read + ', created ' + s.plugins.created + ', updated ' + s.plugins.updated + ', set inactive ' + s.plugins.setInactive + '.')
 
     // licensed=true represents a subscription found in this run, not stale or non-subscription records.
     const invalidLicensed = new GlideRecord(CAP)
