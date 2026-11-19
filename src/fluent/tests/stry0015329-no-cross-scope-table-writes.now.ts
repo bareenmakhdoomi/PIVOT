@@ -3,8 +3,8 @@ import { Test } from '@servicenow/sdk/core'
 
 Test({
     $id: Now.ID['atf-stry0015329-no-cross-scope-table-writes'],
-    name: 'PIVOT - No cross-scope table write privileges',
-    description: 'Checks the deployed PIVOT application scope has no cross-scope table privilege with an operation other than Read.',
+    name: 'PIVOT - Cross-scope privileges are Allowed and table-read-only',
+    description: 'Checks every deployed PIVOT cross-scope privilege is Allowed and no table privilege grants an operation other than Read.',
     active: true,
     failOnServerError: true,
 }, (atf) => {
@@ -22,6 +22,30 @@ Test({
         return false;
     }
 
+    var allPrivileges = new GlideRecord('sys_scope_privilege');
+    allPrivileges.addQuery('source_scope', scope.getUniqueValue());
+    allPrivileges.query();
+    var privilegeCount = 0;
+    var notAllowed = [];
+    while (allPrivileges.next()) {
+        privilegeCount++;
+        if (allPrivileges.getValue('status') !== 'allowed') {
+            notAllowed.push(allPrivileges.getValue('target_name') + ' (' +
+                allPrivileges.getValue('operation') + ', ' +
+                allPrivileges.getValue('status') + ')');
+        }
+    }
+    assertEqual({
+        name: 'PIVOT cross-scope privilege entries exist',
+        shouldbe: true,
+        value: privilegeCount > 0
+    });
+    assertEqual({
+        name: 'every PIVOT cross-scope privilege is Allowed',
+        shouldbe: 0,
+        value: notAllowed.length
+    });
+
     var nonReadTables = new GlideRecord('sys_scope_privilege');
     nonReadTables.addQuery('source_scope', scope.getUniqueValue());
     nonReadTables.addQuery('target_type', 'sys_db_object');
@@ -38,10 +62,12 @@ Test({
         shouldbe: 0,
         value: violations.length
     });
-    stepResult.setOutputMessage(violations.length
-        ? 'Unexpected non-Read cross-scope table privileges: ' + violations.join(', ')
-        : 'No non-Read cross-scope table privileges are configured for PIVOT.');
-    return violations.length === 0;
+    stepResult.setOutputMessage(notAllowed.length || violations.length
+        ? (notAllowed.length ? 'Privileges not Allowed: ' + notAllowed.join(', ') : '') +
+            (notAllowed.length && violations.length ? '; ' : '') +
+            (violations.length ? 'Non-Read table privileges: ' + violations.join(', ') : '')
+        : 'All ' + privilegeCount + ' PIVOT cross-scope privileges are Allowed; no non-Read table privileges are configured.');
+    return notAllowed.length === 0 && violations.length === 0;
 })(outputs, steps, params, stepResult, assertEqual);`,
     })
 })
