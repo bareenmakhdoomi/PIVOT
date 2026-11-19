@@ -13,7 +13,7 @@ Record({
     data: { list_id: assessmentRelatedLists, related_list: 'x_enno_pivot_result.assessment', position: 0, order_by: 'capability' },
 })
 
-// Columns of the Result list (also used by the related list): capability, score and utilization first.
+// Include measurement_status so viewers can group Results and see a count for each status.
 List({
     table: 'x_enno_pivot_result',
     view: default_view,
