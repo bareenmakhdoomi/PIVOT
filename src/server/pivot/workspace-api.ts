@@ -104,11 +104,31 @@ function buildSnapshot() {
     const userIds: string[] = [me]
 
     // Capabilities
+    // PIV-071.06: rows the user may read come from GlideRecordSecure (row ACLs). Field ACLs are checked once per
+    // field on the first readable row; the values are then read with GlideRecord, which avoids one ACL check per
+    // field per row (3.7 s for 2,592 capabilities). A field the user may not read is sent empty.
     const capabilities: any[] = []
-    const c = new GlideRecordSecure(T.capability)
+    const allowed: { [id: string]: boolean } = {}
+    const cs = new GlideRecordSecure(T.capability)
+    cs.query()
+    let firstId = ''
+    while (cs.next()) {
+        allowed[cs.getUniqueValue()] = true
+        if (!firstId) firstId = cs.getUniqueValue()
+    }
+    const CAP_FIELDS = ['number', 'name', 'product_family', 'source', 'licensed', 'installed', 'entitled_count', 'allocated_count', 'app_scope', 'linked_app',
+        'measure_table', 'measure_filter', 'date_field', 'days_back', 'target_value', 'weight', 'active', 'not_found', 'last_discovered']
+    const hidden: { [f: string]: boolean } = {}
+    if (firstId) {
+        const one = new GlideRecordSecure(T.capability)
+        if (one.get(firstId)) CAP_FIELDS.forEach((f) => { if (!(one.getElement(f) as any).canRead()) hidden[f] = true })
+    }
+    const c = new GlideRecord(T.capability)
     c.orderBy('name')
     c.query()
     while (c.next()) {
+        if (!allowed[c.getUniqueValue()]) continue
+        if (Object.keys(hidden).length) CAP_FIELDS.forEach((f) => { if (hidden[f]) c.setValue(f, '') })
         capabilities.push({
             id: c.getUniqueValue(), number: str(c, 'number'), name: str(c, 'name'), family: str(c, 'product_family'), source: str(c, 'source'),
             licensed: bool(c, 'licensed'), installed: bool(c, 'installed'), entitled: num(c, 'entitled_count'), allocated: num(c, 'allocated_count'),
@@ -117,6 +137,9 @@ function buildSnapshot() {
             active: bool(c, 'active'), not_found: bool(c, 'not_found'), last_discovered: ms(str(c, 'last_discovered')), stale: false, staleNote: '',
         })
     }
+
+    // PIV-071.06: empty, null and false values are left out to keep the answer small; the client fills the defaults back in.
+    capabilities.forEach((o) => Object.keys(o).forEach((k) => { if (o[k] === '' || o[k] === null || o[k] === false) delete o[k] }))
 
     // Assessments (newest 52, returned oldest → newest like the design)
     const assessments: any[] = []
@@ -252,8 +275,12 @@ function buildSnapshot() {
 
 export function bootstrap(request: any, response: any) {
     try {
+        // PIV-071.06: JSON.stringify and the stream writer are much faster than setBody for a large answer
+        // (setBody serialises about 1 MB in 1–2 s). Same shape as before: { result: snapshot }.
+        const text = '{"result":' + JSON.stringify(buildSnapshot()) + '}'
         response.setStatus(200)
-        response.setBody(buildSnapshot() as any)
+        response.setContentType('application/json')
+        response.getStreamWriter().writeString(text)
     } catch (ex) {
         gs.error('PIVOT workspace could not load its data: ' + ex)
         response.setStatus(500)

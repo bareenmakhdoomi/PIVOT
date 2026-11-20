@@ -68,7 +68,9 @@ export function createPV(first, api) {
       S.props[SCOPE + '.' + k] = t === 'boolean' ? v === 'true' || v === true : t === 'string' ? String(v) : Number(v);
     });
     D.properties = PROP_META.map(([n, label, unit, help]) => ({ name: SCOPE + '.' + n, label, unit, help, value: PROP_TYPES[n] === 'boolean' ? true : PROP_TYPES[n] === 'string' ? '' : 0 }));
-    S.caps = snap.capabilities || [];
+    // PIV-071.06: the server leaves out empty / null / false capability values; put the defaults back
+    const CAP_DEFAULTS = { number: '', name: '', family: '', source: '', licensed: false, installed: false, entitled: null, allocated: null, scope: '', linked_app: '', measure_table: '', measure_filter: '', date_field: '', days_back: 30, target: null, weight: 1, active: false, not_found: false, last_discovered: null, stale: false, staleNote: '' };
+    S.caps = (snap.capabilities || []).map(c => Object.assign({}, CAP_DEFAULTS, c));
     S.assessments = (snap.assessments || []).slice().sort((a, b) => (a.run_date || 0) - (b.run_date || 0));
     S.logs = snap.logs || {};
     S.results = snap.results || {};
