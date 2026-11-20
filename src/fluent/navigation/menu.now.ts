@@ -48,7 +48,7 @@ Record({
 Record({
     $id: Now.ID['pivot-module-needs-mapping'],
     table: 'sys_app_module',
-    data: { title: 'Needs mapping', application: pivotMenu, link_type: 'FILTER', name: 'x_enno_pivot_capability', filter: 'active=true^product_familyISEMPTY^ORDERBYname', roles: ['x_enno_pivot.admin'], active: true, order: 220 },
+    data: { title: 'Needs mapping', application: pivotMenu, link_type: 'FILTER', name: 'x_enno_pivot_capability', filter: 'active=true^not_found!=true^product_familyISEMPTY^ORDERBYname', roles: ['x_enno_pivot.admin'], active: true, order: 220 },
 })
 // PIV-012.09 / PIV-013.04 – capability lists by source and not found (admin fallback views)
 Record({

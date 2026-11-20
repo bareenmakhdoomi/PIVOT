@@ -2,7 +2,7 @@
 // POST /action performs one user action. All PIVOT table access uses GlideRecordSecure, so the
 // table and field ACLs of the user decide what is read and written. Validation runs here (field
 // messages for the UI) and again in the table business rules.
-import { gs, GlideRecord, GlideRecordSecure, GlideDateTime } from '@servicenow/glide'
+import { gs, GlideRecord, GlideRecordSecure, GlideAggregate, GlideDateTime } from '@servicenow/glide'
 import {
     SCOPE, FAMILIES, PROPERTIES, Errors, initialsOf, priorityOf, priorityReason, validateScores, validateRejection, OPP_ACTIVE,
     validateCapability, validateOutcome, validateProperty,
@@ -147,19 +147,35 @@ function buildSnapshot() {
     const wanted = assessments.filter((x) => x.status === 'complete').slice(-HISTORY_RUNS).concat(assessments.filter((x) => x.status === 'running'))
     const results: { [num: string]: any } = {}
     const outcomeResults: { [num: string]: any } = {}
+    const resultCount: { [num: string]: number } = {}
     wanted.forEach((x) => {
         results[x.number] = {}
         outcomeResults[x.number] = {}
     })
     if (wanted.length) {
         const ids = wanted.map((x) => x.id).join(',')
+        // PIV-071.06: only results with a score, utilization or target are sent. Not Measured results carry
+        // no values, so the client treats a missing result as Not Measured; the run totals come from resultCount.
         const r = new GlideRecordSecure(T.result)
         r.addQuery('assessment', 'IN', ids)
+        r.addEncodedQuery('scoreISNOTEMPTY^ORutilizationISNOTEMPTY^ORtarget_valueISNOTEMPTY')
         r.query()
         while (r.next()) {
             const n = numberOf[str(r, 'assessment')]
             if (n) results[n][str(r, 'capability')] = { score: num(r, 'score'), actual: num(r, 'actual_value'), utilization: num(r, 'utilization'), target: num(r, 'target_value') }
         }
+        const ra = new GlideAggregate(T.result)
+        ra.addQuery('assessment', 'IN', ids)
+        ;(ra as any).addAggregate('COUNT')
+        ra.groupBy('assessment')
+        ra.query()
+        while (ra.next()) {
+            const n = numberOf[String(ra.getValue('assessment'))]
+            if (n) resultCount[n] = Number((ra as any).getAggregate('COUNT'))
+        }
+        assessments.forEach((x) => {
+            if (resultCount[x.number] != null) x.resultCount = resultCount[x.number]
+        })
         const o = new GlideRecordSecure(T.outcomeResult)
         o.addQuery('assessment', 'IN', ids)
         o.query()

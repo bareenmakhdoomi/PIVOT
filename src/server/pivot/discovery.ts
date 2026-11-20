@@ -278,6 +278,7 @@ export function runDiscovery(runStartedAt?: string): DiscoverySummary {
 
     const nm = new GlideRecord(CAP)
     nm.addQuery('active', true)
+    nm.addQuery('not_found', '!=', true) // PIV-014.06: only capabilities found on the instance need a family
     nm.addNullQuery('product_family')
     nm.query()
     while (nm.next()) s.needsMapping++

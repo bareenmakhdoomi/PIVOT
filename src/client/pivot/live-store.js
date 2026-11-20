@@ -207,7 +207,7 @@ export function createPV(first, api) {
           case 'active': return c.active;
           case 'licensed_not_installed': return c.licensed && !c.installed;
           case 'not_measured': return c.active && c.score == null && c.installed;
-          case 'needs_mapping': return !c.family;
+          case 'needs_mapping': return c.active && !c.not_found && !c.family; // PIV-014.06
           case 'not_found': return c.not_found;
           case 'low': return c.score != null && c.score < P('low_score_threshold');
           case 'idle': return c.utilization != null && c.utilization < P('utilization_threshold');
@@ -255,7 +255,8 @@ export function createPV(first, api) {
       const res = S.results[num];
       if (res) {
         const vals = Object.keys(res).map(k => res[k]);
-        x.counts = { capabilities: vals.length, scored: vals.filter(r => r.score != null).length, notMeasured: vals.filter(r => r.score == null).length, low: vals.filter(r => r.score != null && r.score < P('low_score_threshold')).length };
+        const total = a.resultCount != null ? a.resultCount : vals.length, scored = vals.filter(r => r.score != null).length; // PIV-071.06: Not Measured results are not sent
+        x.counts = { capabilities: total, scored: scored, notMeasured: total - scored, low: vals.filter(r => r.score != null && r.score < P('low_score_threshold')).length };
         x.opportunities = S.opps.filter(o => o.assessment === num).length;
       }
       const comp = completedRuns(), i = comp.findIndex(c => c.number === num); x.previousScore = i > 0 ? comp[i - 1].overall_score : null;
@@ -392,7 +393,7 @@ export function createPV(first, api) {
         kpiTrend: outs.filter(o => o.status !== 'not_measured'),
         topOpportunities: store.opportunities().slice(0, 10), roadmap: rm,
         notMeasured: { capabilities: caps.filter(c => c.score == null && c.installed && c.licensed), outcomes: outs.filter(o => o.status === 'not_measured') },
-        insights: store.insights(), running: store.running(), needsMapping: S.caps.filter(c => !c.family).length
+        insights: store.insights(), running: store.running(), needsMapping: S.caps.filter(c => c.active && !c.not_found && !c.family).length
       };
     },
     insights() {

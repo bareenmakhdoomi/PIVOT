@@ -630,6 +630,13 @@ function assessmentsView() {
 /* =====================================================================
    REPORTS (B12)
    ===================================================================== */
+// PIV-041 / PIV-071.06: the Capability estate thumbnail shows at most max squares, sampled evenly after sorting
+// by band so the colour mix stays true. Drawing one animated square per capability froze the page at 2,592 capabilities.
+function gridSample(list, max) {
+  const sorted = list.slice().sort((x, y) => BAND_ORDER.indexOf(bandOf(x)) - BAND_ORDER.indexOf(bandOf(y)));
+  if (sorted.length <= max) return sorted;
+  const out = []; for (let i = 0; i < max; i++) out.push(sorted[Math.floor(i * sorted.length / max)]); return out;
+}
 function reportsView() {
   const d = S.dashboard(), a = d.assessment, fam = st.reports.family;
   const caps = S.capabilities({ view: 'active' }).filter(c => fam === 'all' || c.family === fam);
@@ -662,7 +669,7 @@ function reportsView() {
   const queue = [].concat(S.capabilities({ view: 'active' }).filter(c => c.stale).map(c => [c.name + ' source data is stale', famLabel(c.family) + ' · ' + c.staleNote, 'Critical', `data-cap-open="${c.id}"`]), S.assessments().filter(r => r.status === 'failed').map(r => [r.number + ' failed', 'Run failed email sent · ' + F.date(r.run_date), 'Warning', `data-asm="${esc(r.number)}"`]), d.needsMapping ? [[d.needsMapping + ' capabilities need a product family', 'Admin · Needs mapping', 'Warning', 'data-action="needsMapping"']] : [], d.outcomes.filter(o => o.status === 'below_target').map(o => [o.kpi + ' below target', o.capabilityName + ' · owner ' + o.ownerName, 'Warning', `data-out="${o.id}"`]));
   const reports = [
     ['▥', 'Executive value summary', 'Platform Value Score, licences installed, outcomes and roadmap counts for ' + a.number + '.', 'Sponsor', 'Executive value summary', `${miniAreaTrend(completedRuns().slice(-12).map(r => r.overall_score))}`, 'Score trend · last 12 runs'],
-    ['▦', 'Capability estate', 'Every capability with licence, installation, utilization, score and band.', 'Admin', 'Capability estate', `<div class="mini-grid">${gridCaps.map((c,i) => `<i style="--chart-index:${i};background:${BAND_SOLID[bandOf(c)]}"></i>`).join('')}</div>`, gridCaps.length + ' capabilities'],
+    ['▦', 'Capability estate', 'Every capability with licence, installation, utilization, score and band.', 'Admin', 'Capability estate', `<div class="mini-grid">${gridSample(gridCaps, 120).map((c,i) => `<i style="--chart-index:${i};background:${BAND_SOLID[bandOf(c)]}"></i>`).join('')}</div>`, gridCaps.length + ' capabilities'],
     ['◎', 'Business outcomes', 'Baseline, current, target, improvement and status per KPI.', 'Business owner', 'Business outcomes', `<div class="mini-donut"><div class="donut" style="background:${conic([[BAND_SOLID.strong, ob.improved + ob.on_target], ['#ef9aa6', ob.below_target], ['#e3e6ee', ob.not_measured]])} !important"><div class="donutcenter"><b>${ob.improved + ob.on_target}</b><span>on track</span></div></div></div>`, (ob.improved + ob.on_target) + ' of ' + outs],
     ['△', 'Opportunities', 'All opportunities with scores, priority reason, state and owner.', 'Analyst', 'Opportunities', miniLollipop(allOpps.slice(0, 7).map(o => o.priority)), 'Priority ranking · top 7'],
     ['↻', 'Assessment runs', 'Run history with trigger, duration, score and status.', 'Admin', 'Assessment runs', miniLineTrend(S.assessments().slice(0, 8).reverse().map(r => r.duration ? r.duration / 60000 : null)), 'Duration trend · minutes per run'],
@@ -799,34 +806,36 @@ function animateChart(chart, replay) {
   if (!chart) return;
   chart.classList.remove('chart-enter','chart-hover');
   chart.classList.add(replay ? 'chart-hover' : 'chart-enter');
-  const delay = i => (replay ? 25 : 55) * i;
-  chart.querySelectorAll('.mini-priority-svg .priority-column rect,.mini-bars i,.bars .barstack').forEach((el,i) => {
+  // PIV-071.06: animate at most 80 items per chart and cap the stagger, so large charts cannot lock the page
+  const delay = i => Math.min((replay ? 25 : 55) * i, 1200);
+  const lim = sel => Array.prototype.slice.call(chart.querySelectorAll(sel), 0, 80);
+  lim('.mini-priority-svg .priority-column rect,.mini-bars i,.bars .barstack').forEach((el,i) => {
     animateOne(el,[{transform:'scaleY(.04)',opacity:.25},{transform:'scaleY(1)',opacity:1}],{duration:replay?520:760,delay:delay(i),easing:'cubic-bezier(.2,.75,.2,1)',fill:'both'});
     el.style.transformOrigin = 'center bottom';
   });
-  chart.querySelectorAll('.mini-grid i,.heatgrid button').forEach((el,i) => animateOne(el,[{transform:'scale(.12)',opacity:.2},{transform:'scale(1)',opacity:1}],{duration:replay?300:420,delay:delay(i),easing:'cubic-bezier(.2,.8,.2,1)',fill:'both'}));
-  chart.querySelectorAll('.mini-donut .donut,.donut:not(.donutcenter)').forEach(el => animateOne(el,[{transform:'rotate(-65deg) scale(.78)',opacity:.25},{transform:'rotate(0) scale(1)',opacity:1}],{duration:replay?520:850,easing:'cubic-bezier(.2,.7,.2,1)',fill:'both'}));
-  chart.querySelectorAll('.mini-area-svg .draw-line,.mini-line-svg path, .linechart polyline, .linechart path').forEach(el => {
+  lim('.mini-grid i,.heatgrid button').forEach((el,i) => animateOne(el,[{transform:'scale(.12)',opacity:.2},{transform:'scale(1)',opacity:1}],{duration:replay?300:420,delay:delay(i),easing:'cubic-bezier(.2,.8,.2,1)',fill:'both'}));
+  lim('.mini-donut .donut,.donut:not(.donutcenter)').forEach(el => animateOne(el,[{transform:'rotate(-65deg) scale(.78)',opacity:.25},{transform:'rotate(0) scale(1)',opacity:1}],{duration:replay?520:850,easing:'cubic-bezier(.2,.7,.2,1)',fill:'both'}));
+  lim('.mini-area-svg .draw-line,.mini-line-svg path, .linechart polyline, .linechart path').forEach(el => {
     if (el.tagName.toLowerCase()==='path' && (el.getAttribute('fill')||'none')!=='none' && !el.classList.contains('draw-line')) return;
     let len=220; try { if (el.getTotalLength) len=Math.max(1,el.getTotalLength()); } catch (_) {}
     el.style.strokeDasharray=String(len); el.style.strokeDashoffset=String(len);
     animateOne(el,[{strokeDashoffset:len},{strokeDashoffset:0}],{duration:replay?650:1050,easing:'ease-out',fill:'both'});
   });
-  chart.querySelectorAll('.mini-area-svg .area-fill').forEach(el=>animateOne(el,[{opacity:0,transform:'translateY(7px)'},{opacity:1,transform:'translateY(0)'}],{duration:replay?400:650,delay:120,easing:'ease-out',fill:'both'}));
-  chart.querySelectorAll('.mini-line-svg circle,.mini-area-svg circle,.linechart circle,.chart-point').forEach((el,i)=>animateOne(el,[{opacity:0,transform:'scale(.25)'},{opacity:1,transform:'scale(1)'}],{duration:300,delay:(replay?100:360)+delay(i),easing:'cubic-bezier(.2,.8,.2,1)',fill:'both'}));
-  chart.querySelectorAll('.lollipop-track>i,.duration-track>i,.prs-track>i,.progressline i').forEach((el,i)=>{
+  lim('.mini-area-svg .area-fill').forEach(el=>animateOne(el,[{opacity:0,transform:'translateY(7px)'},{opacity:1,transform:'translateY(0)'}],{duration:replay?400:650,delay:120,easing:'ease-out',fill:'both'}));
+  lim('.mini-line-svg circle,.mini-area-svg circle,.linechart circle,.chart-point').forEach((el,i)=>animateOne(el,[{opacity:0,transform:'scale(.25)'},{opacity:1,transform:'scale(1)'}],{duration:300,delay:(replay?100:360)+delay(i),easing:'cubic-bezier(.2,.8,.2,1)',fill:'both'}));
+  lim('.lollipop-track>i,.duration-track>i,.prs-track>i,.progressline i').forEach((el,i)=>{
     const target=el.style.width || getComputedStyle(el).width;
     animateOne(el,[{width:'0%'},{width:target}],{duration:replay?450:700,delay:delay(i),easing:'cubic-bezier(.2,.8,.2,1)',fill:'both'});
   });
-  chart.querySelectorAll('.mini-stack span,.bubble').forEach((el,i)=>animateOne(el,[{opacity:0,transform:'translateY(10px) scale(.92)'},{opacity:1,transform:'translateY(0) scale(1)'}],{duration:replay?300:440,delay:delay(i),easing:'ease-out',fill:'both'}));
-  chart.querySelectorAll('.prs-gauge path:nth-of-type(2)').forEach(el=>{
+  lim('.mini-stack span,.bubble').forEach((el,i)=>animateOne(el,[{opacity:0,transform:'translateY(10px) scale(.92)'},{opacity:1,transform:'translateY(0) scale(1)'}],{duration:replay?300:440,delay:delay(i),easing:'ease-out',fill:'both'}));
+  lim('.prs-gauge path:nth-of-type(2)').forEach(el=>{
     const target=el.getAttribute('stroke-dasharray')||'70 100';
     animateOne(el,[{strokeDasharray:'0 100'},{strokeDasharray:target}],{duration:900,easing:'ease-out',fill:'both'});
   });
 }
 function initChartMotion() {
   document.querySelectorAll(PIVOT_CHART_SELECTOR).forEach((chart,i)=>{
-    chart.querySelectorAll('.mini-bars i,.mini-grid i,.bars i,.heatgrid button').forEach((el,j)=>el.style.setProperty('--chart-index',j));
+    Array.prototype.slice.call(chart.querySelectorAll('.mini-bars i,.mini-grid i,.bars i,.heatgrid button'), 0, 80).forEach((el,j)=>el.style.setProperty('--chart-index',j));
     requestAnimationFrame(()=>setTimeout(()=>animateChart(chart,false),Math.min(i*35,350)));
   });
 }

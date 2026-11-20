@@ -1,0 +1,20 @@
+{
+  "name": "pivot-ui-tests",
+  "private": true,
+  "description": "PIV-071 browser tests for the PIVOT workspace (Playwright + axe). Runs against a ServiceNow instance; credentials come from environment variables only.",
+  "scripts": {
+    "test": "playwright test",
+    "test:smoke": "playwright test --grep @smoke",
+    "test:a11y": "playwright test tests/a11y.spec.ts",
+    "test:responsive": "playwright test tests/responsive.spec.ts",
+    "report": "playwright show-report"
+  },
+  "devDependencies": {
+    "@axe-core/playwright": "4.10.1",
+    "@playwright/test": "1.49.1",
+    "@types/node": "20.17.10"
+  },
+  "overrides": {
+    "playwright-core": "1.49.1"
+  }
+}
