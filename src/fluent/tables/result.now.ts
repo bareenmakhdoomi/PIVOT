@@ -18,7 +18,7 @@ export const x_enno_pivot_result = Table({
             label: 'Measurement status', default: 'not_measured',
             choices: { measured: { label: 'Measured', sequence: 10 }, not_measured: { label: 'Not Measured', sequence: 20 }, not_installed: { label: 'Licensed, not installed', sequence: 30 } },
         }),
-        reason: StringColumn({ label: 'Reason', maxLength: 255, readOnly: true }),
+        reason: StringColumn({ label: 'Reason', maxLength: 255}),
         measure_table: StringColumn({ label: 'Measure table', maxLength: 80 }),
         filter_used: StringColumn({ label: 'Filter used', maxLength: 1000 }),
         days_back: IntegerColumn({ label: 'Days back' }),
