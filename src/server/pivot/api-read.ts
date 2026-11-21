@@ -444,6 +444,7 @@ export function notifications() {
     while (below.next()) items.push({ kind: 'outcome', title: 'Below target · ' + str(below, 'kpi'), text: 'Current ' + (num(below, 'current_value') === null ? '—' : num(below, 'current_value')) + ', target ' + (num(below, 'target') === null ? '—' : num(below, 'target')) })
     if (isRole('admin')) {
         const nm = new GlideAggregate(T.capability)
+        nm.addQuery('active', '=', true)
         nm.addNullQuery('product_family')
         ;(nm as any).addAggregate('COUNT')
         nm.query()

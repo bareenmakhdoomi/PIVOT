@@ -1,6 +1,6 @@
 // Run in Scripts - Background in the PIVOT application scope on a disposable development/test instance only.
 // runDiscovery refreshes existing discovery Capabilities as well as exercising the temporary fixture.
-// The script reads sys_store_app, sys_plugins, ua_app_family, and v_plugin; its only fixture write is a temporary
+// The script reads sys_store_app, ua_app_family, and v_plugin; its only fixture write is a temporary
 // Capability record in the PIVOT scope, removed at the end.
 (function () {
     var CAP = 'x_enno_pivot_capability';
@@ -41,12 +41,28 @@
     }
 
     function expectedPluginCount() {
-        var plugins = new GlideRecord('sys_plugins');
+        var familyTable = new GlideRecord('ua_app_family');
+        var familyAvailable = familyTable.isValid();
+        var feeById = {};
+        if (familyAvailable) {
+            familyTable.addQuery('for_fee', true);
+            familyTable.addQuery('cust_visible', true);
+            familyTable.query();
+            while (familyTable.next()) {
+                var appId = String(familyTable.getValue('app_id') || '');
+                if (appId && !feeById[appId]) feeById[appId] = true;
+            }
+        }
+
+        var plugins = new GlideRecord('v_plugin');
         if (!plugins.isValid()) return { valid: false, count: 0 };
-        plugins.addQuery('active', true);
+        plugins.addQuery('active', 'active');
         plugins.query();
         var count = 0;
-        while (plugins.next()) count++;
+        while (plugins.next()) {
+            var id = String(plugins.getValue('id') || '');
+            if (id && (!familyAvailable || Object.prototype.hasOwnProperty.call(feeById, id))) count++;
+        }
         return { valid: true, count: count };
     }
 
@@ -92,7 +108,7 @@
             inactiveApp ? inactiveApp.name : 'no inactive app without an existing Capability was found');
 
         var pluginExpected = expectedPluginCount();
-        report('plugin source table available', pluginExpected.valid, 'sys_plugins');
+        report('plugin source table available', pluginExpected.valid, 'v_plugin');
 
         if (activeApp && inactiveApp && pluginExpected.valid) {
             var fixture = new GlideRecord(CAP);

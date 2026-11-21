@@ -64,14 +64,6 @@ CrossScopePrivilege({
     targetScope: 'global',
     targetType: 'sys_db_object',
 })
-CrossScopePrivilege({
-    $id: Now.ID['pivot-xscope-read-sys_plugins'],
-    operation: 'read',
-    status: 'allowed',
-    targetName: 'sys_plugins',
-    targetScope: 'global',
-    targetType: 'sys_db_object',
-})
 
 // PIV-018 … PIV-025 – full assessment on demand (steps 1–6). The weekly job and Run Now arrive in Sprint 4.
 export const assessmentOnDemand = ScheduledScript({

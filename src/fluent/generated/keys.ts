@@ -1083,10 +1083,6 @@ declare global {
                         table: 'sys_scope_privilege'
                         id: '623b552a2fcc1310d2a0d68fcea4e3e3'
                     }
-                    'pivot-xscope-read-sys_plugins': {
-                        table: 'sys_scope_privilege'
-                        id: 'c5244385898c4e7391c2575fdb7c34aa'
-                    }
                     'pivot-xscope-read-sys_store_app': {
                         table: 'sys_scope_privilege'
                         id: '61aa6f0e2f885750d2a0d68fcea4e3f3'
@@ -1913,14 +1909,6 @@ declare global {
                             }
                             element: 'outcome'
                             position: '5'
-                        }
-                    },
-                    {
-                        table: 'sys_ui_policy'
-                        id: '0c9e073981d34adbbdaca98cee305268'
-                        key: {
-                            table: 'x_enno_pivot_result'
-                            short_description: 'PIVOT – Result reason is read-only'
                         }
                     },
                     {
@@ -12622,20 +12610,6 @@ declare global {
                             }
                             element: '.begin_split'
                             position: '0'
-                        }
-                    },
-                    {
-                        table: 'sys_ui_policy_action'
-                        id: 'c6dce99565a6492bb9140c0a4fd49e5e'
-                        key: {
-                            ui_policy: {
-                                id: '0c9e073981d34adbbdaca98cee305268'
-                                key: {
-                                    table: 'x_enno_pivot_result'
-                                    short_description: 'PIVOT – Result reason is read-only'
-                                }
-                            }
-                            field: 'reason'
                         }
                     },
                     {

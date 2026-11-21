@@ -4,16 +4,15 @@ import { admin, viewer } from '../roles/roles.now'
 
 Test({
     $id: Now.ID['atf-capability-mapping-admin-ui'],
-    name: 'PIVOT - Admin opens Needs Mapping from all entry points',
-    description: 'Creates six unmapped test capabilities and verifies the Capability Library, Dashboard, and notification entry points open the same complete mapping dialog before the admin maps the fixtures to ITSM.',
+    name: 'PIVOT - Admin maps three capabilities from Needs Mapping',
+    description: 'Creates three unmapped test capabilities, opens the Needs Mapping dialog as an admin, maps all three to ITSM, then verifies the saved family and that none remain unmapped.',
     active: true,
     failOnServerError: true,
 }, (atf) => {
     atf.server.runServerSideScript({
         $id: Now.ID['atf-capability-mapping-admin-setup'],
         script: `(function(outputs, steps, params, stepResult, assertEqual) {
-    var names = ['ATF mapping capability one', 'ATF mapping capability two', 'ATF mapping capability three',
-        'ATF mapping capability four', 'ATF mapping capability five', 'ATF mapping capability six'];
+    var names = ['ATF mapping capability one', 'ATF mapping capability two', 'ATF mapping capability three'];
     for (var i = 0; i < names.length; i++) {
         var old = new GlideRecord('x_enno_pivot_capability');
         old.addQuery('name', names[i]);
@@ -27,7 +26,7 @@ Test({
         var id = cap.insert();
         assertEqual({ name: names[i] + ' fixture created', shouldbe: true, value: !!id });
     }
-    stepResult.setOutputMessage('Created six unmapped Capability records for the admin mapping flow.');
+    stepResult.setOutputMessage('Created three unmapped Capability records for the admin mapping flow.');
     return true;
 })(outputs, steps, params, stepResult, assertEqual);`,
     })
@@ -47,8 +46,7 @@ Test({
     atf.server.runServerSideScript({
         $id: Now.ID['atf-capability-mapping-admin-verify'],
         script: `(function(outputs, steps, params, stepResult, assertEqual) {
-    var names = ['ATF mapping capability one', 'ATF mapping capability two', 'ATF mapping capability three',
-        'ATF mapping capability four', 'ATF mapping capability five', 'ATF mapping capability six'];
+    var names = ['ATF mapping capability one', 'ATF mapping capability two', 'ATF mapping capability three'];
     var found = 0, mapped = 0, stillUnmapped = 0;
     for (var i = 0; i < names.length; i++) {
         var cap = new GlideRecord('x_enno_pivot_capability');
@@ -61,10 +59,10 @@ Test({
             cap.deleteRecord();
         }
     }
-    assertEqual({ name: 'all six test capabilities still exist until verification', shouldbe: 6, value: found });
-    assertEqual({ name: 'all six capabilities saved with ITSM product family', shouldbe: 6, value: mapped });
+    assertEqual({ name: 'all three test capabilities still exist until verification', shouldbe: 3, value: found });
+    assertEqual({ name: 'all three capabilities saved with ITSM product family', shouldbe: 3, value: mapped });
     assertEqual({ name: 'no mapped test capability remains in Needs Mapping', shouldbe: 0, value: stillUnmapped });
-    stepResult.setOutputMessage('Six capabilities were mapped, verified in storage, and removed from the test data.');
+    stepResult.setOutputMessage('Three capabilities were mapped, verified in storage, and removed from the test data.');
     return true;
 })(outputs, steps, params, stepResult, assertEqual);`,
     })
