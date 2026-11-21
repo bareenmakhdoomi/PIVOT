@@ -1,6 +1,6 @@
 // PIV-011 … PIV-014 – PIVOT discovery (design B5/B6).
-// Finds every licensed subscription, active Store/custom app and active for-fee plugin and keeps exactly one
-// Capability per item (matched on source + source ID, so re-runs never create duplicates).
+// Finds every licensed subscription, active Store/custom app and activated plugin and keeps exactly one
+// Capability per source and name, preferring source ID when matching discovered items.
 // Discovery only writes discovery-owned fields; admin fields (product family once set, measurement settings,
 // target, weight, linked app) are never overwritten. Items no longer found get not_found = true – never deleted.
 // Source tables are only read (cross-scope Read privileges); PIVOT writes only to its own tables.
@@ -47,9 +47,10 @@ const CAP = SCOPE + '_capability'
 const SOURCES = {
     overview: 'sn_sub_man_st_subscription_overview', // licensed subscriptions (purchased / allocated)
     licenseDetails: 'license_details', // fallback when the overview is empty
-    family: 'ua_app_family', // product family + for-fee flag per app / plugin
+    family: 'ua_app_family', // product-family mapping per app / plugin
     apps: 'sys_store_app',
-    plugins: 'v_plugin',
+    plugins: 'sys_plugins',
+    pluginDetails: 'v_plugin',
 }
 const STEP = 2 // discovery is step 2 of an assessment run (B9)
 
@@ -63,6 +64,60 @@ const toInt = (v: string): number => {
 }
 const tableExists = (t: string) => new GlideRecord(t).isValid()
 
+export function _pluginName(name: string, id: string): string {
+    return name || id
+}
+
+function findOrInitializeCapability(name: string, source: string, sourceId: string, defaultDaysBack: number) {
+    const gr = new GlideRecord(CAP)
+    let found = false
+    if (sourceId) {
+        // Source and source ID define identity; inactive records remain reusable.
+        gr.addQuery('source', source)
+        gr.addQuery('source_id', sourceId)
+        gr.setLimit(1)
+        gr.query()
+        found = gr.next()
+    }
+    // Plugin names are not unique; a known plugin ID must never fall back to another plugin by name.
+    if (!found && !(source === 'plugin' && sourceId)) {
+        const byName = new GlideRecord(CAP)
+        byName.addQuery('source', source)
+        byName.addQuery('name', name.slice(0, 100))
+        byName.setLimit(1)
+        byName.query()
+        if (byName.next()) found = gr.get(byName.getUniqueValue())
+    }
+    if (!found) {
+        gr.initialize()
+        gr.setValue('source', source)
+        gr.setValue('active', true)
+        gr.setValue('weight', 1)
+        gr.setValue('days_back', defaultDaysBack)
+        gr.setValue('date_field', 'sys_created_on')
+    }
+    gr.setValue('name', name.slice(0, 100))
+    if (sourceId) gr.setValue('source_id', sourceId.slice(0, 255))
+    return { record: gr, found }
+}
+
+/** Find or create a Capability by its name and source. `License` is the UI label for `subscription`. */
+export function _getOrCreate(name: string, source: string) {
+    if (!name || !name.trim()) throw new Error('Capability name is required.')
+    const sourceValue = source === 'License' ? 'subscription' : source
+    if (['subscription', 'store_app', 'plugin', 'manual'].indexOf(sourceValue) < 0) {
+        throw new Error('Unsupported Capability source: ' + source)
+    }
+    const defaultDaysBack = toInt(gs.getProperty(SCOPE + '.default_days_back', PROPERTIES.default_days_back.def)) || 30
+    const result = findOrInitializeCapability(name, sourceValue, '', defaultDaysBack)
+    if (result.found) return result.record
+    const id = result.record.insert()
+    if (!id) throw new Error('Could not create Capability "' + name + '" for source "' + sourceValue + '".')
+    const created = new GlideRecord(CAP)
+    if (!created.get(id)) throw new Error('Created Capability "' + name + '" could not be loaded.')
+    return created
+}
+
 export function _fromLicenses(runStartedAt?: string): DiscoverySummary {
     return runDiscovery(runStartedAt, true)
 }
@@ -71,7 +126,11 @@ export function _fromApps(runStartedAt?: string): DiscoverySummary {
     return runDiscovery(runStartedAt, false, true)
 }
 
-export function runDiscovery(runStartedAt?: string, licensesOnly = false, appsOnly = false): DiscoverySummary {
+export function _fromPlugins(runStartedAt?: string): DiscoverySummary {
+    return runDiscovery(runStartedAt, false, false, true)
+}
+
+export function runDiscovery(runStartedAt?: string, licensesOnly = false, appsOnly = false, pluginsOnly = false): DiscoverySummary {
     const startValue = runStartedAt || new GlideDateTime().getValue()
     const log: LogEntry[] = []
     const add = (level: LogEntry['level'], message: string) => log.push({ ts: new GlideDateTime().getNumericValue(), level, step: STEP, message })
@@ -80,36 +139,10 @@ export function runDiscovery(runStartedAt?: string, licensesOnly = false, appsOn
     const seeded: string[] = []
     const defaultDaysBack = toInt(gs.getProperty(SCOPE + '.default_days_back', PROPERTIES.default_days_back.def)) || 30
 
-    /** Find the capability for source + key (falls back to source + name for records made before source IDs existed). */
-    function _getOrCreate(source: string, key: string, name: string, data: { [f: string]: any }, family: string, counts: Counts) {
-        const gr = new GlideRecord(CAP)
-        gr.addQuery('source', source)
-        gr.addQuery('source_id', key)
-        gr.setLimit(1)
-        gr.query()
-        let found = gr.next()
-        if (!found) {
-            gr.initialize()
-            const byName = new GlideRecord(CAP)
-            byName.addQuery('source', source)
-            byName.addQuery('name', name)
-            byName.addNullQuery('source_id')
-            byName.setLimit(1)
-            byName.query()
-            if (byName.next()) {
-                found = gr.get(byName.getUniqueValue())
-            }
-        }
-        if (!found) {
-            gr.initialize()
-            gr.setValue('source', source)
-            gr.setValue('active', true)
-            gr.setValue('weight', 1)
-            gr.setValue('days_back', defaultDaysBack)
-            gr.setValue('date_field', 'sys_created_on')
-        }
-        gr.setValue('name', name.slice(0, 100))
-        gr.setValue('source_id', key.slice(0, 255))
+    /** Reuse the same source + name record when an item's source ID has changed. */
+    function upsertDiscoveredCapability(source: string, key: string, name: string, data: { [f: string]: any }, family: string, counts: Counts) {
+        const match = findOrInitializeCapability(name, source, key, defaultDaysBack)
+        const gr = match.record
         Object.keys(data).forEach((f) => gr.setValue(f, data[f]))
         if (family && !str(gr, 'product_family')) gr.setValue('product_family', family) // only fills an empty family
         // PIV-015 – starter measurement settings, applied once and only when nothing is set yet
@@ -142,21 +175,39 @@ export function runDiscovery(runStartedAt?: string, licensesOnly = false, appsOn
         }
         gr.setValue('last_discovered', startValue)
         gr.setValue('not_found', false)
-        if (found) {
-            if (gr.update()) counts.updated++
-            else counts.skipped++
-        } else if (gr.insert()) counts.created++
-        else counts.skipped++
+        const sourceId = key.slice(0, 255)
+        gr.setValue('source', source)
+        gr.setValue('source_id', sourceId)
+        gr.setValue('name', name.slice(0, 100))
+        const savedId = match.found ? gr.update() : gr.insert()
+        if (!savedId) {
+            counts.skipped++
+            add('error', 'Capability "' + name + '" was not saved: GlideRecord returned no sys_id.')
+            return
+        }
+        const saved = new GlideRecord(CAP)
+        if (!saved.get(String(savedId))) {
+            counts.skipped++
+            add('error', 'Capability "' + name + '" was not saved: the saved record could not be reloaded.')
+            return
+        }
+        if (str(saved, 'source') !== source || str(saved, 'source_id') !== sourceId) {
+            counts.skipped++
+            add('error', 'Capability "' + name + '" did not persist its source identity (expected source="' +
+                source + '", source_id="' + sourceId + '"; actual source="' + str(saved, 'source') +
+                '", source_id="' + str(saved, 'source_id') + '").')
+            return
+        }
+        if (match.found) counts.updated++
+        else counts.created++
     }
 
     // ---- product family + for-fee filter (ua_app_family) -------------------------------------------
     const feeByScope: { [k: string]: string } = {}
     const feeById: { [k: string]: string } = {}
-    let familyAvailable = false
     if (!licensesOnly) {
         try {
             if (tableExists(SOURCES.family)) {
-                familyAvailable = true
                 const f = new GlideRecord(SOURCES.family)
                 f.addQuery('for_fee', true)
                 f.addQuery('cust_visible', true)
@@ -171,10 +222,8 @@ export function runDiscovery(runStartedAt?: string, licensesOnly = false, appsOn
             add('error', 'Could not read ua_app_family: ' + ex)
         }
     }
-    const isFee = (map: { [k: string]: string }, key: string) => !familyAvailable || Object.prototype.hasOwnProperty.call(map, key)
-
     // ---- licensed subscriptions (PIV-011) ----------------------------------------------------------
-    if (!appsOnly) {
+    if (!appsOnly && !pluginsOnly) {
         try {
             let rows = 0
             if (tableExists(SOURCES.overview)) {
@@ -186,7 +235,7 @@ export function runDiscovery(runStartedAt?: string, licensesOnly = false, appsOn
                     processLicenseRecord(sysId, () => o.getDisplayValue('subscription') || '', s.licences, add, (name) => {
                         const key = str(o, 'subscription') || sysId
                         if (str(o, 'allocated_count') === '') add('info', 'Subscription "' + name + '" has no allocated count: stored as 0.')
-                        _getOrCreate('subscription', key, name, { licensed: true, entitled_count: toInt(str(o, 'purchased_count')), allocated_count: toInt(str(o, 'allocated_count')) }, '', s.licences)
+                        upsertDiscoveredCapability('subscription', key, name, { licensed: true, entitled_count: toInt(str(o, 'purchased_count')), allocated_count: toInt(str(o, 'allocated_count')) }, '', s.licences)
                     })
                 }
             }
@@ -197,7 +246,7 @@ export function runDiscovery(runStartedAt?: string, licensesOnly = false, appsOn
                     rows++
                     const sysId = l.getUniqueValue()
                     processLicenseRecord(sysId, () => str(l, 'name'), s.licences, add, (name) => {
-                        _getOrCreate('subscription', sysId, name, { licensed: true, entitled_count: toInt(str(l, 'count')), allocated_count: toInt(str(l, 'allocated')) }, '', s.licences)
+                        upsertDiscoveredCapability('subscription', sysId, name, { licensed: true, entitled_count: toInt(str(l, 'count')), allocated_count: toInt(str(l, 'allocated')) }, '', s.licences)
                     })
                 }
             }
@@ -215,28 +264,30 @@ export function runDiscovery(runStartedAt?: string, licensesOnly = false, appsOn
     }
 
     // ---- active Store and custom apps (PIV-012) ----------------------------------------------------
-    try {
-        if (tableExists(SOURCES.apps)) {
-            const a = new GlideRecord(SOURCES.apps)
-            a.addQuery('active', true)
-            a.query()
-            while (a.next()) {
-                const scope = str(a, 'scope'), key = scope || a.getUniqueValue(), name = str(a, 'name') || key
-                if (scope === SCOPE) {
-                    s.excluded.push(scope)
-                    continue
-                }
-                s.apps.read++
-                try {
-                    _getOrCreate('store_app', key, name, { licensed: false, installed: true, app_scope: scope, version: str(a, 'version').slice(0, 40) }, familyFromLob(feeByScope[scope] || ''), s.apps)
-                } catch (ex) {
-                    s.apps.skipped++
-                    add('error', 'App ' + key + ' could not be saved: ' + ex)
+    if (!pluginsOnly) {
+        try {
+            if (tableExists(SOURCES.apps)) {
+                const a = new GlideRecord(SOURCES.apps)
+                a.addQuery('active', true)
+                a.query()
+                while (a.next()) {
+                    const scope = str(a, 'scope'), key = scope || a.getUniqueValue(), name = str(a, 'name') || key
+                    if (scope === SCOPE) {
+                        s.excluded.push(scope)
+                        continue
+                    }
+                    s.apps.read++
+                    try {
+                        upsertDiscoveredCapability('store_app', key, name, { licensed: false, installed: true, app_scope: scope, version: str(a, 'version').slice(0, 40) }, familyFromLob(feeByScope[scope] || ''), s.apps)
+                    } catch (ex) {
+                        s.apps.skipped++
+                        add('error', 'App ' + key + ' could not be saved: ' + ex)
+                    }
                 }
             }
+        } catch (ex) {
+            add('error', 'App discovery failed: ' + ex)
         }
-    } catch (ex) {
-        add('error', 'App discovery failed: ' + ex)
     }
 
     if (appsOnly) {
@@ -246,18 +297,32 @@ export function runDiscovery(runStartedAt?: string, licensesOnly = false, appsOn
         return s
     }
 
-    // ---- active for-fee plugins (PIV-012) -----------------------------------------------------------
+    // ---- active plugins (PIV-012) ------------------------------------------------------------------
     try {
         if (tableExists(SOURCES.plugins)) {
+            const detailsById: { [id: string]: { scope: string } } = {}
+            try {
+                if (tableExists(SOURCES.pluginDetails)) {
+                    const details = new GlideRecord(SOURCES.pluginDetails)
+                    details.query()
+                    while (details.next()) {
+                        const id = str(details, 'id')
+                        if (id && !detailsById[id]) detailsById[id] = { scope: str(details, 'scope') }
+                    }
+                }
+            } catch (ex) {
+                add('warn', 'Plugin scope metadata could not be read from ' + SOURCES.pluginDetails + ': ' + ex)
+            }
             const p = new GlideRecord(SOURCES.plugins)
-            p.addQuery('active', 'active')
+            p.addQuery('active', true)
             p.query()
             while (p.next()) {
-                const id = str(p, 'id'), name = str(p, 'name') || id
-                if (!id || !isFee(feeById, id)) continue
+                const id = str(p, 'source') || p.getUniqueValue()
+                const name = _pluginName(str(p, 'name'), id)
                 s.plugins.read++
                 try {
-                    _getOrCreate('plugin', id, name, { licensed: false, installed: true, app_scope: str(p, 'scope') === 'global' ? '' : str(p, 'scope'), version: str(p, 'version').slice(0, 40) }, familyFromLob(feeById[id] || ''), s.plugins)
+                    const pluginScope = detailsById[id] ? detailsById[id].scope : ''
+                    upsertDiscoveredCapability('plugin', id, name, { active: true, licensed: false, installed: true, app_scope: pluginScope === 'global' ? '' : pluginScope, version: str(p, 'version').slice(0, 40) }, familyFromLob(feeById[id] || ''), s.plugins)
                 } catch (ex) {
                     s.plugins.skipped++
                     add('error', 'Plugin ' + id + ' could not be saved: ' + ex)
@@ -267,6 +332,13 @@ export function runDiscovery(runStartedAt?: string, licensesOnly = false, appsOn
         if (!s.plugins.read) add('warn', 'No active plugins found.')
     } catch (ex) {
         add('error', 'Plugin discovery failed: ' + ex)
+    }
+
+    if (pluginsOnly) {
+        add('info', 'Plugins: found ' + s.plugins.read + ', created ' + s.plugins.created + ', updated ' + s.plugins.updated + ', set inactive ' + s.plugins.setInactive + '.')
+        s.ok = !log.some((l) => l.level === 'error')
+        add(s.ok ? 'info' : 'warn', 'Plugin discovery ' + (s.ok ? 'complete' : 'finished with errors') + ': ' + s.plugins.read + ' active plugins checked.')
+        return s
     }
 
     // ---- no longer found (PIV-013): flag, never delete ---------------------------------------------

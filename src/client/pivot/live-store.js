@@ -392,7 +392,7 @@ export function createPV(first, api) {
         kpiTrend: outs.filter(o => o.status !== 'not_measured'),
         topOpportunities: store.opportunities().slice(0, 10), roadmap: rm,
         notMeasured: { capabilities: caps.filter(c => c.score == null && c.installed && c.licensed), outcomes: outs.filter(o => o.status === 'not_measured') },
-        insights: store.insights(), running: store.running(), needsMapping: S.caps.filter(c => !c.family).length
+        insights: store.insights(), running: store.running(), needsMapping: store.capabilities({ view: 'all' }).filter(c => !c.family).length
       };
     },
     insights() {
