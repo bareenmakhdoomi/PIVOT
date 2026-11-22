@@ -3,8 +3,8 @@ import { Test } from '@servicenow/sdk/core'
 
 Test({
     $id: Now.ID['atf-stry0015288-read-all-licenses'],
-    name: 'PIVOT - Read every licensed subscription',
-    description: 'STRY0015288: verifies _fromLicenses reads every source row, creates or updates one subscription Capability for each named product, and logs skipped blank names with their sys_id.',
+    name: 'PIVOT - License Capability get-or-create and discovery',
+    description: 'STRY0015289: verifies a Capability is created once and reused by name and source. STRY0015288: verifies _fromLicenses reads every source row and logs skipped blank names with their sys_id.',
     active: true,
     failOnServerError: true,
 }, (atf) => {
@@ -13,6 +13,37 @@ Test({
         script: `(function(outputs, steps, params, stepResult, assertEqual) {
     var CAP = 'x_enno_pivot_capability';
     var D = require('x_enno_pivot/pivot/0.0.1/src/server/pivot/discovery.ts');
+    var helperName = '[ATF] STRY0015289 ITSM Pro ' + gs.generateGUID();
+    var helperBefore = new GlideRecord(CAP);
+    helperBefore.addQuery('source', 'subscription');
+    helperBefore.addQuery('name', helperName);
+    helperBefore.query();
+    var helperInitialCount = 0;
+    while (helperBefore.next()) helperInitialCount++;
+    assertEqual({ name: 'new helper fixture does not already exist', shouldbe: 0, value: helperInitialCount });
+    try {
+        var helperCreated = D._getOrCreate(helperName, 'License');
+        var helperId = helperCreated.getUniqueValue();
+        assertEqual({ name: '_getOrCreate creates a Capability for a new name and source', shouldbe: true, value: !!helperId && helperCreated.getValue('source') === 'subscription' });
+
+        var helperReused = D._getOrCreate(helperName, 'License');
+        assertEqual({ name: '_getOrCreate returns the existing Capability on repeat call', shouldbe: helperId, value: helperReused.getUniqueValue() });
+
+        var helperMatches = new GlideRecord(CAP);
+        helperMatches.addQuery('source', 'subscription');
+        helperMatches.addQuery('name', helperName);
+        helperMatches.query();
+        var helperCount = 0;
+        while (helperMatches.next()) helperCount++;
+        assertEqual({ name: 'repeated helper call inserts no duplicate', shouldbe: 1, value: helperCount });
+    } finally {
+        var helperCleanup = new GlideRecord(CAP);
+        helperCleanup.addQuery('source', 'subscription');
+        helperCleanup.addQuery('name', helperName);
+        helperCleanup.query();
+        while (helperCleanup.next()) helperCleanup.deleteRecord();
+    }
+
     var emptyCounts = { read: 0, created: 0, updated: 0, skipped: 0 };
     var emptyLog = [];
     var emptySaved = false;
