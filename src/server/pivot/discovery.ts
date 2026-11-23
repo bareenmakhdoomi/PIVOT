@@ -62,6 +62,25 @@ const toInt = (v: string): number => {
     const n = parseInt(String(v || '').replace(/[^0-9-]/g, ''), 10)
     return isNaN(n) ? 0 : n
 }
+
+export function mapSubscriptionCounts(purchasedCount: string, allocatedCount: string): {
+    entitled_count: number
+    allocated_count: number
+    allocatedEmpty: boolean
+} {
+    const purchased = String(purchasedCount || '').trim()
+    const allocated = String(allocatedCount || '').trim()
+    return {
+        entitled_count: toInt(purchased),
+        allocated_count: allocated ? toInt(allocated) : 0,
+        allocatedEmpty: allocated === '',
+    }
+}
+
+export function allocatedCountNote(name: string, allocatedEmpty: boolean): string {
+    return allocatedEmpty ? 'Subscription "' + name + '" has no allocated count: stored as 0.' : ''
+}
+
 const tableExists = (t: string) => new GlideRecord(t).isValid()
 
 export function _pluginName(name: string, id: string): string {
@@ -234,8 +253,10 @@ export function runDiscovery(runStartedAt?: string, licensesOnly = false, appsOn
                     const sysId = o.getUniqueValue()
                     processLicenseRecord(sysId, () => o.getDisplayValue('subscription') || '', s.licences, add, (name) => {
                         const key = str(o, 'subscription') || sysId
-                        if (str(o, 'allocated_count') === '') add('info', 'Subscription "' + name + '" has no allocated count: stored as 0.')
-                        upsertDiscoveredCapability('subscription', key, name, { licensed: true, entitled_count: toInt(str(o, 'purchased_count')), allocated_count: toInt(str(o, 'allocated_count')) }, '', s.licences)
+                        const counts = mapSubscriptionCounts(str(o, 'purchased_count'), str(o, 'allocated_count'))
+                        const note = allocatedCountNote(name, counts.allocatedEmpty)
+                        if (note) add('info', note)
+                        upsertDiscoveredCapability('subscription', key, name, { licensed: true, entitled_count: counts.entitled_count, allocated_count: counts.allocated_count }, '', s.licences)
                     })
                 }
             }
@@ -246,7 +267,10 @@ export function runDiscovery(runStartedAt?: string, licensesOnly = false, appsOn
                     rows++
                     const sysId = l.getUniqueValue()
                     processLicenseRecord(sysId, () => str(l, 'name'), s.licences, add, (name) => {
-                        upsertDiscoveredCapability('subscription', sysId, name, { licensed: true, entitled_count: toInt(str(l, 'count')), allocated_count: toInt(str(l, 'allocated')) }, '', s.licences)
+                        const counts = mapSubscriptionCounts(str(l, 'count'), str(l, 'allocated'))
+                        const note = allocatedCountNote(name, counts.allocatedEmpty)
+                        if (note) add('info', note)
+                        upsertDiscoveredCapability('subscription', sysId, name, { licensed: true, entitled_count: counts.entitled_count, allocated_count: counts.allocated_count }, '', s.licences)
                     })
                 }
             }

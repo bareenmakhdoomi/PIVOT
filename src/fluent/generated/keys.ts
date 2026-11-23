@@ -617,6 +617,14 @@ declare global {
                         table: 'sys_atf_step'
                         id: 'ab9d12dab57b4b40b3d0f1a74aac6a95'
                     }
+                    'atf-stry0015291-subscription-count-mapping': {
+                        table: 'sys_atf_test'
+                        id: 'cdeb79b6209f45879255436477ede6dd'
+                    }
+                    'atf-stry0015291-subscription-count-mapping-check': {
+                        table: 'sys_atf_step'
+                        id: 'a3d714cc26e8497bba59a4f4fe91dab5'
+                    }
                     'atf-stry0015296-discover-all-apps': {
                         table: 'sys_atf_test'
                         id: 'c0dc6866eaa740799852c447ea511255'
@@ -1273,9 +1281,33 @@ declare global {
                         table: 'x_enno_pivot_capability'
                         id: 'bcab5a88dc464b4898f990e0179b1c43'
                     }
+                    'seed-capability-csm': {
+                        table: 'x_enno_pivot_capability'
+                        id: '4b80921f066c448b910767c9777f49db'
+                    }
                     'seed-capability-customer-service-management': {
                         table: 'x_enno_pivot_capability'
                         id: '29e3a248a19d49fba6808e1ffbd5f294'
+                    }
+                    'seed-capability-discovery': {
+                        table: 'x_enno_pivot_capability'
+                        id: '0ce47ca84fac4425acc5aa1a190653aa'
+                    }
+                    'seed-capability-hardware-asset-management': {
+                        table: 'x_enno_pivot_capability'
+                        id: 'fc2a43e815f54290a1ed125093cfd759'
+                    }
+                    'seed-capability-hr-lifecycle-events': {
+                        table: 'x_enno_pivot_capability'
+                        id: '2e97e0d3dde84ac9ae938ce8b6485e3a'
+                    }
+                    'seed-capability-hr-service-delivery': {
+                        table: 'x_enno_pivot_capability'
+                        id: '864a249d9d5944e192c64eee0867dfe2'
+                    }
+                    'seed-capability-hr-service-portal': {
+                        table: 'x_enno_pivot_capability'
+                        id: '3d36b6eba2cb45d09a3c2e796c0402d0'
                     }
                     'seed-capability-incident': {
                         table: 'x_enno_pivot_capability'
@@ -1301,9 +1333,17 @@ declare global {
                         table: 'x_enno_pivot_capability'
                         id: 'ef059f207e87462a865636ba3d9ac5a8'
                     }
+                    'seed-capability-service-mapping': {
+                        table: 'x_enno_pivot_capability'
+                        id: 'e58edd96a8884c97a4d3f62d6a33fbdf'
+                    }
                     'seed-capability-service-watch': {
                         table: 'x_enno_pivot_capability'
                         id: '8baf2dc3eb6e492e851294c28055d9c8'
+                    }
+                    'seed-capability-software-asset-management': {
+                        table: 'x_enno_pivot_capability'
+                        id: '9b94391398cb458faf8e23135baed089'
                     }
                     'seed-capability-time-card': {
                         table: 'x_enno_pivot_capability'
@@ -2305,6 +2345,15 @@ declare global {
                             value: 'improved'
                             language: 'en'
                             dependent_value: 'NULL'
+                        }
+                    },
+                    {
+                        table: 'sys_element_mapping'
+                        id: '114a86b78aa844daa8b7289c618df0c8'
+                        key: {
+                            id: 'a3d714cc26e8497bba59a4f4fe91dab5'
+                            table: 'var__m_atf_input_variable_41de4a935332120028bc29cac2dc349a'
+                            field: 'script'
                         }
                     },
                     {
@@ -4731,6 +4780,14 @@ declare global {
                         key: {
                             document_key: 'dc3dbea2d7934fa09ea24a8cc95ecead'
                             variable: 'b27b2b29ff6033008d3f5d9ad53bf164'
+                        }
+                    },
+                    {
+                        table: 'sys_variable_value'
+                        id: '3981d4c4f7a8458ba6dcfd1c25273937'
+                        key: {
+                            document_key: 'a3d714cc26e8497bba59a4f4fe91dab5'
+                            variable: '989d9e235324220002c6435723dc3484'
                         }
                     },
                     {
@@ -7445,6 +7502,14 @@ declare global {
                         }
                     },
                     {
+                        table: 'sys_variable_value'
+                        id: '68cc08fed7ca40068bcd92837b9b15f2'
+                        key: {
+                            document_key: 'a3d714cc26e8497bba59a4f4fe91dab5'
+                            variable: '42f2564b73031300440211d8faf6a777'
+                        }
+                    },
+                    {
                         table: 'sys_user_role'
                         id: '6956f4c54234436d86b317b5d18a6db7'
                         key: {
@@ -8861,6 +8926,20 @@ declare global {
                         key: {
                             document_key: '1e9e7d8b93f1487289a066aa9ab42aa3'
                             variable: '42f2564b73031300440211d8faf6a777'
+                        }
+                    },
+                    {
+                        table: 'sys_ui_policy_action'
+                        id: '834c5a2ac44949feb10140df82a87af7'
+                        key: {
+                            ui_policy: {
+                                id: 'b72fb1d1a87a405883680fce96613aad'
+                                key: {
+                                    table: 'x_enno_pivot_result'
+                                    short_description: 'PIVOT – Result reason is read-only'
+                                }
+                            }
+                            field: 'reason'
                         }
                     },
                     {
@@ -11673,6 +11752,14 @@ declare global {
                                     sys_domain: 'global'
                                 }
                             }
+                        }
+                    },
+                    {
+                        table: 'sys_ui_policy'
+                        id: 'b72fb1d1a87a405883680fce96613aad'
+                        key: {
+                            table: 'x_enno_pivot_result'
+                            short_description: 'PIVOT – Result reason is read-only'
                         }
                     },
                     {
