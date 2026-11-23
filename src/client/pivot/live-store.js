@@ -207,7 +207,8 @@ export function createPV(first, api) {
           case 'active': return c.active;
           case 'licensed_not_installed': return c.licensed && !c.installed;
           case 'not_measured': return c.active && c.score == null && c.installed;
-          case 'needs_mapping': return !c.family;
+          case 'needs_mapping': return c.active && !c.not_found && !c.family;
+          case 'installed_apps': return c.active && c.installed && (c.source === 'store_app' || c.source === 'plugin');
           case 'not_found': return c.not_found;
           case 'low': return c.score != null && c.score < P('low_score_threshold');
           case 'idle': return c.utilization != null && c.utilization < P('utilization_threshold');

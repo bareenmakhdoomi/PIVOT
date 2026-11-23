@@ -498,6 +498,18 @@ function updateCapability(b: any): Result {
     const e = validateCapability(f)
     if (!e.measure_table && f.measure_table && !new GlideRecord(String(f.measure_table)).isValid()) e.measure_table = 'Table ' + f.measure_table + ' does not exist on this instance'
     if (hasErrors(e)) return invalid(e)
+    if (f.linked_app !== undefined) {
+        const linkedAppId = String(f.linked_app || '')
+        if (linkedAppId && linkedAppId === gr.getUniqueValue()) return { ok: false, error: 'A capability cannot be linked to itself.' }
+        if (linkedAppId) {
+            const app = new GlideRecordSecure(T.capability)
+            if (!app.get(linkedAppId) || !(str(app, 'installed') === '1' || str(app, 'installed') === 'true') ||
+                (str(app, 'source') !== 'store_app' && str(app, 'source') !== 'plugin')) {
+                return { ok: false, error: 'Linked app must be an installed Store app or plugin Capability.' }
+            }
+        }
+        gr.setValue('linked_app', linkedAppId)
+    }
     if (f.family !== undefined) gr.setValue('product_family', String(f.family || ''))
     if (f.measure_table !== undefined) gr.setValue('measure_table', String(f.measure_table || ''))
     if (f.measure_filter !== undefined) gr.setValue('measure_filter', String(f.measure_filter || '').slice(0, 4000))
@@ -507,7 +519,7 @@ function updateCapability(b: any): Result {
     if (f.target !== undefined) gr.setValue('target_value', f.target === '' || f.target === null ? '' : String(Number(f.target)))
     if (f.active !== undefined) gr.setValue('active', !!f.active)
     const r = save(gr)
-    if (r.ok) r.note = 'Saved. New settings are used from the next assessment run.'
+    if (r.ok) r.note = 'Capability settings saved. Measurement settings are used from the next assessment run.'
     return r
 }
 
