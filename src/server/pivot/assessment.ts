@@ -216,8 +216,10 @@ export function run(assessmentId: string, opts?: RunOptions): RunSummary {
                     else {
                         const r = aggregate(table, filter, dateField, days, 'count', '')
                         if (r.reason) {
-                            reason = r.reason
-                            add('warn', 3, 'Not measured: ' + str(c, 'name') + ' – ' + r.reason + '.')
+                            reason = r.reason === 'Measure table not found'
+                                ? 'Measure table ' + table + ' does not exist on this instance'
+                                : r.reason
+                            add('warn', 3, 'Not measured: ' + str(c, 'name') + ' – ' + reason + '.')
                         } else actual = r.value === undefined ? null : r.value
                     }
                 } catch (ex) {

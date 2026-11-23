@@ -253,7 +253,7 @@ function inField(label, name, value, errs, opts = {}) {
   const dis = opts.disabled ? 'disabled' : '', err = errs && errs[name];
   const ctrl = opts.select ? `<select name="${name}" id="f-${name}" ${dis} ${err ? `aria-invalid="true" aria-describedby="err-${name}"` : ''}>${opts.select.map(([v, t]) => `<option value="${esc(v)}" ${String(v) === String(value == null ? '' : value) ? 'selected' : ''}>${esc(t)}</option>`).join('')}</select>`
     : opts.area ? `<textarea name="${name}" id="f-${name}" rows="${opts.rows || 3}" ${dis} ${err ? `aria-invalid="true" aria-describedby="err-${name}"` : ''} placeholder="${esc(opts.ph || '')}">${esc(value == null ? '' : value)}</textarea>`
-      : `<input name="${name}" id="f-${name}" type="${opts.type || 'text'}" value="${esc(value == null ? '' : value)}" ${dis} ${opts.step ? `step="${opts.step}"` : ''} placeholder="${esc(opts.ph || '')}" ${err ? `aria-invalid="true" aria-describedby="err-${name}"` : ''}>`;
+      : `<input name="${name}" id="f-${name}" type="${opts.type || 'text'}" value="${esc(value == null ? '' : value)}" ${dis} ${opts.inputmode ? `inputmode="${opts.inputmode}"` : ''} ${opts.step ? `step="${opts.step}"` : ''} placeholder="${esc(opts.ph || '')}" ${err ? `aria-invalid="true" aria-describedby="err-${name}"` : ''}>`;
   return `<label class="field ${opts.wide ? 'wide' : ''}">${esc(label)}${ctrl}${opts.help ? `<small class="fieldhelp">${esc(opts.help)}</small>` : ''}${fieldErr(errs || {}, name)}</label>`;
 }
 function capabilityLibrary() {
@@ -271,7 +271,7 @@ function capabilityLibrary() {
  <div class="detail-grid" style="margin-top:12px"><section class="panel"><div class="panelhead"><div><h3>Measurement settings</h3><div class="paneldesc">${admin ? 'Used from the next assessment run' : esc(why('capability.edit'))}</div></div>${admin ? '' : '<span class="pill">Read-only</span>'}</div><form id="capForm" data-cap="${c.id}" class="formgrid" novalidate>
  ${inField('Measure table', 'measure_table', c.measure_table, l.errors, { disabled: !admin, ph: 'e.g. incident' })}${inField('Date field', 'date_field', c.date_field, l.errors, { disabled: !admin })}
  ${inField('Filter (encoded query)', 'measure_filter', c.measure_filter, l.errors, { disabled: !admin, wide: true })}
- ${inField('Days back', 'days_back', c.days_back, l.errors, { disabled: !admin, type: 'number' })}${inField('Target', 'target', c.target, l.errors, { disabled: !admin, type: 'number', help: 'Empty = Not Measured' })}
+ ${inField('Days back', 'days_back', c.days_back, l.errors, { disabled: !admin, type: 'number' })}${inField('Target', 'target', c.target, l.errors, { disabled: !admin, type: 'text', inputmode: 'decimal', help: 'Empty = Not Measured' })}
  ${inField('Weight (1–5)', 'weight', c.weight, l.errors, { disabled: !admin, type: 'number' })}${inField('Product family', 'family', c.family || '', l.errors, { disabled: !admin, select: fam })}
  ${admin ? `<div class="formactions wide"><button class="btn primary" type="submit">Save measurement settings</button>${l.note ? `<span class="formnote" role="status">${esc(l.note)}</span>` : ''}</div>` : ''}</form></section>
  <section class="panel"><h3>Evidence &amp; next step</h3><p class="record-desc">Each assessment stores a result per capability. Check the history before acting on one run.</p><div class="subnav"><button data-action="evidence" data-cap="${c.id}">View evidence (${c.results.length} runs)</button><button data-asm="${esc(c.results[0] ? c.results[0].assessment : S.latest().number)}">Open assessment</button></div>

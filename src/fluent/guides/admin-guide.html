@@ -5,6 +5,20 @@
 <h2>Capabilities</h2>
 <h3>Where they come from</h3>
 <p>Each run starts with <strong>discovery</strong>: licences from the subscription overview (<code>sn_sub_man_st_subscription_overview</code>, fallback <code>license_details</code>), installed Store apps (<code>sys_store_app</code>) and plugins (<code>v_plugin</code>). For-fee items are filtered with <code>ua_app_family</code>, which also gives the product family. Each capability is keyed by source and source id, so a new run updates it instead of making a copy. Admin settings (family, weight, measure table, filter, target, days back, linked app) are never overwritten. Items no longer found are flagged "Not found in last run", never deleted. A licence counts as installed only when it is linked to an installed app capability (Linked app).</p>
+<h3>Subscription fields copied to Capability</h3>
+<p>Discovery reads every row from <code>sn_sub_man_st_subscription_overview</code> when that table exists and has rows. It reads the subscription reference and display value, <code>purchased_count</code>, <code>allocated_count</code> and the row's <code>sys_id</code>. It uses <code>license_details</code> only if the overview has no rows; from that table it reads <code>name</code>, <code>count</code>, <code>allocated</code> and <code>sys_id</code>. Rows without a product name are skipped and logged with their <code>sys_id</code>. A missing allocated count is stored as 0.</p>
+<table>
+<thead><tr><th>Capability field</th><th><code>sn_sub_man_st_subscription_overview</code></th><th><code>license_details</code> fallback</th></tr></thead>
+<tbody>
+<tr><td>Name</td><td>Subscription display value</td><td><code>name</code></td></tr>
+<tr><td>Source</td><td><code>subscription</code> (shown as <strong>License</strong>)</td><td><code>subscription</code> (shown as <strong>License</strong>)</td></tr>
+<tr><td>Source ID</td><td>Subscription reference value; row <code>sys_id</code> if empty</td><td>Row <code>sys_id</code></td></tr>
+<tr><td>Licensed</td><td><code>true</code> for a discovered subscription</td><td><code>true</code> for a discovered subscription</td></tr>
+<tr><td>Entitled (purchased) count</td><td><code>purchased_count</code></td><td><code>count</code></td></tr>
+<tr><td>Allocated count</td><td><code>allocated_count</code></td><td><code>allocated</code></td></tr>
+</tbody>
+</table>
+<p>The Source, Licensed, Entitled and Allocated fields have help text describing their discovery provenance. <strong>Licensed</strong> means discovery found the subscription; it is separate from the purchased and allocated counts.</p>
 <h3>Set the measurement (measure table, target, weight)</h3>
 <ol>
 <li>Open <strong>Capability Library</strong> and page to the capability (or search for it).</li>

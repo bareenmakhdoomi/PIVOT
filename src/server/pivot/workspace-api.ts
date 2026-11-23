@@ -539,7 +539,7 @@ function updateCapability(b: any): Result {
     if (!gr.canWrite()) return deny('Only PIVOT admins can change measurement settings.')
     const f = b.fields || {}
     const e = validateCapability(f)
-    if (!e.measure_table && f.measure_table && !new GlideRecord(String(f.measure_table)).isValid()) e.measure_table = 'Table ' + f.measure_table + ' does not exist on this instance.'
+    if (!e.measure_table && f.measure_table && !new GlideRecord(String(f.measure_table)).isValid()) e.measure_table = 'Table ' + f.measure_table + ' does not exist on this instance'
     if (hasErrors(e)) return invalid(e)
     if (f.family !== undefined) gr.setValue('product_family', String(f.family || ''))
     if (f.measure_table !== undefined) gr.setValue('measure_table', String(f.measure_table || ''))

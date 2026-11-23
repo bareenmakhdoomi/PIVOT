@@ -86,12 +86,12 @@ export function capabilityBefore(current: any, previous: any) {
             family: current.getValue('product_family') || '',
         }))
         if (err) return stop(current, err)
-        // PIV-014.04 – a licence can only be linked to another, installed capability
+        // PIV-014.04 / STRY0015313 – links must reference a different installed capability.
         const linked = current.getValue('linked_app')
-        if (linked && (!previous || linked !== previous.getValue('linked_app'))) {
-            if (linked === current.getUniqueValue()) return stop(current, 'A capability cannot be linked to itself.')
+        if (linked) {
+            if (linked === current.getUniqueValue()) return stop(current, 'A capability cannot be linked to itself')
             const app = new GlideRecord(SCOPE + '_capability')
-            if (!app.get(linked) || !(app.getValue('installed') === '1' || app.getValue('installed') === 'true')) return stop(current, 'Linked app must be an installed capability.')
+            if (!app.get(linked) || !(app.getValue('installed') === '1' || app.getValue('installed') === 'true')) return stop(current, 'Linked app must be an installed capability')
         }
     } catch (ex) {
         gs.error('PIVOT capability rule failed: ' + ex)

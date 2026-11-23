@@ -5,6 +5,8 @@
 
 PIVOT currently scopes the families listed below. Each family has at least three named capability candidates and a proposed measure table. Before configuring a measure, the relevant product SME should confirm that the table is installed and populated on the target instance, represents meaningful usage, and can be safely queried with the required date field and filters.
 
+The STRY0015318 workshop decision register is in [`SME_Measure_Workshop.md`](./SME_Measure_Workshop.md). It tracks proposed filters, date windows, targets, approval status, owners, and due dates; no proposal is an approved measure until SMEs record their decision.
+
 ## IT Service Management (ITSM)
 
 | Key capability candidate | Proposed measure table | Measure idea for SME review |
@@ -85,9 +87,11 @@ PIVOT currently scopes the families listed below. Each family has at least three
 
 PIVOT already seeds starting measurements for a subset of well-known discovered products. Those mappings are implementation references, not SME approval. In particular, existing starter mappings include Incident Management (`incident`), Problem Management (`problem`), Change Management (`change_request`), Service Catalog Fulfilment (`sc_req_item`), Asset Management (`alm_asset`), Customer Service (`sn_customerservice_case`), Project Management (`pm_project`), Resource Management (`resource_plan`), Time Tracking (`time_card`), Agile Development (`rm_story`), and Event Management (`em_alert`).
 
+The ITSM starter settings use `sys_created_on` with a 30-day look-back for the core measures. Incident Management uses `active=true` with a proposed target of 100; Problem Management uses `active=true` with a target of 20; Change Management uses `active=true` with a target of 50; Service Catalog Fulfilment uses `active=true` with a target of 300. Major Incident Management and CAB retain their specialized 90-day starter settings. These are starting targets for SME review, not approved benchmarks.
+
 ## SME review checklist
 
-For each candidate, record the SME-approved capability name and measure table, then confirm:
+For each candidate, record the SME-approved capability name and measure table in the workshop decision register, then confirm:
 
 1. The table exists on the target ServiceNow instance and contains the records relevant to this capability.
 2. Counting records in that table is a valid measure of adoption, not merely installed capacity or historical inventory.
