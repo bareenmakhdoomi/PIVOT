@@ -11,7 +11,8 @@ export const pivotMenu = ApplicationMenu({
     active: true,
 })
 
-// PIV-008.03: admins see the setup and assessment modules; source-specific capability lists are viewer-accessible.
+// PIV-008.03: admins see Workspace, Capabilities, Needs mapping, Properties, Assessment list in that order;
+// the other admin lists follow. Every module after Workspace and My Opportunities is admin-only (decision 23 Nov 2026).
 // First module: opens the workspace on the Dashboard (all PIVOT roles) – PIV-008.02
 Record({
     $id: Now.ID['pivot-module-workspace'],
@@ -47,28 +48,28 @@ Record({
 Record({
     $id: Now.ID['pivot-module-needs-mapping'],
     table: 'sys_app_module',
-    data: { title: 'Needs mapping', application: pivotMenu, link_type: 'FILTER', name: 'x_enno_pivot_capability', filter: 'active=true^product_familyISEMPTY^ORDERBYname', roles: ['x_enno_pivot.admin'], active: true, order: 220 },
+    data: { title: 'Needs mapping', application: pivotMenu, link_type: 'FILTER', name: 'x_enno_pivot_capability', filter: 'active=true^not_found!=true^product_familyISEMPTY^ORDERBYname', roles: ['x_enno_pivot.admin'], active: true, order: 220 },
 })
 // PIV-012.09 / PIV-013.04 – capability lists by source and not found
 Record({
     $id: Now.ID['pivot-module-cap-licences'],
     table: 'sys_app_module',
-    data: { title: 'Licensed', application: pivotMenu, link_type: 'FILTER', name: 'x_enno_pivot_capability', filter: 'source=subscription^ORDERBYname', roles: ['x_enno_pivot.viewer'], active: true, order: 310 },
+    data: { title: 'Licensed', application: pivotMenu, link_type: 'FILTER', name: 'x_enno_pivot_capability', filter: 'source=subscription^ORDERBYname', roles: ['x_enno_pivot.admin'], active: true, order: 310 },
 })
 Record({
     $id: Now.ID['pivot-module-cap-apps'],
     table: 'sys_app_module',
-    data: { title: 'Installed Apps', application: pivotMenu, link_type: 'FILTER', name: 'x_enno_pivot_capability', filter: 'source=store_app^ORDERBYname', roles: ['x_enno_pivot.viewer'], active: true, order: 320 },
+    data: { title: 'Installed Apps', application: pivotMenu, link_type: 'FILTER', name: 'x_enno_pivot_capability', filter: 'source=store_app^ORDERBYname', roles: ['x_enno_pivot.admin'], active: true, order: 320 },
 })
 Record({
     $id: Now.ID['pivot-module-cap-plugins'],
     table: 'sys_app_module',
-    data: { title: 'Plugins', application: pivotMenu, link_type: 'DIRECT', query: 'x_enno_pivot_plugins.do', roles: ['x_enno_pivot.viewer'], active: true, order: 330 },
+    data: { title: 'Plugins', application: pivotMenu, link_type: 'DIRECT', query: 'x_enno_pivot_plugins.do', roles: ['x_enno_pivot.admin'], active: true, order: 330 },
 })
 Record({
     $id: Now.ID['pivot-module-cap-not-found'],
     table: 'sys_app_module',
-    data: { title: 'Not found in last run', application: pivotMenu, link_type: 'FILTER', name: 'x_enno_pivot_capability', filter: 'not_found=true^ORDERBYDESClast_discovered', roles: ['x_enno_pivot.viewer'], active: true, order: 340 },
+    data: { title: 'Not found in last run', application: pivotMenu, link_type: 'FILTER', name: 'x_enno_pivot_capability', filter: 'not_found=true^ORDERBYDESClast_discovered', roles: ['x_enno_pivot.admin'], active: true, order: 340 },
 })
 Record({
     $id: Now.ID['pivot-module-assessments'],

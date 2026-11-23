@@ -43,9 +43,9 @@ export const EVENT_FAILED = SCOPE + '.run_failed'
 const secs = (ms: number) => String(Math.round(ms / 100) / 10)
 
 /** Value of a GlideAggregate over table + encoded query + date window. Returns { value } or { reason } when it cannot be measured. */
-function aggregate(table: string, filter: string, dateField: string, daysBack: number, agg: 'count' | 'sum' | 'avg', field: string): { value?: number; reason?: string } {
+function aggregate(table: string, filter: string, dateField: string, daysBack: number, agg: 'count' | 'sum' | 'avg', field: string): { value?: number; reason?: string; missing?: boolean } {
     const probe = new GlideRecord(table)
-    if (!probe.isValid()) return { reason: 'Measure table not found' }
+    if (!probe.isValid()) return { reason: 'Measure table ' + table + ' does not exist on this instance', missing: true } // PIV-046.03 / PIV-017.05 – name the table
     if (filter && !probe.isEncodedQueryValid(filter)) return { reason: 'Filter is not valid for ' + table }
     if (dateField && !probe.isValidField(dateField)) return { reason: 'Date field ' + dateField + ' not found on ' + table }
     if (agg !== 'count' && (!field || !probe.isValidField(field))) return { reason: 'Field to ' + (agg === 'sum' ? 'sum' : 'average') + ' not found on ' + table }
@@ -216,8 +216,10 @@ export function run(assessmentId: string, opts?: RunOptions): RunSummary {
                     else {
                         const r = aggregate(table, filter, dateField, days, 'count', '')
                         if (r.reason) {
-                            reason = r.reason
-                            add('warn', 3, 'Not measured: ' + str(c, 'name') + ' – ' + r.reason + '.')
+                            reason = r.reason === 'Measure table not found'
+                                ? 'Measure table ' + table + ' does not exist on this instance'
+                                : r.reason
+                            add('warn', 3, 'Not measured: ' + str(c, 'name') + ' – ' + reason + '.')
                         } else actual = r.value === undefined ? null : r.value
                     }
                 } catch (ex) {
@@ -315,7 +317,7 @@ export function run(assessmentId: string, opts?: RunOptions): RunSummary {
                             const agg = (str(o, 'kpi_aggregate') || 'count') as 'count' | 'sum' | 'avg'
                             const r = aggregate(kt, str(o, 'kpi_filter'), 'sys_created_on', periodDays(str(o, 'period')), agg, str(o, 'kpi_field'))
                             if (r.reason) {
-                                reason = r.reason === 'Measure table not found' ? 'KPI table not found' : r.reason
+                                reason = r.missing ? 'KPI table ' + kt + ' does not exist on this instance' : r.reason
                                 add('warn', 5, 'Outcome "' + str(o, 'kpi') + '": ' + reason + '.')
                             } else actual = r.value === undefined ? null : r.value
                         }

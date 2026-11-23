@@ -68,7 +68,9 @@ export function createPV(first, api) {
       S.props[SCOPE + '.' + k] = t === 'boolean' ? v === 'true' || v === true : t === 'string' ? String(v) : Number(v);
     });
     D.properties = PROP_META.map(([n, label, unit, help]) => ({ name: SCOPE + '.' + n, label, unit, help, value: PROP_TYPES[n] === 'boolean' ? true : PROP_TYPES[n] === 'string' ? '' : 0 }));
-    S.caps = snap.capabilities || [];
+    // PIV-071.06: the server leaves out empty / null / false capability values; put the defaults back
+    const CAP_DEFAULTS = { number: '', name: '', family: '', source: '', licensed: false, installed: false, entitled: null, allocated: null, scope: '', linked_app: '', measure_table: '', measure_filter: '', date_field: '', days_back: 30, target: null, weight: 1, active: false, not_found: false, last_discovered: null, stale: false, staleNote: '' };
+    S.caps = (snap.capabilities || []).map(c => Object.assign({}, CAP_DEFAULTS, c));
     S.assessments = (snap.assessments || []).slice().sort((a, b) => (a.run_date || 0) - (b.run_date || 0));
     S.logs = snap.logs || {};
     S.results = snap.results || {};
@@ -207,7 +209,7 @@ export function createPV(first, api) {
           case 'active': return c.active;
           case 'licensed_not_installed': return c.licensed && !c.installed;
           case 'not_measured': return c.active && c.score == null && c.installed;
-          case 'needs_mapping': return c.active && !c.not_found && !c.family;
+          case 'needs_mapping': return c.active && !c.not_found && c.active && !c.not_found && !c.family; // PIV-014.06
           case 'installed_apps': return c.active && c.installed && (c.source === 'store_app' || c.source === 'plugin');
           case 'not_found': return c.not_found;
           case 'low': return c.score != null && c.score < P('low_score_threshold');
@@ -256,7 +258,8 @@ export function createPV(first, api) {
       const res = S.results[num];
       if (res) {
         const vals = Object.keys(res).map(k => res[k]);
-        x.counts = { capabilities: vals.length, scored: vals.filter(r => r.score != null).length, notMeasured: vals.filter(r => r.score == null).length, low: vals.filter(r => r.score != null && r.score < P('low_score_threshold')).length };
+        const total = a.resultCount != null ? a.resultCount : vals.length, scored = vals.filter(r => r.score != null).length; // PIV-071.06: Not Measured results are not sent
+        x.counts = { capabilities: total, scored: scored, notMeasured: total - scored, low: vals.filter(r => r.score != null && r.score < P('low_score_threshold')).length };
         x.opportunities = S.opps.filter(o => o.assessment === num).length;
       }
       const comp = completedRuns(), i = comp.findIndex(c => c.number === num); x.previousScore = i > 0 ? comp[i - 1].overall_score : null;
@@ -393,7 +396,7 @@ export function createPV(first, api) {
         kpiTrend: outs.filter(o => o.status !== 'not_measured'),
         topOpportunities: store.opportunities().slice(0, 10), roadmap: rm,
         notMeasured: { capabilities: caps.filter(c => c.score == null && c.installed && c.licensed), outcomes: outs.filter(o => o.status === 'not_measured') },
-        insights: store.insights(), running: store.running(), needsMapping: S.caps.filter(c => !c.family).length
+        insights: store.insights(), running: store.running(), needsMapping: S.caps.filter(c => c.active && !c.not_found && !c.family).length
       };
     },
     insights() {

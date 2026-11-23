@@ -2,7 +2,7 @@
 // POST /action performs one user action. All PIVOT table access uses GlideRecordSecure, so the
 // table and field ACLs of the user decide what is read and written. Validation runs here (field
 // messages for the UI) and again in the table business rules.
-import { gs, GlideRecord, GlideRecordSecure, GlideDateTime } from '@servicenow/glide'
+import { gs, GlideRecord, GlideRecordSecure, GlideAggregate, GlideDateTime } from '@servicenow/glide'
 import {
     SCOPE, FAMILIES, PROPERTIES, Errors, initialsOf, priorityOf, priorityReason, validateScores, validateRejection, OPP_ACTIVE,
     validateCapability, validateOutcome, validateProperty,
@@ -104,11 +104,31 @@ function buildSnapshot() {
     const userIds: string[] = [me]
 
     // Capabilities
+    // PIV-071.06: rows the user may read come from GlideRecordSecure (row ACLs). Field ACLs are checked once per
+    // field on the first readable row; the values are then read with GlideRecord, which avoids one ACL check per
+    // field per row (3.7 s for 2,592 capabilities). A field the user may not read is sent empty.
     const capabilities: any[] = []
-    const c = new GlideRecordSecure(T.capability)
+    const allowed: { [id: string]: boolean } = {}
+    const cs = new GlideRecordSecure(T.capability)
+    cs.query()
+    let firstId = ''
+    while (cs.next()) {
+        allowed[cs.getUniqueValue()] = true
+        if (!firstId) firstId = cs.getUniqueValue()
+    }
+    const CAP_FIELDS = ['number', 'name', 'product_family', 'source', 'licensed', 'installed', 'entitled_count', 'allocated_count', 'app_scope', 'linked_app',
+        'measure_table', 'measure_filter', 'date_field', 'days_back', 'target_value', 'weight', 'active', 'not_found', 'last_discovered']
+    const hidden: { [f: string]: boolean } = {}
+    if (firstId) {
+        const one = new GlideRecordSecure(T.capability)
+        if (one.get(firstId)) CAP_FIELDS.forEach((f) => { if (!(one.getElement(f) as any).canRead()) hidden[f] = true })
+    }
+    const c = new GlideRecord(T.capability)
     c.orderBy('name')
     c.query()
     while (c.next()) {
+        if (!allowed[c.getUniqueValue()]) continue
+        if (Object.keys(hidden).length) CAP_FIELDS.forEach((f) => { if (hidden[f]) c.setValue(f, '') })
         capabilities.push({
             id: c.getUniqueValue(), number: str(c, 'number'), name: str(c, 'name'), family: str(c, 'product_family'), source: str(c, 'source'),
             licensed: bool(c, 'licensed'), installed: bool(c, 'installed'), entitled: num(c, 'entitled_count'), allocated: num(c, 'allocated_count'),
@@ -117,6 +137,9 @@ function buildSnapshot() {
             active: bool(c, 'active'), not_found: bool(c, 'not_found'), last_discovered: ms(str(c, 'last_discovered')), stale: false, staleNote: '',
         })
     }
+
+    // PIV-071.06: empty, null and false values are left out to keep the answer small; the client fills the defaults back in.
+    capabilities.forEach((o) => Object.keys(o).forEach((k) => { if (o[k] === '' || o[k] === null || o[k] === false) delete o[k] }))
 
     // Assessments (newest 52, returned oldest → newest like the design)
     const assessments: any[] = []
@@ -147,19 +170,35 @@ function buildSnapshot() {
     const wanted = assessments.filter((x) => x.status === 'complete').slice(-HISTORY_RUNS).concat(assessments.filter((x) => x.status === 'running'))
     const results: { [num: string]: any } = {}
     const outcomeResults: { [num: string]: any } = {}
+    const resultCount: { [num: string]: number } = {}
     wanted.forEach((x) => {
         results[x.number] = {}
         outcomeResults[x.number] = {}
     })
     if (wanted.length) {
         const ids = wanted.map((x) => x.id).join(',')
+        // PIV-071.06: only results with a score, utilization or target are sent. Not Measured results carry
+        // no values, so the client treats a missing result as Not Measured; the run totals come from resultCount.
         const r = new GlideRecordSecure(T.result)
         r.addQuery('assessment', 'IN', ids)
+        r.addEncodedQuery('scoreISNOTEMPTY^ORutilizationISNOTEMPTY^ORtarget_valueISNOTEMPTY')
         r.query()
         while (r.next()) {
             const n = numberOf[str(r, 'assessment')]
             if (n) results[n][str(r, 'capability')] = { score: num(r, 'score'), actual: num(r, 'actual_value'), utilization: num(r, 'utilization'), target: num(r, 'target_value') }
         }
+        const ra = new GlideAggregate(T.result)
+        ra.addQuery('assessment', 'IN', ids)
+        ;(ra as any).addAggregate('COUNT')
+        ra.groupBy('assessment')
+        ra.query()
+        while (ra.next()) {
+            const n = numberOf[String(ra.getValue('assessment'))]
+            if (n) resultCount[n] = Number((ra as any).getAggregate('COUNT'))
+        }
+        assessments.forEach((x) => {
+            if (resultCount[x.number] != null) x.resultCount = resultCount[x.number]
+        })
         const o = new GlideRecordSecure(T.outcomeResult)
         o.addQuery('assessment', 'IN', ids)
         o.query()
@@ -236,8 +275,12 @@ function buildSnapshot() {
 
 export function bootstrap(request: any, response: any) {
     try {
+        // PIV-071.06: JSON.stringify and the stream writer are much faster than setBody for a large answer
+        // (setBody serialises about 1 MB in 1–2 s). Same shape as before: { result: snapshot }.
+        const text = '{"result":' + JSON.stringify(buildSnapshot()) + '}'
         response.setStatus(200)
-        response.setBody(buildSnapshot() as any)
+        response.setContentType('application/json')
+        response.getStreamWriter().writeString(text)
     } catch (ex) {
         gs.error('PIVOT workspace could not load its data: ' + ex)
         response.setStatus(500)
@@ -280,7 +323,7 @@ function opportunityAction(kind: string, b: any): Result {
     const gr = findOpp(b.number)
     if (!gr) return { ok: false, error: 'Opportunity ' + b.number + ' was not found.' }
     if (!gr.canWrite()) return deny('You cannot change this opportunity.')
-    if (b.workNote) gr.setValue('work_notes', String(b.workNote).slice(0, 1000)) // PIV-060.04 – only set by AI.confirmChat (internal)
+    if (b.workNote) (gr as any).work_notes = String(b.workNote).slice(0, 1000) // PIV-060.04 – only set by AI.confirmChat. A journal field needs the property assignment; setValue does not add an entry
     const state = str(gr, 'state')
     switch (kind) {
         case 'accept':
@@ -543,7 +586,16 @@ function setProp(b: any): Result {
     const short = String(b.name || '').replace(SCOPE + '.', '')
     const v = validateProperty(short, b.value, props())
     if (v.error) return { ok: false, error: v.error }
-    gs.setProperty(SCOPE + '.' + short, String(v.value))
+    // Saved on the sys_properties record: gs.setProperty does not persist when called from the REST API (found in Sprint 6 testing)
+    const name = SCOPE + '.' + short
+    const pr = new GlideRecord('sys_properties')
+    pr.addQuery('name', name)
+    pr.setLimit(1)
+    pr.query()
+    if (pr.next()) {
+        pr.setValue('value', String(v.value))
+        if (!pr.update()) return { ok: false, error: 'The setting was not saved. Ask your ServiceNow admin to check the system log.' }
+    } else gs.setProperty(name, String(v.value))
     return { ok: true, note: /threshold|days_back/.test(short) ? 'Applies from the next assessment run.' : 'Saved.' }
 }
 

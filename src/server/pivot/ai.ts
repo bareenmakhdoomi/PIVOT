@@ -8,9 +8,12 @@
 //  * Every AI answer and the user's decision is logged in x_enno_pivot_ai_log (PIV-054.06).
 //  * x_enno_pivot.ai_enabled = false switches every AI feature off; PIVOT works fully without them (PIV-054.03).
 import { gs, GlideRecord, GlideRecordSecure, GlideDateTime, GlideAggregate } from '@servicenow/glide'
+import { OneExtendUtil } from '@servicenow/glide/sn_one_extend'
 import { SCOPE, PROPERTIES, FAMILIES, OPP_ACTIVE, OPP_STATE_LABEL, roadmapPhase, impactFromStatus, outcomeStatus, gapConfig } from './rules.ts'
 
-declare const sn_generative_ai: any
+// Generative AI Controller "Generic Prompt" capability – the same call sn_generative_ai.LLMClient makes. Scoped
+// namespaces such as sn_generative_ai are not visible inside a JavaScript module, so PIVOT calls OneExtendUtil directly.
+const GENERIC_PROMPT = '0c90ca79533121106b38ddeeff7b12d7'
 
 const T = {
     capability: SCOPE + '_capability',
@@ -93,15 +96,16 @@ export function rulesLabel(runNumber: string, runDate: string) {
 // ---------------------------------------------------------------- the LLM (PIV-054.02)
 /** True when the Generative AI Controller script API is installed. Whether a provider answers is checked by test(). */
 export function apiPresent(): boolean {
-    try { return typeof sn_generative_ai !== 'undefined' && !!sn_generative_ai && typeof sn_generative_ai.LLMClient === 'function' } catch (e) { return false }
+    try { return !!OneExtendUtil && typeof (OneExtendUtil as any).call === 'function' } catch (e) { return false }
 }
 type Llm = { ok: boolean; text: string; notSetUp?: boolean; error?: string }
 export function llm(prompt: string): Llm {
     if (!apiPresent()) return { ok: false, text: '', notSetUp: true, error: MSG.notSetUp }
     try {
-        const r = new sn_generative_ai.LLMClient().call({ prompt: prompt })
-        if (r && String(r.status) === 'Success' && r.response) return { ok: true, text: String(r.response) }
-        const why = String((r && r.response) || '')
+        const res: any = OneExtendUtil.call({ prompt: prompt, model: null, provider: null })
+        const cap = res && res.capabilities ? res.capabilities[GENERIC_PROMPT] : null
+        if (cap && String(cap.status) === 'success' && cap.response) return { ok: true, text: String(cap.response) }
+        const why = String((cap && (cap.error || cap.response)) || (res ? JSON.stringify(res).slice(0, 300) : 'no response'))
         const notSetUp = /provider|not configured|no model|not enabled|disabled|not approved|entitle/i.test(why)
         gs.warn('PIVOT AI: the LLM did not answer: ' + why)
         return { ok: false, text: '', notSetUp, error: notSetUp ? MSG.notSetUp : MSG.failed }
@@ -160,6 +164,7 @@ export function decide(logId: string, decision: string, detail?: string): AiResu
     const l = new GlideRecord(T.log)
     if (!/^[0-9a-f]{32}$/i.test(String(logId || '')) || !l.get(String(logId))) return { ok: false, error: 'The AI suggestion was not found.' }
     if (str(l, 'user') !== gs.getUserID()) return { ok: false, error: 'Only the person who asked for this suggestion can decide on it.' }
+    if (str(l, 'decision') !== 'shown') return { ok: false, error: 'This suggestion was already ' + str(l, 'decision') + '. Ask for a new one.' } // one decision per suggestion
     l.setValue('decision', decision)
     if (detail) l.setValue('decision_detail', String(detail).slice(0, 1000))
     l.update()
@@ -656,7 +661,8 @@ export function suggestOwnersAll(channel?: string): AiResult {
         opps.push({ number: str(o, 'number'), capability: o.getDisplayValue('capability'), capabilityId: str(o, 'capability'), family: fam, group: str(o, 'assignment_group'), finding: TYPE_LABEL[str(o, 'type')] || str(o, 'type'), priority: num(o, 'priority') })
     }
     const run = latestCompleted()
-    const label = rulesLabel(run ? str(run, 'number') : '', run ? str(run, 'run_date') : '')
+    // bulk suggestions are ranked by the PIVOT rules (experience on the product, then workload) – said so in the label
+    const label = 'PIVOT suggestion · ranked by experience and workload' + (run ? ' · from ' + str(run, 'number') + ', ' + dateText(str(run, 'run_date')) : '')
     if (!opps.length) return { ok: true, label, footer: MSG.footer, items: [] }
     // candidates per family/group are cached; workload grows as suggestions are handed out so the load is spread
     const cache: { [k: string]: Candidate[] } = {}
@@ -944,6 +950,7 @@ export function test(): AiResult {
 
 /** PIV-055.04 – Now Assist panel: explain the opportunity the user is looking at, or ask which one. */
 export function explainForPanel(table: string, sysId: string, text?: string): AiResult {
+    if (!hasPivotRole()) return { ok: false, error: MSG.noRole, noAccess: true } // PIV-054.04 AC 2
     const m = /PVO\d+/i.exec(String(text || ''))
     let number = m ? m[0].toUpperCase() : ''
     if (!number && table === T.opportunity && /^[0-9a-f]{32}$/i.test(String(sysId || ''))) {

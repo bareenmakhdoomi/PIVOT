@@ -445,6 +445,7 @@ export function notifications() {
     if (isRole('admin')) {
         const nm = new GlideAggregate(T.capability)
         nm.addQuery('active', '=', true)
+        nm.addQuery('not_found', '!=', true) // PIV-014.06: capabilities not found in the last discovery need no family
         nm.addNullQuery('product_family')
         ;(nm as any).addAggregate('COUNT')
         nm.query()

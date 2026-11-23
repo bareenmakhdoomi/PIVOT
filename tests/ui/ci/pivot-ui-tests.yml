@@ -1,0 +1,44 @@
+# PIV-071.02 – PIVOT workspace browser tests after every merge to dev or main.
+# Store the instance URL and the test users in repository secrets; nothing secret is kept in the repository.
+name: PIVOT UI tests
+on:
+  push:
+    branches: [dev, main]
+  workflow_dispatch: {}
+jobs:
+  ui-tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    defaults:
+      run:
+        working-directory: tests/ui
+    env:
+      CI: 'true'
+      PIVOT_URL: ${{ secrets.PIVOT_URL }}
+      PIVOT_ADMIN_USER: ${{ secrets.PIVOT_ADMIN_USER }}
+      PIVOT_ADMIN_PASSWORD: ${{ secrets.PIVOT_ADMIN_PASSWORD }}
+      PIVOT_ANALYST_USER: ${{ secrets.PIVOT_ANALYST_USER }}
+      PIVOT_ANALYST_PASSWORD: ${{ secrets.PIVOT_ANALYST_PASSWORD }}
+      PIVOT_OWNER_USER: ${{ secrets.PIVOT_OWNER_USER }}
+      PIVOT_OWNER_PASSWORD: ${{ secrets.PIVOT_OWNER_PASSWORD }}
+      PIVOT_VIEWER_USER: ${{ secrets.PIVOT_VIEWER_USER }}
+      PIVOT_VIEWER_PASSWORD: ${{ secrets.PIVOT_VIEWER_PASSWORD }}
+      PIVOT_NOROLE_USER: ${{ secrets.PIVOT_NOROLE_USER }}
+      PIVOT_NOROLE_PASSWORD: ${{ secrets.PIVOT_NOROLE_PASSWORD }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: npm install
+      - run: npx playwright install --with-deps chromium
+      - run: npx playwright test
+      - name: Keep screenshots, traces and the report (failing steps have a screenshot)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pivot-ui-test-results
+          path: |
+            tests/ui/results
+            tests/ui/playwright-report
+          retention-days: 14

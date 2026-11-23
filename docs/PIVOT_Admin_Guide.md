@@ -11,7 +11,22 @@ PIVOT only reads other applications' tables and writes to its own scope (x_enno_
 
 ## Where they come from
 
-Each run starts with **discovery**: licences from the subscription overview (`sn_sub_man_st_subscription_overview`, fallback `license_details`), installed Store apps (`sys_store_app`) and plugins (`v_plugin`). For-fee items are filtered with `ua_app_family`, which also gives the product family. Each capability is keyed by source and source id, so a new run updates it instead of making a copy. Admin settings (family, weight, measure table, filter, target, days back, linked app) are never overwritten. Items no longer found are flagged "Not found in last run", never deleted. A licence counts as installed only when it is linked to an installed app capability (Linked app).
+Each run starts with **discovery**: licences from the subscription overview (`sn_sub_man_st_subscription_overview`, falling back to `license_details` only when the overview has no rows), every active Store or custom app (`sys_store_app`, except PIVOT itself), and active for-fee plugins (`v_plugin`). `ua_app_family` supplies product-family mappings and continues to filter plugins; apps are included even when they have no for-fee family mapping. Each capability is keyed by source and source id, so a new run updates it instead of making a copy. Admin settings (family, weight, measure table, filter, target, days back, linked app) are never overwritten. Items no longer found are flagged "Not found in last run", never deleted. A licence counts as installed only when it is linked to an installed app capability (Linked app).
+
+### Subscription fields copied to Capability
+
+Discovery reads every row from `sn_sub_man_st_subscription_overview` when that table exists and has rows. It reads the subscription reference and its display value, `purchased_count`, `allocated_count`, and the row's `sys_id`. It uses `license_details` only if the overview has no rows; from that table it reads `name`, `count`, `allocated`, and `sys_id`. Rows without a product name are skipped and logged with their `sys_id`. A missing allocated count is stored as 0.
+
+| Capability field | `sn_sub_man_st_subscription_overview` | `license_details` fallback |
+|---|---|---|
+| Name | Subscription display value | `name` |
+| Source | `subscription` (shown as **License**) | `subscription` (shown as **License**) |
+| Source ID | Subscription reference value; row `sys_id` if empty | Row `sys_id` |
+| Licensed | `true` for a discovered subscription | `true` for a discovered subscription |
+| Entitled (purchased) count | `purchased_count` | `count` |
+| Allocated count | `allocated_count` | `allocated` |
+
+The Source, Licensed, Entitled, and Allocated fields have help text describing their discovery provenance. **Licensed** means discovery found the subscription; it is separate from the purchased and allocated counts.
 
 ## Set the measurement (measure table, target, weight)
 
@@ -22,11 +37,11 @@ Each run starts with **discovery**: licences from the subscription overview (`sn
     - **Measure table** – the table that shows real use, for example `incident`.
     - **Measure filter** – optional conditions, for example only active records.
     - **Date field** and **Days back** – the period counted (default `sys_created_on`, 30 days).
-    - **Target** – the count that means full use (score 100).
+    - **Target** – the editable count that means full use (score 100). The field help reads **“Empty = Not Measured”**; clear the value to leave a capability unscored.
     - **Weight** – how much the capability counts in the Platform Value Score (0 leaves it out).
-3. Save. The next run measures it: score = actual ÷ target × 100, capped at 100. Without a measure table or target it stays **Not Measured**.
+3. Save. Target is editable Capability data, not a fixed product benchmark. The next run measures it: score = actual ÷ target × 100, capped at 100. Without a measure table or target it stays **Not Measured**.
 
-On first discovery 14 well-known products get a starting measure and target (for example Incident: `incident`, 30 days, target 500). They are starting points; change them to match your organisation. A cleared starter setting stays cleared.
+For the complete list of configured starter measures, filters, targets, and per-target rationale, see [Seed measures and target rationale](./Seed_Measures.md). These are provisional starting proposals; validate and adjust them for your organisation. Discovery applies a starter only when the measure table and target are both empty, and preserves admin-edited settings on later runs.
 
 ## Map product families
 

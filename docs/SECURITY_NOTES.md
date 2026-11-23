@@ -4,6 +4,10 @@
 
 PIVOT runs in the `x_enno_pivot` application scope. This register records the cross-scope privileges declared by the project and the separately reported Generative AI Controller execute privilege. The table grants below are `read` operations on `sys_db_object` targets with status `allowed`; they do not grant PIVOT write access to those source tables. PIVOT writes business data only to its own application tables.
 
+### Architect review (STRY0015327)
+
+All 22 project-declared table privileges were reviewed. Each is a `read` operation with status `allowed`, and its business reason is recorded below. No `write` or `create` table privileges are declared, so there are no such entries to retain; any discovered PIVOT table privilege with either operation should be removed. The separately instance-created `sn_generative_ai.LLMClient` `execute` privilege is a non-table API grant and is outside this table-privilege review.
+
 Review these entries against the `CrossScopePrivilege` declarations in:
 
 - [`src/fluent/discovery/discovery.now.ts`](../src/fluent/discovery/discovery.now.ts) — discovery and inventory source tables.
@@ -12,11 +16,14 @@ Review these entries against the `CrossScopePrivilege` declarations in:
 | Target table / API | Target scope | Operation / status | Reason |
 |---|---|---|---|
 | `sn_sub_man_st_subscription_overview` | `sn_sub_man` | `read` / `allowed` | Discover subscription names and purchased/allocated counts to populate licensed Capability records. |
-| `subscription_entitlement` | `sn_entitlement` | `read` / `allowed` | A read grant is declared for the entitlement table. No direct read of this table was found in the current PIVOT source; confirm its continuing need with the privilege owner before release. |
+| `subscription_entitlement` | `sn_entitlement` | `read` / `allowed` | Resolve the display value of the `subscription` reference on `sn_sub_man_st_subscription_overview`, which discovery reads with `getDisplayValue('subscription')`. There is no separate GlideRecord query to this table. |
 | `license_details` | `global` | `read` / `allowed` | Fallback source for licensed products and entitlement counts when the subscription overview has no rows. |
 | `ua_app_family` | `global` | `read` / `allowed` | Identify for-fee apps/plugins and map discovered products to a ServiceNow product family. |
 | `sys_store_app` | `sn_appclient` | `read` / `allowed` | Discover active installed Store applications, including app name, scope, and version. |
-| `v_plugin` | `global` | `read` / `allowed` | Discover active plugins eligible for PIVOT capability inventory. |
+| `sys_plugins` | `global` | `read` / `allowed` | Enumerate every activated plugin record and read its plugin ID, name, and version for Capability discovery. |
+| `v_plugin` | `global` | `read` / `allowed` | Enrich activated plugin Capabilities with scope metadata when available. |
+| `cmdb_ci` | `global` | `read` / `allowed` | Count configuration item records for the Discovery and Service Mapping starter measures. |
+| `task` | `global` | `read` / `allowed` | Count HR case records for the HRSD starter measures, using the `sys_class_name` filter to scope the parent Task table to HR records. |
 | `incident` | `global` | `read` / `allowed` | Count incident records for the Incident Management starter measure. |
 | `problem` | `global` | `read` / `allowed` | Count problem records for the Problem Management starter measure. |
 | `change_request` | `global` | `read` / `allowed` | Count change requests for the Change Management starter measure. |
@@ -49,7 +56,7 @@ The PIVOT server-script write paths were reviewed: every GlideRecord insert, upd
 | `x_enno_pivot_roadmap_item` | Roadmap generation creates, updates, or removes PIVOT roadmap rows. |
 | `x_enno_pivot_ai_log` | PIVOT AI usage and decision logging. |
 
-Other tables referenced by server scripts (for example `sys_user`, role-membership tables, discovery sources, and measure tables) are read-only. Workspace property changes use `gs.setProperty` with the `x_enno_pivot.` prefix; they do not update a customer application's table. The separately reported `sn_generative_ai.LLMClient` `execute` privilege is a non-table API invocation, not a table write grant. ATF test `PIVOT - No cross-scope table write privileges` checks the deployed application's `sys_scope_privilege` records for non-Read table operations. The source-code destination review remains required for every change that adds or changes a server-side write path.
+Other tables referenced by server scripts (for example `sys_user`, role-membership tables, discovery sources, and measure tables) are read-only. Workspace property changes use `gs.setProperty` with the `x_enno_pivot.` prefix; they do not update a customer application's table. The separately reported `sn_generative_ai.LLMClient` `execute` privilege is a non-table API invocation, not a table write grant. ATF test `PIVOT - Cross-scope privileges are Allowed and table-read-only` checks that every deployed PIVOT `sys_scope_privilege` entry is `allowed` and that no cross-scope table privilege grants a non-Read operation. The source-code destination review remains required for every change that adds or changes a server-side write path.
 
 ### Measurement scope boundary
 
