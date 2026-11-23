@@ -337,6 +337,19 @@ export function runDiscovery(runStartedAt?: string, licensesOnly = false, appsOn
             } catch (ex) {
                 add('warn', 'Plugin scope metadata could not be read from ' + SOURCES.pluginDetails + ': ' + ex)
             }
+            // Every Store app is also registered as a plugin (com.<scope>). Keep it active once, as a Store app,
+            // so the same product is not listed and counted twice (PIV-011.03 / 012.01 / 012.02).
+            const appScopes: { [scope: string]: boolean } = {}
+            if (tableExists(SOURCES.apps)) {
+                const sa = new GlideRecord(SOURCES.apps)
+                sa.addQuery('active', true)
+                sa.query()
+                while (sa.next()) {
+                    const sc = str(sa, 'scope')
+                    if (sc) appScopes[sc] = true
+                }
+            }
+            let appTwins = 0
             const p = new GlideRecord(SOURCES.plugins)
             p.addQuery('active', true)
             p.query()
@@ -346,12 +359,15 @@ export function runDiscovery(runStartedAt?: string, licensesOnly = false, appsOn
                 s.plugins.read++
                 try {
                     const pluginScope = detailsById[id] ? detailsById[id].scope : ''
-                    upsertDiscoveredCapability('plugin', id, name, { active: true, licensed: false, installed: true, app_scope: pluginScope === 'global' ? '' : pluginScope, version: str(p, 'version').slice(0, 40) }, familyFromLob(feeById[id] || ''), s.plugins)
+                    const appTwin = !!pluginScope && pluginScope !== 'global' && !!appScopes[pluginScope]
+                    if (appTwin) appTwins++
+                    upsertDiscoveredCapability('plugin', id, name, { active: !appTwin, licensed: false, installed: true, app_scope: pluginScope === 'global' ? '' : pluginScope, version: str(p, 'version').slice(0, 40) }, familyFromLob(feeById[id] || ''), s.plugins)
                 } catch (ex) {
                     s.plugins.skipped++
                     add('error', 'Plugin ' + id + ' could not be saved: ' + ex)
                 }
             }
+            if (appTwins) add('info', appTwins + ' plugin(s) belong to a Store app and are kept inactive; the product is listed once, as a Store app.')
         }
         if (!s.plugins.read) add('warn', 'No active plugins found.')
     } catch (ex) {

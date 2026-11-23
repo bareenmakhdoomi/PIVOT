@@ -1231,6 +1231,10 @@ declare global {
                         table: 'sys_scope_privilege'
                         id: '623b552a2fcc1310d2a0d68fcea4e3e3'
                     }
+                    'pivot-xscope-read-sys_plugins': {
+                        table: 'sys_scope_privilege'
+                        id: '4e23b07f2f9cd310d2a0d68fcea4e3b4'
+                    }
                     'pivot-xscope-read-sys_store_app': {
                         table: 'sys_scope_privilege'
                         id: '61aa6f0e2f885750d2a0d68fcea4e3f3'
