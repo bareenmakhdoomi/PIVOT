@@ -196,7 +196,6 @@ export function opportunities(request: any) {
     const q: string[] = []
     const state = param(request, 'state') || 'active'
     if (state === 'active') q.push('stateIN' + OPP_ACTIVE.join(','))
-    else if (state === 'new') q.push('stateINnew,open')
     else if (state !== 'all') q.push('state=' + safe(state))
     if (param(request, 'type')) q.push('type=' + safe(param(request, 'type')))
     if (param(request, 'capability')) q.push('capability=' + safe(param(request, 'capability')))
@@ -446,6 +445,7 @@ export function notifications() {
     if (isRole('admin')) {
         const nm = new GlideAggregate(T.capability)
         nm.addQuery('active', '=', true)
+        nm.addQuery('not_found', '!=', true) // PIV-014.06: capabilities not found in the last discovery need no family
         nm.addNullQuery('product_family')
         ;(nm as any).addAggregate('COUNT')
         nm.query()

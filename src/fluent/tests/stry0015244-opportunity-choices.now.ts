@@ -4,7 +4,7 @@ import { Test } from '@servicenow/sdk/core'
 Test({
     $id: Now.ID['atf-stry0015244-opportunity-choices'],
     name: 'PIVOT - Opportunity type and state choices',
-    description: 'Type choices include lowercase adoption and license values with readable labels. State choices include new, in progress, accepted, rejected and done. New opportunities default to new.',
+    description: 'Type choices include lowercase adoption and license values with readable labels. State choices New (stored value open), In progress, Accepted, Rejected and Done. New opportunities default to New (open).',
     active: true,
     failOnServerError: true,
 }, (atf) => {
@@ -27,7 +27,7 @@ Test({
     var capId = cap.insert();
 
     var opp = new GlideRecord('x_enno_pivot_opportunity');
-    opp.initialize();
+    opp.newRecord(); // newRecord applies the dictionary defaults (initialize does not)
     opp.setValue('capability', capId);
     opp.setValue('type', 'adoption');
     var oppId = opp.insert();
@@ -36,12 +36,12 @@ Test({
 
     assertEqual({ name: 'adoption choice label', shouldbe: 'Adoption', value: choiceLabel('type', 'adoption') });
     assertEqual({ name: 'license choice label', shouldbe: 'License', value: choiceLabel('type', 'license') });
-    assertEqual({ name: 'new state label', shouldbe: 'New', value: choiceLabel('state', 'new') });
+    assertEqual({ name: 'new state label', shouldbe: 'New', value: choiceLabel('state', 'open') });
     assertEqual({ name: 'in progress state label', shouldbe: 'In progress', value: choiceLabel('state', 'in_progress') });
     assertEqual({ name: 'accepted state label', shouldbe: 'Accepted', value: choiceLabel('state', 'accepted') });
     assertEqual({ name: 'rejected state label', shouldbe: 'Rejected', value: choiceLabel('state', 'rejected') });
     assertEqual({ name: 'done state label', shouldbe: 'Done', value: choiceLabel('state', 'done') });
-    assertEqual({ name: 'new opportunity defaults to New', shouldbe: 'new', value: saved.getValue('state') });
+    assertEqual({ name: 'new opportunity defaults to New', shouldbe: 'open', value: saved.getValue('state') });
 
     if (oppId) { var delOpp = new GlideRecord('x_enno_pivot_opportunity'); if (delOpp.get(oppId)) delOpp.deleteRecord(); }
     if (capId) { var delCap = new GlideRecord('x_enno_pivot_capability'); if (delCap.get(capId)) delCap.deleteRecord(); }

@@ -17,12 +17,12 @@ const PROP_META = [
   ['priority_weight_impact', 'Priority weight: business impact', '×', 'Business impact is multiplied by this in the priority (0–10, default 1).'],
   ['gap_rule_config', 'Gap rule texts and defaults', 'JSON', 'Optional JSON per gap type: title, text, value, effort. Leave empty for the built-in defaults.'],
   ['slow_capability_seconds', 'Slow capability warning', 's', 'Log a warning when one capability takes longer.'],
-  ['admin_group', 'Run email recipients', '', 'Who receives the run complete / failed emails.'],
+  ['admin_group', 'Run email recipients', '', 'Group whose active members also get the run complete / failed emails. Every active PIVOT admin always gets them.'],
   ['ai_enabled', 'AI features (Now Assist)', '', 'Turns all PIVOT AI features on or off. PIVOT works fully without them (NFR-AI-02).']
 ];
 const PROP_TYPES = { admin_group: 'string', ai_enabled: 'boolean', gap_rule_config: 'string' };
 // PIV-032.01 – active opportunity states (the gap rules refresh these; Done/Rejected are closed)
-const ACTIVE = ['new', 'open', 'accepted', 'in_progress'];
+const ACTIVE = ['open', 'accepted', 'in_progress'];
 const ROLE_RANK = ['viewer', 'business_owner', 'analyst', 'admin'];
 
 export function createPV(first, api) {
@@ -32,10 +32,10 @@ export function createPV(first, api) {
   const r2 = n => Math.round(n * 100) / 100;
 
   const LABELS = {
-    source: { subscription: 'Subscription', store_app: 'Store app', plugin: 'Plugin', manual: 'Manual' },
+    source: { subscription: 'License', store_app: 'Store app', plugin: 'Plugin', manual: 'Manual' },
     family: {}, status: { queued: 'Queued', running: 'Running', complete: 'Complete', failed: 'Failed', none: 'No run yet' },
     type: { shelfware: 'Shelfware', idle_licences: 'Idle licences', low_adoption: 'Low adoption', not_measured: 'Not measured', weak_outcome: 'Weak outcome', adoption_potential: 'Adoption potential', adoption: 'Adoption', license: 'License' },
-    state: { new: 'New', open: 'New', accepted: 'Accepted', in_progress: 'In progress', done: 'Done', rejected: 'Rejected' },
+    state: { open: 'New', accepted: 'Accepted', in_progress: 'In progress', done: 'Done', rejected: 'Rejected' },
     phase: { now: 'Now', next: 'Next', later: 'Later' },
     outcome: { improved: 'Improved', on_target: 'On target', below_target: 'Below target', not_measured: 'Not measured' },
     direction: { higher_better: 'Higher is better', lower_better: 'Lower is better' },
@@ -58,6 +58,8 @@ export function createPV(first, api) {
     D.instance = snap.instance || {};
     S.me = snap.me.id;
     S.realRoles = snap.me.roles && snap.me.roles.length ? snap.me.roles : ['viewer'];
+    S.readNotes = Array.isArray(snap.me.readNotifications) ? snap.me.readNotifications : [];
+    S.version = snap.version || '';
     if (!previewRoles().includes(S.role) || !S.loaded) S.role = snap.me.role || 'viewer';
     D.personas = { admin: S.me, analyst: S.me, business_owner: S.me, viewer: S.me };
     S.props = {};
@@ -66,7 +68,9 @@ export function createPV(first, api) {
       S.props[SCOPE + '.' + k] = t === 'boolean' ? v === 'true' || v === true : t === 'string' ? String(v) : Number(v);
     });
     D.properties = PROP_META.map(([n, label, unit, help]) => ({ name: SCOPE + '.' + n, label, unit, help, value: PROP_TYPES[n] === 'boolean' ? true : PROP_TYPES[n] === 'string' ? '' : 0 }));
-    S.caps = snap.capabilities || [];
+    // PIV-071.06: the server leaves out empty / null / false capability values; put the defaults back
+    const CAP_DEFAULTS = { number: '', name: '', family: '', source: '', licensed: false, installed: false, entitled: null, allocated: null, scope: '', linked_app: '', measure_table: '', measure_filter: '', date_field: '', days_back: 30, target: null, weight: 1, active: false, not_found: false, last_discovered: null, stale: false, staleNote: '' };
+    S.caps = (snap.capabilities || []).map(c => Object.assign({}, CAP_DEFAULTS, c));
     S.assessments = (snap.assessments || []).slice().sort((a, b) => (a.run_date || 0) - (b.run_date || 0));
     S.logs = snap.logs || {};
     S.results = snap.results || {};
@@ -77,13 +81,14 @@ export function createPV(first, api) {
     S.serverNow = snap.now || Date.now();
     S.engine = !!snap.engineAvailable;
     S.ai = !!snap.aiAvailable;
+    S.aiUsage = snap.aiUsage || null;
     S.loaded = true;
   }
 
   function P(n) { return S.props[SCOPE + '.' + n]; }
   function phaseOf(p) { return p == null ? 'later' : p >= P('priority_now') ? 'now' : p >= P('priority_next') ? 'next' : 'later'; }
   function cap(id) { return S.caps.find(c => c.id === id); }
-  function completedRuns() { return S.assessments.filter(a => a.status === 'complete'); }
+  function completedRuns() { return S.assessments.filter(a => a.status === 'complete' || a.status === 'complete_with_warnings'); } // PIV-037: same as the API
   function latestRun() { const c = completedRuns(); return c[c.length - 1] || null; }
   function latestRes() { const a = latestRun(); return (a && S.results[a.number]) || {}; }
   function latestOutRes() { const a = latestRun(); return (a && S.outcomeResults[a.number]) || {}; }
@@ -106,7 +111,8 @@ export function createPV(first, api) {
   }
   function previewRoles() {
     // Admins can preview every role; others their own roles and Viewer. The server always uses the real roles.
-    const set = S.realRoles.includes('admin') ? ROLE_RANK.slice() : S.realRoles.concat(['viewer']);
+    // PIV-065.05 AC 3 – only admins get "Preview as"; everyone else has just their own (highest) role.
+    const set = S.realRoles.includes('admin') ? ROLE_RANK.slice() : ROLE_RANK.filter(r => S.realRoles.includes(r)).slice(-1);
     return ROLE_RANK.filter(r => set.includes(r)).reverse();
   }
   function can(action, rec) {
@@ -175,6 +181,9 @@ export function createPV(first, api) {
     refresh: () => reload().then(() => ({ ok: true }), err => ({ ok: false, error: (err && err.message) || NETWORK_ERROR })),
     role: () => S.role,
     previewRoles,
+    readNotifications: () => (S.readNotes || []).slice(),
+    appVersion: () => S.version || '',
+    markRead: keys => { S.readNotes = (S.readNotes || []).concat(keys); return act({ action: 'markRead', keys }, { reload: false }); },
     setRole(r) { if (LABELS.role[r] && previewRoles().includes(r)) { S.role = r; emit({ type: 'role' }); } },
     user: () => Object.assign({ title: '' }, D.users[S.me], { title: (D.users[S.me] && D.users[S.me].title) || 'ServiceNow user' }),
     users: role => Object.keys(D.users).map(k => D.users[k]).filter(u => !role || u.role === role),
@@ -200,7 +209,8 @@ export function createPV(first, api) {
           case 'active': return c.active;
           case 'licensed_not_installed': return c.licensed && !c.installed;
           case 'not_measured': return c.active && c.score == null && c.installed;
-          case 'needs_mapping': return !c.family;
+          case 'needs_mapping': return c.active && !c.not_found && c.active && !c.not_found && !c.family; // PIV-014.06
+          case 'installed_apps': return c.active && c.installed && (c.source === 'store_app' || c.source === 'plugin');
           case 'not_found': return c.not_found;
           case 'low': return c.score != null && c.score < P('low_score_threshold');
           case 'idle': return c.utilization != null && c.utilization < P('utilization_threshold');
@@ -248,7 +258,8 @@ export function createPV(first, api) {
       const res = S.results[num];
       if (res) {
         const vals = Object.keys(res).map(k => res[k]);
-        x.counts = { capabilities: vals.length, scored: vals.filter(r => r.score != null).length, notMeasured: vals.filter(r => r.score == null).length, low: vals.filter(r => r.score != null && r.score < P('low_score_threshold')).length };
+        const total = a.resultCount != null ? a.resultCount : vals.length, scored = vals.filter(r => r.score != null).length; // PIV-071.06: Not Measured results are not sent
+        x.counts = { capabilities: total, scored: scored, notMeasured: total - scored, low: vals.filter(r => r.score != null && r.score < P('low_score_threshold')).length };
         x.opportunities = S.opps.filter(o => o.assessment === num).length;
       }
       const comp = completedRuns(), i = comp.findIndex(c => c.number === num); x.previousScore = i > 0 ? comp[i - 1].overall_score : null;
@@ -282,7 +293,7 @@ export function createPV(first, api) {
       o = o || {}; const q = (o.q || '').toLowerCase(), st = o.state || 'active';
       const rows = S.opps.filter(x => {
         if (st === 'active' && !ACTIVE.includes(x.state)) return false;
-        if (st !== 'active' && st !== 'all' && !(st === 'new' ? x.state === 'new' || x.state === 'open' : x.state === st)) return false;
+        if (st !== 'active' && st !== 'all' && x.state !== st) return false;
         if (o.type && o.type !== 'all' && x.type !== o.type) return false;
         if (o.phase && o.phase !== 'all' && x.phase !== o.phase) return false;
         if (o.capability && x.capability !== o.capability) return false;
@@ -385,14 +396,14 @@ export function createPV(first, api) {
         kpiTrend: outs.filter(o => o.status !== 'not_measured'),
         topOpportunities: store.opportunities().slice(0, 10), roadmap: rm,
         notMeasured: { capabilities: caps.filter(c => c.score == null && c.installed && c.licensed), outcomes: outs.filter(o => o.status === 'not_measured') },
-        insights: store.insights(), running: store.running(), needsMapping: S.caps.filter(c => !c.family).length
+        insights: store.insights(), running: store.running(), needsMapping: S.caps.filter(c => c.active && !c.not_found && !c.family).length
       };
     },
     insights() {
       const out = [], res = latestRes(), ores = latestOutRes();
       S.outcomes.forEach(o => {
-        const r = res[o.capability], or = ores[o.id] || {}, c = cap(o.capability); if (!r || r.score == null || !c) return;
-        if (r.score >= P('high_usage_threshold') && or.status === 'below_target') out.push({ kind: 'high_usage_below_target', capability: c.name, capabilityId: c.id, outcome: o.kpi, score: r.score, text: c.name + ' is used a lot (score ' + Math.round(r.score) + ') but “' + o.kpi + '” is below target.' });
+        const r = res[o.capability], or = ores[o.id] || {}, c = cap(o.capability); if (!r || r.score == null || !c || o.active === false) return; // PIV-040: active outcomes only, as the gap rules
+        if (r.score >= P('high_usage_threshold') && or.status === 'below_target') out.push({ kind: 'high_usage_below_target', capability: c.name, capabilityId: c.id, outcome: o.kpi, score: r.score, current: or.actual, target: o.target, text: c.name + ' is used a lot (score ' + Math.round(r.score) + ') but “' + o.kpi + '” is below target: ' + (or.actual == null ? '—' : fmt.num(or.actual, 1)) + ' against a target of ' + (o.target == null ? '—' : fmt.num(o.target, 1)) + '.' });
         if (r.score < P('low_score_threshold') && o.important_objective) out.push({ kind: 'low_usage_important', capability: c.name, capabilityId: c.id, outcome: o.objective, score: r.score, text: c.name + ' has low usage (score ' + Math.round(r.score) + ') but supports an important objective: “' + o.objective + '”.' });
       });
       return out;
@@ -405,14 +416,25 @@ export function createPV(first, api) {
     }
   };
 
-  // AI (FR-AI-01 … 07) arrives with the AI sprint. Until then every AI entry point reports "not available"
-  // and the workspace hides the AI panels (AI.enabled() is false). No sample answers are ever shown.
+  // AI (PIV-054 … 060). Every call goes to the server (POST /action { action: 'ai', skill }), which checks the AI switch,
+  // the user's PIVOT role and reads the records as the user. Suggestions never change a record; decisions are logged.
+  const aiCall = (body, opts) => act(Object.assign({ action: 'ai' }, body), { reload: !!(opts && opts.reload) });
   const ai = {
     label: 'AI-generated',
     enabled: () => S.ai && !!P('ai_enabled'),
     stamp: () => { const a = latestRun(); return a ? 'AI-generated from ' + a.number + ', ' + fmt.date(a.run_date) : 'AI-generated'; },
-    explain: () => null, briefing: () => null, suggestScores: () => null, suggestOwners: () => [], draftPlan: () => null,
-    ask: () => ({ ok: false, answer: 'AI features are not available in this version of PIVOT yet.', items: [] })
+    explain: num => aiCall({ skill: 'explain', number: num }),
+    briefing: num => aiCall({ skill: 'briefing', number: num }, { reload: true }),
+    suggestScores: num => aiCall({ skill: 'scores', number: num }),
+    suggestOwners: num => aiCall({ skill: 'owners', number: num }),
+    suggestOwnersAll: () => aiCall({ skill: 'ownersAll' }),
+    draftPlan: num => aiCall({ skill: 'plan', number: num }),
+    ask: q => aiCall({ skill: 'ask', question: q }),
+    confirm: c => aiCall({ skill: 'confirm', confirm: c }, { reload: true }),
+    decide: (logId, decision, detail) => (logId ? aiCall({ skill: 'decide', logId, decision, detail: detail || '' }) : Promise.resolve({ ok: true })),
+    test: () => aiCall({ skill: 'test' }),
+    usage: () => S.aiUsage || null,
+    suggested: ['How are we doing?', 'Which licences are we not using?', 'What is assigned to me?', 'When did PIVOT last run?', 'What is not measured?', 'What should we do first?']
   };
 
   ingest(first);

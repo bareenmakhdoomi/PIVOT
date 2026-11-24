@@ -2,12 +2,13 @@
 // POST /action performs one user action. All PIVOT table access uses GlideRecordSecure, so the
 // table and field ACLs of the user decide what is read and written. Validation runs here (field
 // messages for the UI) and again in the table business rules.
-import { gs, GlideRecord, GlideRecordSecure, GlideDateTime } from '@servicenow/glide'
+import { gs, GlideRecord, GlideRecordSecure, GlideAggregate, GlideDateTime } from '@servicenow/glide'
 import {
     SCOPE, FAMILIES, PROPERTIES, Errors, initialsOf, priorityOf, priorityReason, validateScores, validateRejection, OPP_ACTIVE,
     validateCapability, validateOutcome, validateProperty,
 } from './rules.ts'
 import { startRunNow } from './assessment.ts'
+import * as AI from './ai.ts'
 
 const T = {
     capability: SCOPE + '_capability',
@@ -103,11 +104,31 @@ function buildSnapshot() {
     const userIds: string[] = [me]
 
     // Capabilities
+    // PIV-071.06: rows the user may read come from GlideRecordSecure (row ACLs). Field ACLs are checked once per
+    // field on the first readable row; the values are then read with GlideRecord, which avoids one ACL check per
+    // field per row (3.7 s for 2,592 capabilities). A field the user may not read is sent empty.
     const capabilities: any[] = []
-    const c = new GlideRecordSecure(T.capability)
+    const allowed: { [id: string]: boolean } = {}
+    const cs = new GlideRecordSecure(T.capability)
+    cs.query()
+    let firstId = ''
+    while (cs.next()) {
+        allowed[cs.getUniqueValue()] = true
+        if (!firstId) firstId = cs.getUniqueValue()
+    }
+    const CAP_FIELDS = ['number', 'name', 'product_family', 'source', 'licensed', 'installed', 'entitled_count', 'allocated_count', 'app_scope', 'linked_app',
+        'measure_table', 'measure_filter', 'date_field', 'days_back', 'target_value', 'weight', 'active', 'not_found', 'last_discovered']
+    const hidden: { [f: string]: boolean } = {}
+    if (firstId) {
+        const one = new GlideRecordSecure(T.capability)
+        if (one.get(firstId)) CAP_FIELDS.forEach((f) => { if (!(one.getElement(f) as any).canRead()) hidden[f] = true })
+    }
+    const c = new GlideRecord(T.capability)
     c.orderBy('name')
     c.query()
     while (c.next()) {
+        if (!allowed[c.getUniqueValue()]) continue
+        if (Object.keys(hidden).length) CAP_FIELDS.forEach((f) => { if (hidden[f]) c.setValue(f, '') })
         capabilities.push({
             id: c.getUniqueValue(), number: str(c, 'number'), name: str(c, 'name'), family: str(c, 'product_family'), source: str(c, 'source'),
             licensed: bool(c, 'licensed'), installed: bool(c, 'installed'), entitled: num(c, 'entitled_count'), allocated: num(c, 'allocated_count'),
@@ -116,6 +137,9 @@ function buildSnapshot() {
             active: bool(c, 'active'), not_found: bool(c, 'not_found'), last_discovered: ms(str(c, 'last_discovered')), stale: false, staleNote: '',
         })
     }
+
+    // PIV-071.06: empty, null and false values are left out to keep the answer small; the client fills the defaults back in.
+    capabilities.forEach((o) => Object.keys(o).forEach((k) => { if (o[k] === '' || o[k] === null || o[k] === false) delete o[k] }))
 
     // Assessments (newest 52, returned oldest → newest like the design)
     const assessments: any[] = []
@@ -138,6 +162,7 @@ function buildSnapshot() {
             id: a.getUniqueValue(), number: n, run_date: ms(str(a, 'run_date')), run_by: runBy || 'system',
             trigger: str(a, 'trigger') === 'run_now' ? 'Run Now' : 'Weekly schedule', status: str(a, 'status') === 'complete_with_warnings' ? 'complete' : str(a, 'status') || 'queued', withWarnings: str(a, 'status') === 'complete_with_warnings',
             duration: str(a, 'duration') ? ms(str(a, 'duration')) : null, overall_score: num(a, 'overall_score'), error: errEntry ? errEntry.message : '',
+            briefing: parseJson(str(a, 'briefing'), null), // PIV-056.05 – the stored briefing with its original AI label
         })
     }
 
@@ -145,19 +170,35 @@ function buildSnapshot() {
     const wanted = assessments.filter((x) => x.status === 'complete').slice(-HISTORY_RUNS).concat(assessments.filter((x) => x.status === 'running'))
     const results: { [num: string]: any } = {}
     const outcomeResults: { [num: string]: any } = {}
+    const resultCount: { [num: string]: number } = {}
     wanted.forEach((x) => {
         results[x.number] = {}
         outcomeResults[x.number] = {}
     })
     if (wanted.length) {
         const ids = wanted.map((x) => x.id).join(',')
+        // PIV-071.06: only results with a score, utilization or target are sent. Not Measured results carry
+        // no values, so the client treats a missing result as Not Measured; the run totals come from resultCount.
         const r = new GlideRecordSecure(T.result)
         r.addQuery('assessment', 'IN', ids)
+        r.addEncodedQuery('scoreISNOTEMPTY^ORutilizationISNOTEMPTY^ORtarget_valueISNOTEMPTY')
         r.query()
         while (r.next()) {
             const n = numberOf[str(r, 'assessment')]
             if (n) results[n][str(r, 'capability')] = { score: num(r, 'score'), actual: num(r, 'actual_value'), utilization: num(r, 'utilization'), target: num(r, 'target_value') }
         }
+        const ra = new GlideAggregate(T.result)
+        ra.addQuery('assessment', 'IN', ids)
+        ;(ra as any).addAggregate('COUNT')
+        ra.groupBy('assessment')
+        ra.query()
+        while (ra.next()) {
+            const n = numberOf[String(ra.getValue('assessment'))]
+            if (n) resultCount[n] = Number((ra as any).getAggregate('COUNT'))
+        }
+        assessments.forEach((x) => {
+            if (resultCount[x.number] != null) x.resultCount = resultCount[x.number]
+        })
         const o = new GlideRecordSecure(T.outcomeResult)
         o.addQuery('assessment', 'IN', ids)
         o.query()
@@ -179,7 +220,7 @@ function buildSnapshot() {
         opportunities.push({
             id: op.getUniqueValue(), number: str(op, 'number'), capability: str(op, 'capability'), outcome: str(op, 'outcome'), type: str(op, 'type'),
             description: str(op, 'description'), value: num(op, 'value'), effort: num(op, 'effort'), business_impact: num(op, 'business_impact'),
-            priority: num(op, 'priority'), priority_reason: str(op, 'priority_reason'), state: str(op, 'state') || 'new', assigned_to: str(op, 'assigned_to'),
+            priority: num(op, 'priority'), priority_reason: str(op, 'priority_reason'), state: str(op, 'state') || 'open', assigned_to: str(op, 'assigned_to'),
             assignment_group: str(op, 'assignment_group'), groupName: op.getDisplayValue('assignment_group') || '', gap_resolved: str(op, 'gap_resolved') === '1' || str(op, 'gap_resolved') === 'true',
             rejection_reason: str(op, 'rejection_reason'), assessment: numberOf[str(op, 'assessment')] || op.getDisplayValue('assessment') || '',
             created: ms(str(op, 'sys_created_on')), updated: ms(str(op, 'sys_updated_on')), activity: Array.isArray(activity) ? activity : [],
@@ -209,7 +250,7 @@ function buildSnapshot() {
             kpi_aggregate: str(bo, 'kpi_aggregate') || 'count', kpi_field: str(bo, 'kpi_field'), baseline: num(bo, 'baseline'),
             baseline_date: str(bo, 'baseline_date') ? ms(str(bo, 'baseline_date') + ' 12:00:00') : null, baseline_change_reason: str(bo, 'baseline_change_reason'),
             target: num(bo, 'target'), period: str(bo, 'period') || 'monthly', owner: str(bo, 'owner'), expected_benefit: str(bo, 'expected_benefit'),
-            important_objective: bool(bo, 'important_objective'), low_volume_expected: bool(bo, 'low_volume_expected'),
+            important_objective: bool(bo, 'important_objective'), low_volume_expected: bool(bo, 'low_volume_expected'), active: bool(bo, 'active'),
             manual_value: num(bo, 'manual_value'), manual_value_date: str(bo, 'manual_value_date'), manual_value_by: str(bo, 'manual_value_by'),
         })
     }
@@ -222,17 +263,24 @@ function buildSnapshot() {
     return {
         now: nowMs(),
         instance: { name: gs.getProperty('instance_name', ''), company: gs.getProperty('glide.product.description', '') },
-        me: { id: me, role: myRoles[0] || 'viewer', roles: myRoles.length ? myRoles : ['viewer'] },
+        me: { id: me, role: myRoles[0] || 'viewer', roles: myRoles.length ? myRoles : ['viewer'], readNotifications: readNotifications() },
         users, families: FAMILIES, properties: p,
         capabilities, assessments, logs, results, outcomeResults, opportunities, roadmap, outcomes,
-        engineAvailable: true, aiAvailable: false, // PIV-034 – the assessment engine (weekly job and Run Now)
+        version: appVersion(), // PIV-043.06 – the guides show the same version
+        engineAvailable: true, // PIV-034 – the assessment engine (weekly job and Run Now)
+        aiAvailable: AI.apiPresent(), // PIV-054.02 – Generative AI Controller installed; x_enno_pivot.ai_enabled switches the features
+        aiUsage: myRoles.indexOf('admin') > -1 ? AI.usage(30) : null, // PIV-054.06 AC 2 – Settings > AI features
     }
 }
 
 export function bootstrap(request: any, response: any) {
     try {
+        // PIV-071.06: JSON.stringify and the stream writer are much faster than setBody for a large answer
+        // (setBody serialises about 1 MB in 1–2 s). Same shape as before: { result: snapshot }.
+        const text = '{"result":' + JSON.stringify(buildSnapshot()) + '}'
         response.setStatus(200)
-        response.setBody(buildSnapshot() as any)
+        response.setContentType('application/json')
+        response.getStreamWriter().writeString(text)
     } catch (ex) {
         gs.error('PIVOT workspace could not load its data: ' + ex)
         response.setStatus(500)
@@ -275,10 +323,11 @@ function opportunityAction(kind: string, b: any): Result {
     const gr = findOpp(b.number)
     if (!gr) return { ok: false, error: 'Opportunity ' + b.number + ' was not found.' }
     if (!gr.canWrite()) return deny('You cannot change this opportunity.')
+    if (b.workNote) (gr as any).work_notes = String(b.workNote).slice(0, 1000) // PIV-060.04 – only set by AI.confirmChat. A journal field needs the property assignment; setValue does not add an entry
     const state = str(gr, 'state')
     switch (kind) {
         case 'accept':
-            if (state !== 'new' && state !== 'open') return { ok: false, error: 'Only new opportunities can be accepted.' }
+            if (state !== 'open') return { ok: false, error: 'Only new opportunities can be accepted.' }
             gr.setValue('state', 'accepted')
             addActivity(gr, 'Accepted.')
             return save(gr)
@@ -289,7 +338,7 @@ function opportunityAction(kind: string, b: any): Result {
             return save(gr)
         case 'reopen':
             if (state !== 'done' && state !== 'rejected') return { ok: false, error: 'Only done or rejected opportunities can be reopened.' }
-            gr.setValue('state', 'new')
+            gr.setValue('state', 'open')
             addActivity(gr, 'Reopened (was ' + (state === 'done' ? 'Done' : 'Rejected') + ').')
             return save(gr)
         case 'done':
@@ -490,8 +539,20 @@ function updateCapability(b: any): Result {
     if (!gr.canWrite()) return deny('Only PIVOT admins can change measurement settings.')
     const f = b.fields || {}
     const e = validateCapability(f)
-    if (!e.measure_table && f.measure_table && !new GlideRecord(String(f.measure_table)).isValid()) e.measure_table = 'Table ' + f.measure_table + ' does not exist on this instance.'
+    if (!e.measure_table && f.measure_table && !new GlideRecord(String(f.measure_table)).isValid()) e.measure_table = 'Table ' + f.measure_table + ' does not exist on this instance'
     if (hasErrors(e)) return invalid(e)
+    if (f.linked_app !== undefined) {
+        const linkedAppId = String(f.linked_app || '')
+        if (linkedAppId && linkedAppId === gr.getUniqueValue()) return { ok: false, error: 'A capability cannot be linked to itself.' }
+        if (linkedAppId) {
+            const app = new GlideRecordSecure(T.capability)
+            if (!app.get(linkedAppId) || !(str(app, 'installed') === '1' || str(app, 'installed') === 'true') ||
+                (str(app, 'source') !== 'store_app' && str(app, 'source') !== 'plugin')) {
+                return { ok: false, error: 'Linked app must be an installed Store app or plugin Capability.' }
+            }
+        }
+        gr.setValue('linked_app', linkedAppId)
+    }
     if (f.family !== undefined) gr.setValue('product_family', String(f.family || ''))
     if (f.measure_table !== undefined) gr.setValue('measure_table', String(f.measure_table || ''))
     if (f.measure_filter !== undefined) gr.setValue('measure_filter', String(f.measure_filter || '').slice(0, 4000))
@@ -501,7 +562,7 @@ function updateCapability(b: any): Result {
     if (f.target !== undefined) gr.setValue('target_value', f.target === '' || f.target === null ? '' : String(Number(f.target)))
     if (f.active !== undefined) gr.setValue('active', !!f.active)
     const r = save(gr)
-    if (r.ok) r.note = 'Saved. New settings are used from the next assessment run.'
+    if (r.ok) r.note = 'Capability settings saved. Measurement settings are used from the next assessment run.'
     return r
 }
 
@@ -525,11 +586,21 @@ function setProp(b: any): Result {
     const short = String(b.name || '').replace(SCOPE + '.', '')
     const v = validateProperty(short, b.value, props())
     if (v.error) return { ok: false, error: v.error }
-    gs.setProperty(SCOPE + '.' + short, String(v.value))
+    // Saved on the sys_properties record: gs.setProperty does not persist when called from the REST API (found in Sprint 6 testing)
+    const name = SCOPE + '.' + short
+    const pr = new GlideRecord('sys_properties')
+    pr.addQuery('name', name)
+    pr.setLimit(1)
+    pr.query()
+    if (pr.next()) {
+        pr.setValue('value', String(v.value))
+        if (!pr.update()) return { ok: false, error: 'The setting was not saved. Ask your ServiceNow admin to check the system log.' }
+    } else gs.setProperty(name, String(v.value))
     return { ok: true, note: /threshold|days_back/.test(short) ? 'Applies from the next assessment run.' : 'Saved.' }
 }
 
-function runAction(b: any): Result {
+function runAction(b: any, internal?: boolean): Result {
+    if (!internal && b && b.workNote) delete b.workNote // work notes "Changed from Virtual Agent …" are written by AI.confirmChat only
     switch (String(b && b.action)) {
         case 'accept': return opportunityAction('accept', b)
         case 'reject': return opportunityAction('reject', b)
@@ -550,19 +621,57 @@ function runAction(b: any): Result {
         case 'updateCapability': return updateCapability(b)
         case 'mapFamily': return mapFamily(b)
         case 'setProp': return setProp(b)
+        case 'markRead': return markRead(b)
+        case 'ai': return aiAction(b)
     }
     return { ok: false, error: 'Unknown action.' }
+}
+
+// PIV-054 … 060 – AI features. Each skill checks the AI switch and the user's PIVOT role itself (ai.ts).
+function aiAction(b: any): Result {
+    const ch = 'workspace', n = String(b.number || '')
+    switch (String(b.skill || '')) {
+        case 'explain': return AI.explain(n, ch)
+        case 'briefing': return AI.briefing(n, ch)
+        case 'scores': return AI.suggestScores(n, ch)
+        case 'owners': return AI.suggestOwners(n, ch)
+        case 'ownersAll': return AI.suggestOwnersAll(ch)
+        case 'plan': return AI.draftPlan(n, ch)
+        case 'ask': return AI.ask(String(b.question || ''), ch)
+        case 'confirm': return AI.confirmChat(b.confirm || {}, ch, (x: any) => runAction(x, true))
+        case 'decide': return AI.decide(String(b.logId || ''), String(b.decision || ''), String(b.detail || ''))
+        case 'test': return AI.test()
+        case 'usage': return AI.usage(Number(b.days) || 30)
+    }
+    return { ok: false, error: 'Unknown AI request.' }
+}
+
+function appVersion(): string {
+    const a = new GlideRecord('sys_scope')
+    return a.get('scope', SCOPE) ? str(a, 'version') : ''
+}
+
+// PIV-065.03 – notifications marked read are kept as a user preference (keys only, newest 200).
+const READ_PREF = SCOPE + '.read_notifications'
+function readNotifications(): string[] {
+    try { const v = (gs.getUser() as any).getPreference(READ_PREF); const a = v ? JSON.parse(String(v)) : []; return Array.isArray(a) ? a.map(String) : [] } catch (e) { return [] }
+}
+function markRead(b: any): any {
+    const keys = Array.isArray(b && b.keys) ? b.keys.map((k: any) => String(k).slice(0, 120)) : []
+    const all = readNotifications().filter((k) => keys.indexOf(k) < 0).concat(keys).slice(-200)
+    ;(gs.getUser() as any).savePreference(READ_PREF, JSON.stringify(all))
+    return { ok: true, note: 'Marked as read.' }
 }
 
 // PIV-063.04 – every successful action answers { ok: true, note }
 const DEFAULT_NOTE: { [a: string]: string } = {
     accept: 'Accepted. It stays on the roadmap until it is closed as done.', done: 'Closed as done.', start: 'Work started. The opportunity is now In progress.',
     reopen: 'Reopened. The opportunity is New again.', assign: 'Assignment saved.', note: 'Note added.', scores: 'Scores saved.', reorder: 'Order changed.',
-    resetRoadmap: 'Roadmap back in priority order.', saveOutcome: 'Outcome saved.', updateCapability: 'Measurement settings saved.', mapFamily: 'Product family saved.', setProp: 'Saved.',
+    resetRoadmap: 'Roadmap back in priority order.', saveOutcome: 'Outcome saved.', updateCapability: 'Measurement settings saved.', mapFamily: 'Product family saved.', setProp: 'Saved.', markRead: 'Marked as read.',
 }
 export function runActionWithNote(b: any): Result {
     const r = runAction(b || {})
-    if (r.ok && !r.note) r.note = DEFAULT_NOTE[String(b && b.action)] || 'Saved.'
+    if (r.ok && !r.note && String(b && b.action) !== 'ai') r.note = DEFAULT_NOTE[String(b && b.action)] || 'Saved.'
     return r
 }
 
@@ -577,3 +686,8 @@ export function action(request: any, response: any) {
         response.setBody({ ok: false, error: 'PIVOT could not save the change. Ask your PIVOT admin to check the system log.' } as any)
     }
 }
+
+// PIV-059 / 060 – Virtual Agent "Ask PIVOT" topic and the Now Assist panel call these through the PivotAI script include.
+export function vaAsk(question: string): Result { return AI.ask(question, 'va') }
+export function vaConfirm(c: any): Result { return AI.confirmChat(c || {}, 'va', (x: any) => runAction(x, true)) }
+export function panelExplain(table: string, sysId: string, text: string): Result { return AI.explainForPanel(table, sysId, text) }
