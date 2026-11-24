@@ -19,7 +19,7 @@ Test({
         source.addQuery('active', inactiveValue);
         source.query();
         while (source.next()) {
-            var sourceId = sourceType == 'store_app' ? source.getValue('scope') : source.getValue('id');
+            var sourceId = sourceType == 'store_app' ? source.getValue('scope') : source.getValue('source');
             if (!sourceId) continue;
             var existing = new GlideRecord(CAP);
             existing.addQuery('source', sourceType);
@@ -44,7 +44,7 @@ Test({
         return null;
     };
     var app = makeFixture('sys_store_app', false, 'store_app');
-    var plugin = makeFixture('v_plugin', 'inactive', 'plugin');
+    var plugin = makeFixture('sys_plugins', false, 'plugin');
     assertEqual({ name: 'inactive Store app test fixture available', shouldbe: true, value: !!app });
     assertEqual({ name: 'inactive plugin test fixture available', shouldbe: true, value: !!plugin });
     if (!app || !plugin) {
