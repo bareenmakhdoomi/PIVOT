@@ -773,14 +773,6 @@ declare global {
                         table: 'sys_atf_step'
                         id: '291660c956b546f29a03d3a99dea203f'
                     }
-                    'atf-stry0015309-repeat-discovery': {
-                        table: 'sys_atf_test'
-                        id: 'd5faa2e2a96a464aa242c37fe69c72fb'
-                    }
-                    'atf-stry0015309-repeat-discovery-check': {
-                        table: 'sys_atf_step'
-                        id: '00fea9c324fa4a3a971941a9cfe80fb0'
-                    }
                     'atf-stry0015306-discovery-timestamps': {
                         table: 'sys_atf_test'
                         id: '6c07def93aa8483090384a067156a7d4'
@@ -788,6 +780,14 @@ declare global {
                     'atf-stry0015306-discovery-timestamps-check': {
                         table: 'sys_atf_step'
                         id: '40ff73487fe641b6b3766f095f19c5cc'
+                    }
+                    'atf-stry0015309-repeat-discovery': {
+                        table: 'sys_atf_test'
+                        id: 'd5faa2e2a96a464aa242c37fe69c72fb'
+                    }
+                    'atf-stry0015309-repeat-discovery-check': {
+                        table: 'sys_atf_step'
+                        id: '00fea9c324fa4a3a971941a9cfe80fb0'
                     }
                     'atf-stry0015312-capability-linked-app': {
                         table: 'sys_atf_test'

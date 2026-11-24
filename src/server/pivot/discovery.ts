@@ -340,6 +340,7 @@ export function runDiscovery(runStartedAt?: string, licensesOnly = false, appsOn
             // Every Store app is also registered as a plugin (com.<scope>). Keep it active once, as a Store app,
             // so the same product is not listed and counted twice (PIV-011.03 / 012.01 / 012.02).
             const appScopes: { [scope: string]: boolean } = {}
+            const appNames: { [name: string]: boolean } = {}
             if (tableExists(SOURCES.apps)) {
                 const sa = new GlideRecord(SOURCES.apps)
                 sa.addQuery('active', true)
@@ -347,6 +348,8 @@ export function runDiscovery(runStartedAt?: string, licensesOnly = false, appsOn
                 while (sa.next()) {
                     const sc = str(sa, 'scope')
                     if (sc) appScopes[sc] = true
+                    const an = str(sa, 'name').trim().toLowerCase()
+                    if (an) appNames[an] = true
                 }
             }
             let appTwins = 0
@@ -359,7 +362,8 @@ export function runDiscovery(runStartedAt?: string, licensesOnly = false, appsOn
                 s.plugins.read++
                 try {
                     const pluginScope = detailsById[id] ? detailsById[id].scope : ''
-                    const appTwin = !!pluginScope && pluginScope !== 'global' && !!appScopes[pluginScope]
+                    // Same product when the plugin's scope or its exact name matches an active Store app (some plugins have no scope in v_plugin).
+                    const appTwin = (!!pluginScope && pluginScope !== 'global' && !!appScopes[pluginScope]) || !!appNames[name.trim().toLowerCase()]
                     if (appTwin) appTwins++
                     upsertDiscoveredCapability('plugin', id, name, { active: !appTwin, licensed: false, installed: true, app_scope: pluginScope === 'global' ? '' : pluginScope, version: str(p, 'version').slice(0, 40) }, familyFromLob(feeById[id] || ''), s.plugins)
                 } catch (ex) {
