@@ -60,10 +60,11 @@ Test({
     licensed.addQuery('licensed', true);
     licensed.query();
     while (licensed.next()) {
+        // Hand-made capabilities (no source ID) are left to the admin and are not counted here.
+        if (!licensed.getValue('source_id')) continue;
         licensedCount++;
         if (licensed.getValue('source') != 'subscription' ||
-            (licensed.getValue('not_found') != '0' && licensed.getValue('not_found') != 'false') ||
-            !licensed.getValue('source_id')) {
+            (licensed.getValue('not_found') != '0' && licensed.getValue('not_found') != 'false')) {
             onlyCurrentSubscriptionsLicensed = false;
         }
     }

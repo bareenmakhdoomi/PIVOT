@@ -429,6 +429,8 @@ export function runDiscovery(runStartedAt?: string, licensesOnly = false, appsOn
     let clearedLicensed = 0
     let failedLicensedClears = 0
     while (invalidLicensed.next()) {
+        // Hand-made capabilities (no source ID) are not discovery's to change: an admin may mark them licensed.
+        if (!str(invalidLicensed, 'source_id')) continue
         if (str(invalidLicensed, 'source') === 'subscription' &&
             str(invalidLicensed, 'not_found') !== '1' &&
             str(invalidLicensed, 'not_found') !== 'true' &&
