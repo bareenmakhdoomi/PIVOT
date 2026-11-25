@@ -1324,8 +1324,9 @@ function render(keepScroll) {
 }
 function viewSlug(v) { return String(v || '').toLowerCase().replace(/&/g, 'and').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, ''); }
 function viewFromParam(p) { if (!p) return ''; const want = viewSlug(p); return Object.keys(RENDER).find(k => viewSlug(k) === want || viewSlug(k).replace(/-and-/g, '-') === want) || ''; }
-function syncViewParam(view) { try { const u = new URL(window.location.href); if (u.searchParams.get('view') === viewSlug(view)) return; u.searchParams.set('view', viewSlug(view)); window.history.replaceState(window.history.state, '', u.toString()); } catch (e) { /* address not writable here */ } }
-function go(view) { if (!RENDER[view]) view = 'Dashboard'; st.view = view; syncViewParam(view); closeModal(true); toggleProfile(false); closeDrawer(); render(); window.scrollTo({ top: 0 }); const h = document.querySelector('#main .h1'); if (h) { h.setAttribute('tabindex', '-1'); h.focus({ preventScroll: true }); } }
+function syncViewParam(view, push) { try { const u = new URL(window.location.href); if (u.searchParams.get('view') === viewSlug(view)) return; u.searchParams.set('view', viewSlug(view)); if (push) window.history.pushState(window.history.state, '', u.toString()); else window.history.replaceState(window.history.state, '', u.toString()); } catch (e) { /* address not writable here */ } }
+// PIV-062.05 AC2: each view change is a browser history entry, so Back returns to the previous view (filters are kept in st per view).
+function go(view, fromHistory) { if (!RENDER[view]) view = 'Dashboard'; st.view = view; syncViewParam(view, !fromHistory); closeModal(true); toggleProfile(false); closeDrawer(); render(); window.scrollTo({ top: 0 }); const h = document.querySelector('#main .h1'); if (h) { h.setAttribute('tabindex', '-1'); h.focus({ preventScroll: true }); } }
 function openCapability(id) { const l = st.lib; l.q = ''; l.family = 'all'; l.errors = {}; l.note = ''; const c = S.capability(id); l.view = c && !c.active ? 'not_found' : 'active'; if (c && !c.family && isAdmin()) l.view = 'needs_mapping'; const list = libList(); l.page = Math.max(0, list.findIndex(x => x.id === id)); if (list.findIndex(x => x.id === id) < 0) { l.view = 'all'; l.page = Math.max(0, libList().findIndex(x => x.id === id)); } go('Capability Library'); }
 function closeDrawer() { const d = $('notificationDrawer'), t = $('notificationTrigger'); if (d && !d.hidden) { d.hidden = true; t.setAttribute('aria-expanded', 'false'); t.classList.remove('is-open'); } }
 
@@ -1443,6 +1444,7 @@ S.subscribe(ev => {
 });
 
 try { const startView = viewFromParam(new URL(window.location.href).searchParams.get('view')); if (startView) st.view = startView; } catch (e) { /* no address */ }
+try { window.addEventListener('popstate', () => { const v = viewFromParam(new URL(window.location.href).searchParams.get('view')) || 'Dashboard'; if (v !== st.view) go(v, true); }); } catch (e) { /* no history */ }
 try { const saved = JSON.parse(window.localStorage.getItem('x_enno_pivot.exports.' + S.user().id) || '[]'); if (Array.isArray(saved)) st.exports = saved; } catch (e) { /* storage off */ }
 render();
 try { const runNum = new URL(window.location.href).searchParams.get('run'); if (runNum && /^[A-Z]{2,5}\d{4,10}$/.test(runNum)) { if (st.view !== 'Assessments') { st.view = 'Assessments'; render(); } openAssessment(runNum); const u = new URL(window.location.href); u.searchParams.delete('run'); window.history.replaceState(window.history.state, '', u.toString()); } } catch (e) { /* no address */ }
@@ -1483,6 +1485,6 @@ function mount(host) {
       const retry = document.getElementById('pivotRetry'); if (retry) retry.addEventListener('click', () => window.location.reload());
     });
 }
-window.x_enno_pivot_portal = { mount, version: '8beb2a08fd05' };
+window.x_enno_pivot_portal = { mount, version: 'd491f44c37a2' };
 
 })();
